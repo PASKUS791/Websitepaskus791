@@ -1,16 +1,92 @@
-# React + Vite
+# PelatihDash
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Dashboard rekrutmen berbasis React + Vite untuk kebutuhan operasional `PASKUS 791`.
 
-Currently, two official plugins are available:
+Project ini berisi alur login, dashboard utama, kalender jadwal yang bisa diedit, arsip hasil laporan, board perlu tindakan, dan library SOP dengan tampilan taktis.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Fitur Utama
 
-## React Compiler
+- Login portal dengan demo account lokal.
+- Dashboard utama untuk monitoring kandidat.
+- Halaman `Jadwal` dengan mode day/week/month dan data yang bisa diedit.
+- Halaman `Hasil Laporan` dengan arsip laporan kandidat, laporan tambahan, edit, hapus, eliminasi kandidat, dan status dispatch.
+- Halaman `Perlu Tindakan` untuk reminder kandidat tanpa laporan, jadwal terlewat, dan data yang belum terkirim.
+- Halaman `SOP` dengan beberapa card dokumen dan detail view interaktif.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React 19
+- Vite 8
+- React Router
+- Framer Motion
+- Recharts
+- Tailwind CSS
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Demo Login
+
+Gunakan salah satu akun demo berikut:
+
+- `paskus` / `paskus123`
+- `recruiter` / `recruiter123`
+
+## Menjalankan Project
+
+Install dependency:
+
+```bash
+npm install
+```
+
+Jalankan development server:
+
+```bash
+npm run dev
+```
+
+Build production:
+
+```bash
+npm run build
+```
+
+Preview hasil build:
+
+```bash
+npm run preview
+```
+
+Lint project:
+
+```bash
+npm run lint
+```
+
+## Struktur Singkat
+
+```text
+src/
+  dashboard/
+    DashboardLayout.jsx
+    pages.jsx
+  lib/
+    auth.js
+  pages/
+    LoginPortal.jsx
+  App.jsx
+  main.jsx
+```
+
+## Halaman
+
+- `/` : login portal
+- `/dashboard` : dashboard utama
+- `/dashboard/jadwal` : kalender jadwal rekrutmen
+- `/dashboard/laporan` : arsip hasil laporan
+- `/dashboard/tindakan` : board perlu tindakan
+- `/dashboard/sop` : dokumen SOP
+
+## Catatan
+
+- Sebagian data saat ini masih menggunakan local state dan `localStorage`.
+- Konten halaman `SOP` saat ini sudah disiapkan dengan placeholder `Lorem ipsum` agar mudah diganti dengan data final.
+- Asset `introph.gif` cukup besar sehingga build dapat menampilkan warning ukuran bundle.
