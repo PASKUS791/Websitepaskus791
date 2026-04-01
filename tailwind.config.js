@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Space Grotesk"', 'sans-serif'],
+        public: ['"Public Sans"', 'sans-serif'],
       },
     },
   },
