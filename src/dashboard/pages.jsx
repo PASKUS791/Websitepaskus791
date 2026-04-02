@@ -1,126 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
+import { RESOURCE_KEYS, useSyncedResource } from "../lib/resources";
 
-const WEEKLY_DATA = [
-  { week: "W1", total: 200 },
-  { week: "W2", total: 350 },
-  { week: "W3", total: 500 },
-  { week: "W4", total: 700 },
-  { week: "W5", total: 900 },
-  { week: "W6", total: 1200 },
-  { week: "W7", total: 1428 },
-];
-
-const PLAYERS = [
-  {
-    roblox: "Alpha_Shadow",
-    discord: "ShadowOps#1234",
-    age: 21,
-    gender: "Pria",
-    group: "Golongan 1",
-    status: "Approved",
-  },
-  {
-    roblox: "Bravo_Medic_X",
-    discord: "MedicPro#9981",
-    age: 19,
-    gender: "Wanita",
-    group: "Golongan 2",
-    status: "Review",
-  },
-  {
-    roblox: "Commander_V",
-    discord: "BigBoss#0001",
-    age: 24,
-    gender: "Pria",
-    group: "Golongan 1",
-    status: "Rejected",
-  },
-];
-
-const REPORT_ARCHIVE_STORAGE_KEY = "pelatihdash.report-archive.v1";
-
-const REPORT_ARCHIVE_INITIAL_REPORTS = [
-  {
-    id: "rep-ahmad-rizky",
-    name: "Ahmad Rizky",
-    discord: "rizky_ops#4421",
-    group: "GOL A",
-    status: "LULUS",
-    age: "24 Tahun",
-    gender: "Laki-Laki",
-    question: "Bagaimana penanganan krisis pada protokol Bravo-9?",
-    notes:
-      "Kandidat menunjukkan penguasaan taktis yang luar biasa dan pemahaman hierarki yang solid.",
-    updatedAt: "2026-04-01T08:15:00.000Z",
-  },
-  {
-    id: "rep-sarah-wijaya",
-    name: "Sarah Wijaya",
-    discord: "sarah_ops#9901",
-    group: "GOL B",
-    status: "LULUS",
-    age: "22 Tahun",
-    gender: "Perempuan",
-    question: "Prioritas utama saat integritas sistem terancam?",
-    notes:
-      "Respons cepat dengan fokus pada enkripsi data. Kemampuan teknis memenuhi standar operasional.",
-    updatedAt: "2026-04-01T08:42:00.000Z",
-  },
-  {
-    id: "rep-doni-pratama",
-    name: "Doni Pratama",
-    discord: "doni_alpha#1283",
-    group: "GOL A",
-    status: "LULUS",
-    age: "27 Tahun",
-    gender: "Laki-Laki",
-    question: "Visi Anda untuk unit Tactical Command dalam 5 tahun?",
-    notes:
-      "Potensi kepemimpinan sangat tinggi. Memiliki pandangan futuristik yang sejalan dengan doktrin unit.",
-    updatedAt: "2026-04-01T09:05:00.000Z",
-  },
-  {
-    id: "rep-maya-angelia",
-    name: "Maya Angelia",
-    discord: "maya_ops#0042",
-    group: "GOL C",
-    status: "GAGAL",
-    age: "19 Tahun",
-    gender: "Perempuan",
-    question: "Kapan diperbolehkan mengabaikan rantai komando?",
-    notes:
-      "Kurangnya disiplin hierarkis. Jawaban terlalu subjektif dan berisiko bagi stabilitas operasi.",
-    updatedAt: "2026-04-01T09:18:00.000Z",
-  },
-  {
-    id: "rep-budi-santoso",
-    name: "Budi Santoso",
-    discord: "budisant#7712",
-    group: "GOL A",
-    status: "LULUS",
-    age: "31 Tahun",
-    gender: "Laki-Laki",
-    question: "Pengalaman dalam mengelola data intelijen skala besar?",
-    notes:
-      "Veteran yang teruji. Pengalaman 10 tahun sangat berharga untuk penguatan basis data Alpha-6.",
-    updatedAt: "2026-04-01T09:24:00.000Z",
-  },
-  {
-    id: "rep-citra-dewi",
-    name: "Citra Dewi",
-    discord: "citrad#5511",
-    group: "GOL B",
-    status: "LULUS",
-    age: "20 Tahun",
-    gender: "Perempuan",
-    question: "Apa arti loyalitas dalam tugas penyamaran?",
-    notes:
-      "Dedikasi tinggi. Menunjukkan ketahanan mental yang diperlukan untuk unit operasi khusus.",
-    updatedAt: "2026-04-01T09:31:00.000Z",
-  },
-];
+const EMPTY_DASHBOARD_DATA = [];
 
 const SCHEDULE_DAY_LABELS = [
   "MONDAY",
@@ -134,220 +17,12 @@ const SCHEDULE_DAY_LABELS = [
 
 const CALENDAR_VIEW_OPTIONS = ["DAY", "WEEK", "MONTH"];
 const MIN_SCHEDULE_YEAR = 2026;
-const SCHEDULE_STORAGE_KEY = "pelatihdash.schedule-events.v1";
 const SCHEDULE_TONE_OPTIONS = [
   { value: "olive", label: "Stable / Golongan 1" },
   { value: "amber", label: "Priority / Golongan 2" },
   { value: "danger", label: "Gap / Critical" },
 ];
 const INITIAL_SCHEDULE_DATE = getCurrentScheduleDate();
-
-const SCHEDULE_EVENTS = [
-  {
-    id: "sch-0328",
-    date: "2026-03-28",
-    title: "LT. GHOST",
-    subtitle: "GOLONGAN 1",
-    time: "07:00 - 13:00 HRS",
-    tone: "olive",
-    capacity: 8,
-    location: "Shadow Deck",
-    coordinator: "Ghost / Lane A",
-    objective: "Final prep batch sebelum masuk wave April 2026.",
-  },
-  {
-    id: "sch-0402",
-    date: "2026-04-02",
-    title: "SGT. MILLER",
-    subtitle: "GOLONGAN 1",
-    time: "08:00 - 16:00 HRS",
-    tone: "olive",
-    capacity: 14,
-    location: "Hangar Alpha",
-    coordinator: "Miller / Desk A",
-    objective: "Screening utama kandidat batch infantry.",
-  },
-  {
-    id: "sch-0403",
-    date: "2026-04-03",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "10:00 - 18:00 HRS",
-    tone: "amber",
-    capacity: 16,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Verifikasi kepemimpinan dan tactical discipline.",
-  },
-  {
-    id: "sch-0406",
-    date: "2026-04-06",
-    title: "LT. GHOST",
-    subtitle: "GOLONGAN 1",
-    time: "08:00 - 16:00 HRS",
-    tone: "olive",
-    capacity: 12,
-    location: "Stealth Yard",
-    coordinator: "Ghost / Lane A",
-    objective: "Focused drill untuk kandidat dengan nilai mobilitas tinggi.",
-  },
-  {
-    id: "sch-0407",
-    date: "2026-04-07",
-    title: "SGT. MILLER",
-    subtitle: "GOLONGAN 1",
-    time: "08:00 - 16:00 HRS",
-    tone: "olive",
-    capacity: 10,
-    location: "Hangar Alpha",
-    coordinator: "Miller / Desk A",
-    objective: "Sinkronisasi recruiter dan medical readiness.",
-  },
-  {
-    id: "sch-0408a",
-    date: "2026-04-08",
-    title: "MAJ. PAYNE",
-    subtitle: "GOLONGAN 2",
-    time: "09:00 - 17:00 HRS",
-    tone: "amber",
-    capacity: 12,
-    location: "Command Dome",
-    coordinator: "Payne / Desk C",
-    objective: "Assessment lanjutan untuk kandidat leadership path.",
-  },
-  {
-    id: "sch-0408b",
-    date: "2026-04-08",
-    title: "RECRUITMENT GAP",
-    subtitle: "WAITLIST REVIEW",
-    time: "ACTION PENDING",
-    tone: "danger",
-    capacity: 0,
-    location: "Control Desk",
-    coordinator: "Ops Control",
-    objective: "Penjadwalan kosong sementara menunggu validasi dokumen tambahan.",
-  },
-  {
-    id: "sch-0409",
-    date: "2026-04-09",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "10:00 - 18:00 HRS",
-    tone: "olive",
-    capacity: 14,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Recheck sesi wawancara dan tactical briefing kedua.",
-  },
-  {
-    id: "sch-0410a",
-    date: "2026-04-10",
-    title: "SGT. MILLER",
-    subtitle: "GOLONGAN 1",
-    time: "08:00 - 16:00 HRS",
-    tone: "olive",
-    capacity: 10,
-    location: "Hangar Alpha",
-    coordinator: "Miller / Desk A",
-    objective: "Batch aktif untuk kandidat prioritas minggu kedua.",
-  },
-  {
-    id: "sch-0410b",
-    date: "2026-04-10",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "14:00 - 22:00 HRS",
-    tone: "amber",
-    capacity: 8,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Night evaluation lane untuk late applicants.",
-  },
-  {
-    id: "sch-0412",
-    date: "2026-04-12",
-    title: "LT. GHOST",
-    subtitle: "GOLONGAN 1",
-    time: "07:00 - 13:00 HRS",
-    tone: "olive",
-    capacity: 10,
-    location: "Stealth Yard",
-    coordinator: "Ghost / Lane A",
-    objective: "Quick insertion drill dan endurance test.",
-  },
-  {
-    id: "sch-0414",
-    date: "2026-04-14",
-    title: "SGT. MILLER",
-    subtitle: "GOLONGAN 1",
-    time: "08:00 - 16:00 HRS",
-    tone: "olive",
-    capacity: 8,
-    location: "Hangar Alpha",
-    coordinator: "Miller / Desk A",
-    objective: "Panel evaluasi dokumen final gelombang ketiga.",
-  },
-  {
-    id: "sch-0416",
-    date: "2026-04-16",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "12:00 - 18:00 HRS",
-    tone: "amber",
-    capacity: 10,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Review komando dan taktikal decision test.",
-  },
-  {
-    id: "sch-0421",
-    date: "2026-04-21",
-    title: "MAJ. PAYNE",
-    subtitle: "GOLONGAN 2",
-    time: "09:00 - 15:00 HRS",
-    tone: "amber",
-    capacity: 8,
-    location: "Command Dome",
-    coordinator: "Payne / Desk C",
-    objective: "Re-run kandidat cadangan untuk leadership stream.",
-  },
-  {
-    id: "sch-0428",
-    date: "2026-04-28",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "10:00 - 16:00 HRS",
-    tone: "amber",
-    capacity: 10,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Close-out batch dan final recruitment endorsement.",
-  },
-  {
-    id: "sch-1102",
-    date: "2026-11-02",
-    title: "SGT. MILLER",
-    subtitle: "GOLONGAN 1",
-    time: "09:00 - 15:00 HRS",
-    tone: "olive",
-    capacity: 9,
-    location: "Hangar Alpha",
-    coordinator: "Miller / Desk A",
-    objective: "Awal rotasi November 2026 untuk re-open tactical lane.",
-  },
-  {
-    id: "sch-1106",
-    date: "2027-02-06",
-    title: "CPT. PRICE",
-    subtitle: "GOLONGAN 2",
-    time: "10:00 - 18:00 HRS",
-    tone: "amber",
-    capacity: 12,
-    location: "Ops Chamber 2",
-    coordinator: "Price / Desk B",
-    objective: "Leadership assessment batch awal 2027.",
-  },
-];
 
 const ACTIVE_APPLICANTS_BASE = 486;
 
@@ -603,39 +278,19 @@ function sortScheduleEvents(events) {
 }
 
 function getDefaultScheduleEvents() {
-  return sortScheduleEvents(
-    SCHEDULE_EVENTS.filter((event) => isSupportedScheduleDate(event.date)).map(
-      (event, index) => normalizeScheduleEvent(event, index),
-    ),
-  );
+  return [];
 }
 
-function loadStoredScheduleEvents() {
-  if (typeof window === "undefined") {
+function loadStoredScheduleEvents(value = EMPTY_DASHBOARD_DATA) {
+  if (!Array.isArray(value)) {
     return getDefaultScheduleEvents();
   }
 
-  try {
-    const rawValue = window.localStorage.getItem(SCHEDULE_STORAGE_KEY);
-
-    if (!rawValue) {
-      return getDefaultScheduleEvents();
-    }
-
-    const parsedValue = JSON.parse(rawValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return getDefaultScheduleEvents();
-    }
-
-    return sortScheduleEvents(
-      parsedValue
-        .map((event, index) => normalizeScheduleEvent(event, index))
-        .filter((event) => isSupportedScheduleDate(event.date)),
-    );
-  } catch {
-    return getDefaultScheduleEvents();
-  }
+  return sortScheduleEvents(
+    value
+      .map((event, index) => normalizeScheduleEvent(event, index))
+      .filter((event) => isSupportedScheduleDate(event.date)),
+  );
 }
 
 function getScheduleEditorFormState(event, selectedDate) {
@@ -686,36 +341,12 @@ function normalizeArchiveReport(report, index = 0) {
   };
 }
 
-function loadStoredArchiveReports() {
-  if (typeof window === "undefined") {
-    return REPORT_ARCHIVE_INITIAL_REPORTS.map((report, index) =>
-      normalizeArchiveReport(report, index),
-    );
+function loadStoredArchiveReports(value = EMPTY_DASHBOARD_DATA) {
+  if (!Array.isArray(value)) {
+    return [];
   }
 
-  try {
-    const rawValue = window.localStorage.getItem(REPORT_ARCHIVE_STORAGE_KEY);
-
-    if (!rawValue) {
-      return REPORT_ARCHIVE_INITIAL_REPORTS.map((report, index) =>
-        normalizeArchiveReport(report, index),
-      );
-    }
-
-    const parsedValue = JSON.parse(rawValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return REPORT_ARCHIVE_INITIAL_REPORTS.map((report, index) =>
-        normalizeArchiveReport(report, index),
-      );
-    }
-
-    return parsedValue.map((report, index) => normalizeArchiveReport(report, index));
-  } catch {
-    return REPORT_ARCHIVE_INITIAL_REPORTS.map((report, index) =>
-      normalizeArchiveReport(report, index),
-    );
-  }
+  return value.map((report, index) => normalizeArchiveReport(report, index));
 }
 
 function getArchiveGroupClasses(group) {
@@ -770,6 +401,30 @@ function formatRelativeMinutes(date, referenceDate = new Date()) {
 
   const differenceInDays = Math.floor(differenceInHours / 24);
   return `${differenceInDays} Days Ago`;
+}
+
+function buildCandidateWeeklyData(candidates) {
+  const currentDate = new Date();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const targetWeekDate = addDays(currentDate, (index - 6) * 7);
+    const weekStart = getStartOfWeek(targetWeekDate);
+    const weekEnd = addDays(weekStart, 6);
+    const total = candidates.filter((candidate) => {
+      const candidateDate = new Date(candidate.createdAt || candidate.updatedAt || Date.now());
+
+      return (
+        !Number.isNaN(candidateDate.getTime()) &&
+        candidateDate.getTime() >= weekStart.getTime() &&
+        candidateDate.getTime() <= weekEnd.getTime()
+      );
+    }).length;
+
+    return {
+      week: `W${index + 1}`,
+      total,
+    };
+  });
 }
 
 function normalizeReminderIdentity(value) {
@@ -2290,28 +1945,50 @@ function Row({ data }) {
 }
 
 export function DashboardHome() {
+  const {
+    data: candidates,
+    loading: candidatesLoading,
+    error: candidatesError,
+  } = useSyncedResource(RESOURCE_KEYS.dashboardCandidates, {
+    defaultValue: [],
+    saveDelay: 500,
+    normalize: (value) =>
+      Array.isArray(value)
+        ? value.map((candidate) => ({
+            roblox: candidate.roblox?.trim() || "Unknown",
+            discord: candidate.discord?.trim() || "unknown#0000",
+            age: Number(candidate.age) || 0,
+            gender: candidate.gender?.trim() || "Tidak Diketahui",
+            group: candidate.group?.trim() || "Golongan 1",
+            status: candidate.status?.trim() || "Review",
+            createdAt: candidate.createdAt || new Date().toISOString(),
+            updatedAt: candidate.updatedAt || candidate.createdAt || new Date().toISOString(),
+          }))
+        : [],
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGroup, setFilterGroup] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const weeklyData = useMemo(() => buildCandidateWeeklyData(candidates), [candidates]);
 
   const filteredPlayers = useMemo(
     () =>
-      PLAYERS.filter((player) => {
+      candidates.filter((player) => {
         return (
           player.roblox.toLowerCase().includes(searchTerm.toLowerCase()) &&
           (filterGroup === "" || player.group === filterGroup) &&
           (filterStatus === "" || player.status === filterStatus)
         );
       }),
-    [filterGroup, filterStatus, searchTerm],
+    [candidates, filterGroup, filterStatus, searchTerm],
   );
 
-  const total = PLAYERS.length;
-  const approved = PLAYERS.filter((player) => player.status === "Approved").length;
-  const rejected = PLAYERS.filter((player) => player.status === "Rejected").length;
+  const total = candidates.length;
+  const approved = candidates.filter((player) => player.status === "Approved").length;
+  const rejected = candidates.filter((player) => player.status === "Rejected").length;
   const approvalRate = total ? Math.round((approved / total) * 100) : 0;
-  const last = WEEKLY_DATA[WEEKLY_DATA.length - 1].total;
-  const previous = WEEKLY_DATA[WEEKLY_DATA.length - 2].total;
+  const last = weeklyData[weeklyData.length - 1]?.total ?? 0;
+  const previous = weeklyData[weeklyData.length - 2]?.total ?? 0;
   const growth = previous ? (((last - previous) / previous) * 100).toFixed(1) : "0.0";
 
   return (
@@ -2332,7 +2009,7 @@ export function DashboardHome() {
         </p>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Card
           title="Pendaftar"
           value={total}
@@ -2341,7 +2018,7 @@ export function DashboardHome() {
         >
           <div className="mt-2 h-12">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={WEEKLY_DATA}>
+              <LineChart data={weeklyData}>
                 <Line
                   type="monotone"
                   dataKey="total"
@@ -2402,16 +2079,16 @@ export function DashboardHome() {
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <input
               type="text"
               placeholder="Search by name..."
-              className="rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400"
+              className="w-full rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400 sm:w-[220px]"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
             <select
-              className="rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400"
+              className="w-full rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400 sm:w-auto"
               value={filterGroup}
               onChange={(event) => setFilterGroup(event.target.value)}
             >
@@ -2420,7 +2097,7 @@ export function DashboardHome() {
               <option value="Golongan 2">Golongan 2</option>
             </select>
             <select
-              className="rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400"
+              className="w-full rounded-sm border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400 sm:w-auto"
               value={filterStatus}
               onChange={(event) => setFilterStatus(event.target.value)}
             >
@@ -2431,6 +2108,18 @@ export function DashboardHome() {
             </select>
           </div>
         </div>
+
+        {candidatesLoading ? (
+          <div className="mt-4 rounded-sm border border-dashed border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-400">
+            Memuat data kandidat dari database...
+          </div>
+        ) : null}
+
+        {candidatesError ? (
+          <div className="mt-4 rounded-sm border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {candidatesError}
+          </div>
+        ) : null}
 
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
@@ -2493,6 +2182,16 @@ export function DashboardHome() {
 }
 
 export function JadwalPage() {
+  const {
+    data: scheduleEvents,
+    setData: setScheduleEvents,
+    loading: schedulesLoading,
+    error: schedulesError,
+  } = useSyncedResource(RESOURCE_KEYS.dashboardSchedules, {
+    defaultValue: [],
+    saveDelay: 450,
+    normalize: loadStoredScheduleEvents,
+  });
   const [zuluNow, setZuluNow] = useState(new Date());
   const [viewMode, setViewMode] = useState("MONTH");
   const [focusedMonth, setFocusedMonth] = useState(
@@ -2504,7 +2203,6 @@ export function JadwalPage() {
     ),
   );
   const [selectedDate, setSelectedDate] = useState(INITIAL_SCHEDULE_DATE);
-  const [scheduleEvents, setScheduleEvents] = useState(loadStoredScheduleEvents);
   const [activeEventId, setActiveEventId] = useState(null);
   const [editorState, setEditorState] = useState({
     open: false,
@@ -2512,7 +2210,7 @@ export function JadwalPage() {
     event: null,
   });
   const [syncStatus, setSyncStatus] = useState({
-    message: "Realtime local sync active.",
+    message: "Realtime database sync active.",
     at: new Date(),
   });
 
@@ -2546,36 +2244,6 @@ export function JadwalPage() {
     }, 30000);
 
     return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(scheduleEvents));
-    return undefined;
-  }, [scheduleEvents]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handleStorage = (storageEvent) => {
-      if (storageEvent.key !== SCHEDULE_STORAGE_KEY) {
-        return;
-      }
-
-      setScheduleEvents(loadStoredScheduleEvents());
-      setSyncStatus({
-        message: "Perubahan jadwal tersinkron dari tab lain.",
-        at: new Date(),
-      });
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const eventsByDate = useMemo(() => {
@@ -2807,7 +2475,19 @@ export function JadwalPage() {
     );
   }, [liveCalendarDate, scheduleEvents]);
 
-  const syncTimeLabel = syncStatus.at.toLocaleTimeString("id-ID", {
+  const resolvedSyncStatus = schedulesLoading
+    ? {
+        message: "Memuat jadwal dari database...",
+        at: syncStatus.at,
+      }
+    : schedulesError
+      ? {
+          message: schedulesError,
+          at: syncStatus.at,
+        }
+      : syncStatus;
+
+  const syncTimeLabel = resolvedSyncStatus.at.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -3087,7 +2767,7 @@ export function JadwalPage() {
                   Realtime Sync
                 </p>
                 <p className="mt-2 font-public text-[11px] uppercase tracking-[0.08em] text-stone-200">
-                  {syncStatus.message}
+                  {resolvedSyncStatus.message}
                 </p>
                 <p className="mt-2 font-public text-[10px] uppercase tracking-[0.14em] text-stone-300">
                   {liveCalendarDate.toLocaleDateString("id-ID", {
@@ -3660,27 +3340,27 @@ export function JadwalPage() {
 }
 
 export function LaporanPage() {
-  const [reports, setReports] = useState(loadStoredArchiveReports);
+  const {
+    data: reports,
+    setData: setReports,
+    loading: reportsLoading,
+    error: reportsError,
+  } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
+    defaultValue: [],
+    saveDelay: 450,
+    normalize: loadStoredArchiveReports,
+  });
   const [systemTime, setSystemTime] = useState(new Date());
   const [editorReport, setEditorReport] = useState(null);
   const [supplementEditorState, setSupplementEditorState] = useState(null);
   const [archiveNotice, setArchiveNotice] = useState(
-    "Channel siap untuk pengiriman laporan ke resimen.",
+    "Channel siap untuk sinkronisasi laporan ke database.",
   );
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
     return () => window.clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    window.localStorage.setItem(REPORT_ARCHIVE_STORAGE_KEY, JSON.stringify(reports));
-    return undefined;
-  }, [reports]);
 
   const latestUpdatedAt = useMemo(() => {
     return reports.reduce((latestTimestamp, report) => {
@@ -3701,6 +3381,9 @@ export function LaporanPage() {
     isArchivePendingDispatch(report),
   ).length;
   const lastReportLabel = formatRelativeMinutes(latestUpdatedDate, systemTime);
+  const resolvedArchiveNotice = reportsLoading
+    ? "Memuat arsip laporan dari database..."
+    : reportsError || archiveNotice;
 
   const handleDispatchReports = () => {
     const dispatchTimestamp = new Date().toISOString();
@@ -3897,7 +3580,7 @@ export function LaporanPage() {
 
             <div className="border border-white/6 bg-stone-950 px-4 py-2">
               <p className="font-public text-[10px] uppercase tracking-[0.12em] text-stone-300">
-                {archiveNotice}
+                {resolvedArchiveNotice}
               </p>
             </div>
           </div>
@@ -4134,31 +3817,28 @@ function TindakanEmptyState({ message }) {
 
 export function TindakanPage() {
   const [systemTime, setSystemTime] = useState(new Date());
-  const [reports, setReports] = useState(loadStoredArchiveReports);
-  const [scheduleEvents, setScheduleEvents] = useState(loadStoredScheduleEvents);
+  const { data: reports } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
+    defaultValue: [],
+    saveDelay: 450,
+    normalize: loadStoredArchiveReports,
+  });
+  const { data: scheduleEvents } = useSyncedResource(
+    RESOURCE_KEYS.dashboardSchedules,
+    {
+      defaultValue: [],
+      saveDelay: 450,
+      normalize: loadStoredScheduleEvents,
+    },
+  );
+  const { data: candidates } = useSyncedResource(RESOURCE_KEYS.dashboardCandidates, {
+    defaultValue: [],
+    saveDelay: 500,
+    normalize: (value) => (Array.isArray(value) ? value : []),
+  });
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
     return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handleStorage = (storageEvent) => {
-      if (storageEvent.key === REPORT_ARCHIVE_STORAGE_KEY) {
-        setReports(loadStoredArchiveReports());
-      }
-
-      if (storageEvent.key === SCHEDULE_STORAGE_KEY) {
-        setScheduleEvents(loadStoredScheduleEvents());
-      }
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const candidatesWithoutReports = useMemo(() => {
@@ -4169,7 +3849,7 @@ export function TindakanPage() {
       ]),
     );
 
-    return PLAYERS.filter((player) => {
+    return candidates.filter((player) => {
       const robloxIdentity = normalizeReminderIdentity(player.roblox);
       const discordIdentity = normalizeReminderIdentity(player.discord);
 
@@ -4198,7 +3878,7 @@ export function TindakanPage() {
         description,
       };
     });
-  }, [reports]);
+  }, [candidates, reports]);
 
   const overdueSchedules = useMemo(() => {
     return scheduleEvents

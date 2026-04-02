@@ -12,26 +12,14 @@ import foto2 from "../assets/5.webp";
 import foto3 from "../assets/GATAM_2.webp";
 import foto4 from "../assets/GATAM_3.webp";
 import foto5 from "../assets/GATAM_4.webp";
-import gdaGif from "../assets/introph.gif";
-import {
-  authenticateUser,
-  DUMMY_ACCOUNTS,
-  isAuthenticated,
-  setAuthenticated,
-  setAuthenticatedUser,
-} from "../lib/auth";
+import PortalModeSwitch from "../components/PortalModeSwitch";
+import RotatingPaskusLogo from "../components/RotatingPaskusLogo";
+import SecurityAttackOverlay from "../components/SecurityAttackOverlay";
+import paskusLogo from "../assets/paskus.webp";
+import { useAuth } from "../lib/auth";
+import { useAnimatedFavicon } from "../lib/useAnimatedFavicon";
 
 const PHOTOS = [foto1, foto2, foto3, foto4, foto5];
-const FAVICON_FRAMES = [
-  "/favicon1.svg",
-  "/favicon2.svg",
-  "/favicon3.svg",
-  "/favicon4.svg",
-  "/favicon5.svg",
-  "/favicon6.svg",
-  "/favicon7.svg",
-  "/favicon8.svg",
-];
 const FractureOverlay = () => (
   <motion.div
     initial={{ opacity: 0 }}
@@ -110,12 +98,15 @@ function GlitchBackground({ currentIndex, mouseX, mouseY }) {
 
 export default function LoginPortal() {
   const navigate = useNavigate();
+  const { loading, login, user } = useAuth();
+  useAnimatedFavicon();
   const [phase, setPhase] = useState("intro");
   const [progress, setProgress] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [securityAlert, setSecurityAlert] = useState(null);
   const [isAuthing, setIsAuthing] = useState(false);
 
   const mouseX = useMotionValue(0);
@@ -147,21 +138,6 @@ export default function LoginPortal() {
 
     return logMessages.slice(Math.max(0, completed - 3), completed);
   }, [logMessages, progress]);
-
-  useEffect(() => {
-    let index = 0;
-
-    const interval = window.setInterval(() => {
-      const link = document.querySelector("link[rel='icon']");
-
-      if (link) {
-        link.href = FAVICON_FRAMES[index];
-        index = (index + 1) % FAVICON_FRAMES.length;
-      }
-    }, 400);
-
-    return () => window.clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (phase !== "intro") {
@@ -234,24 +210,37 @@ export default function LoginPortal() {
     setError("");
     setIsAuthing(true);
 
-    window.setTimeout(() => {
-      const account = authenticateUser(username, password);
+    window.setTimeout(async () => {
+      try {
+        await login("pelatih", username, password);
+        navigate("/dashboard", { replace: true });
+      } catch (authError) {
+        const attackPayload = authError?.payload?.securityEvent;
 
-      if (!account) {
-        setError("ACCESS DENIED - CHECK DEMO ACCOUNT");
+        if (attackPayload) {
+          setSecurityAlert({
+            ...attackPayload,
+            retryAfterSeconds: authError?.payload?.retryAfterSeconds,
+          });
+        }
+
+        setError(attackPayload?.classification || authError.message || "ACCESS DENIED");
         setIsAuthing(false);
         window.setTimeout(() => setError(""), 1200);
-        return;
       }
-
-      setAuthenticated(true);
-      setAuthenticatedUser(account);
-      navigate("/dashboard", { replace: true });
     }, 1000);
   };
 
-  if (isAuthenticated()) {
+  if (loading) {
+    return null;
+  }
+
+  if (user?.scope === "pelatih") {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (user?.scope === "hco") {
+    return <Navigate to="/hco/dashboard" replace />;
   }
 
   return (
@@ -282,6 +271,11 @@ export default function LoginPortal() {
         )}
       </AnimatePresence>
 
+      <SecurityAttackOverlay
+        alert={securityAlert}
+        onDismiss={() => setSecurityAlert(null)}
+      />
+
       <AnimatePresence mode="wait">
         {phase === "intro" && (
           <motion.div
@@ -295,13 +289,12 @@ export default function LoginPortal() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 1.5 }}
-              className="relative group"
+              className="relative group translate-x-2 md:translate-x-4"
             >
-              <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-[80px] transition-all group-hover:bg-emerald-500/40" />
-              <img
-                src={gdaGif}
-                alt="GDA LOGO GIF"
-                className="relative z-10 h-48 w-48 object-contain mix-blend-screen brightness-150"
+              <RotatingPaskusLogo
+                sizeClassName="h-44 w-44 md:h-48 md:w-48"
+                glowClassName="bg-emerald-400/24"
+                imageClassName="mix-blend-screen brightness-110"
               />
               <motion.div
                 initial={{ width: 0 }}
@@ -498,60 +491,22 @@ export default function LoginPortal() {
               </div>
 
               <div className="relative mx-auto w-full max-w-6xl px-6 py-14 lg:px-10">
-                <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,560px)] lg:items-start lg:justify-center">
-                  <aside className="order-2 lg:order-1 lg:pt-36">
-                    <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.04] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.25)]">
-                      <p className="text-[10px] uppercase tracking-[0.35em] text-emerald-300">
-                        Demo Account
-                      </p>
-                      <p className="mt-3 text-sm leading-6 text-stone-400">
-                        Panel akun demo saya pindahkan ke luar box login supaya area form lebih bersih dan logo tidak bertabrakan dengan konten ini.
-                      </p>
-
-                      <div className="mt-5 space-y-3">
-                        {DUMMY_ACCOUNTS.map((account) => (
-                          <button
-                            key={account.username}
-                            type="button"
-                            onClick={() => {
-                              setUsername(account.username);
-                              setPassword(account.password);
-                              setError("");
-                            }}
-                            className="flex w-full items-center justify-between rounded-md border border-white/8 bg-black/20 px-3 py-3 text-left transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.05]"
-                          >
-                            <div>
-                              <p className="text-xs font-semibold text-stone-100">
-                                {account.label}
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-stone-400">
-                                Username:{" "}
-                                <span className="text-emerald-300">
-                                  {account.username}
-                                </span>
-                              </p>
-                              <p className="text-[11px] leading-5 text-stone-400">
-                                Password:{" "}
-                                <span className="text-emerald-300">
-                                  {account.password}
-                                </span>
-                              </p>
-                            </div>
-                            <span className="text-[10px] uppercase tracking-[0.3em] text-emerald-300">
-                              Fill
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </aside>
-
-                  <div className="order-1 flex flex-col items-center lg:order-2">
+                <div className="flex justify-center">
+                  <div className="flex w-full max-w-[620px] flex-col items-center">
                     <div className="mb-6 flex flex-col items-center text-center">
+                      <div className="mb-6">
+                        <PortalModeSwitch
+                          activeMode="staff"
+                          onSelect={(mode) =>
+                            navigate(mode === "hco" ? "/hco" : "/", { replace: true })
+                          }
+                        />
+                      </div>
+
                       <img
-                        src={gdaGif}
+                        src={paskusLogo}
                         alt="Paskus insignia"
-                        className="h-20 w-20 shrink-0 object-contain opacity-90"
+                        className="h-20 w-20 shrink-0 rounded-full object-cover opacity-90"
                       />
 
                       <h1 className="mt-4 text-2xl font-semibold uppercase tracking-[0.2em] text-stone-200">
@@ -670,7 +625,7 @@ export default function LoginPortal() {
                               {error ||
                                 (isAuthing
                                   ? "VERIFYING..."
-                                  : "SYSTEM SECURE - DEMO READY")}
+                                  : "SYSTEM SECURE - SERVER AUTH")}
                             </span>
                           </div>
 

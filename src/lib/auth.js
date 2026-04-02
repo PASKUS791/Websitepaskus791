@@ -1,86 +1,85 @@
-const AUTH_KEY = "pelatihdash-session";
-const SESSION_USER_KEY = "pelatihdash-user";
+import {
+  createElement,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { apiFetch } from "./api";
 
-export const DUMMY_ACCOUNTS = [
-  {
-    username: "paskus",
-    password: "paskus123",
-    label: "Staff Command",
-  },
-  {
-    username: "recruiter",
-    password: "recruiter123",
-    label: "Recruiter Desk",
-  },
-];
+const AuthContext = createContext(null);
 
-export function isAuthenticated() {
-  if (typeof window === "undefined") {
-    return false;
-  }
+function AuthProviderInner({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  return window.sessionStorage.getItem(AUTH_KEY) === "authenticated";
-}
+  const refreshSession = useCallback(async () => {
+    try {
+      const payload = await apiFetch("/api/auth/session");
+      setUser(payload?.authenticated ? payload.user : null);
+      setError("");
+    } catch (sessionError) {
+      setUser(null);
+      setError(sessionError.message || "Gagal memeriksa sesi.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-export function setAuthenticated(value) {
-  if (typeof window === "undefined") {
-    return;
-  }
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
 
-  if (value) {
-    window.sessionStorage.setItem(AUTH_KEY, "authenticated");
-    return;
-  }
+  const login = async (scope, username, password) => {
+    const payload = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: { scope, username, password },
+    });
 
-  window.sessionStorage.removeItem(AUTH_KEY);
-  window.sessionStorage.removeItem(SESSION_USER_KEY);
-}
+    setUser(payload?.user ?? null);
+    setError("");
+    return payload?.user ?? null;
+  };
 
-export function authenticateUser(username, password) {
-  const normalizedUsername = username.trim().toLowerCase();
+  const logout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore logout transport errors and clear local auth state anyway.
+    }
 
-  return (
-    DUMMY_ACCOUNTS.find(
-      (account) =>
-        account.username === normalizedUsername && account.password === password,
-    ) ?? null
-  );
-}
+    setUser(null);
+  };
 
-export function setAuthenticatedUser(account) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  if (!account) {
-    window.sessionStorage.removeItem(SESSION_USER_KEY);
-    return;
-  }
-
-  window.sessionStorage.setItem(
-    SESSION_USER_KEY,
-    JSON.stringify({
-      username: account.username,
-      label: account.label,
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      error,
+      login,
+      logout,
+      refreshSession,
+      isScopeAuthenticated: (scope) => user?.scope === scope,
     }),
+    [error, loading, refreshSession, user],
   );
+
+  return createElement(AuthContext.Provider, { value }, children);
 }
 
-export function getAuthenticatedUser() {
-  if (typeof window === "undefined") {
-    return null;
+export function AuthProvider({ children }) {
+  return createElement(AuthProviderInner, null, children);
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider.");
   }
 
-  const raw = window.sessionStorage.getItem(SESSION_USER_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    window.sessionStorage.removeItem(SESSION_USER_KEY);
-    return null;
-  }
+  return context;
 }

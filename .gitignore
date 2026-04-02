@@ -10,7 +10,15 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+PelatihDash-hostinger-deploy
+PelatihDash-hostinger-deploy.zip
+PelatihDash-hostinger-*.zip
+PelatihDash-hostinger-*/
 *.local
+.env
+.env.*
+server/data/*
+!server/data/.gitkeep
 
 # Editor directories and files
 .vscode/*

@@ -6,9 +6,16 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import globals from "globals";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores([
+    "dist",
+    "PelatihDash-hostinger-deploy",
+    "PelatihDash-hostinger-beta",
+    "PelatihDash-hostinger-beta-*",
+    "PelatihDash-hostinger-latest-*",
+    "*.zip",
+  ]),
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["src/**/*.{js,jsx}"],
     extends: [
       js.configs.recommended,
       react.configs.flat.recommended,
@@ -33,6 +40,17 @@ export default defineConfig([
     rules: {
       "no-unused-vars": ["error", { varsIgnorePattern: "^(?:[A-Z_]|motion)$" }],
       "react/prop-types": "off",
+    },
+  },
+  {
+    files: ["server/**/*.{js,mjs}", "*.js"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2024,
+      globals: globals.node,
+      parserOptions: {
+        sourceType: "module",
+      },
     },
   },
 ]);
