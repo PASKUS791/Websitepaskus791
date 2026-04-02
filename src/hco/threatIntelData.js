@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 export const HOSTILE_INTEL_CATEGORY_IDS = new Set(["2", "3"]);
 
 const SOURCES = {

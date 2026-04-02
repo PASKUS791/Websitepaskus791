@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import { apiFetch } from "../lib/api";
 import { RESOURCE_KEYS, saveResource } from "../lib/resources";
 import { RONOGRAD_MAP_DATA } from "./ronogradMapData";

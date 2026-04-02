@@ -1,32 +1,57 @@
-# Security Notes
+# Catatan Keamanan
 
-## Active Protections
+Dokumen ini merangkum proteksi yang sudah aktif di project dan hal-hal yang perlu dijaga saat deploy production.
 
-- Passwords are hashed server-side with `scrypt` and configurable work factors.
-- Additional password pepper is loaded from `.env` using `APP_PASSWORD_PEPPER`.
-- Login sessions use `HttpOnly`, signed, `SameSite=Strict` cookies.
-- Login endpoints use request rate limiting and brute-force lockouts.
-- API writes validate trusted `Origin` / `Referer` to reduce CSRF risk.
-- SQLite access uses prepared statements to reduce SQL injection risk.
-- Deploy headers disable framing, sniffing, indexing, and weak cross-domain policies.
-- Apache deploy rules deny access to source files, dotfiles, and config files.
+## Proteksi yang Sudah Aktif
 
-## Production Checklist
+- Password di-hash di sisi server menggunakan `scrypt` dengan parameter yang bisa dikonfigurasi.
+- Pepper password tambahan dimuat dari file `.env` melalui `APP_PASSWORD_PEPPER`.
+- Session login memakai cookie `HttpOnly`, signed, dan `SameSite=Strict`.
+- Endpoint login memiliki proteksi rate limit dan lockout brute force.
+- Request tulis ke API memvalidasi `Origin` dan `Referer` tepercaya untuk mengurangi risiko CSRF.
+- Akses SQLite memakai prepared statement untuk mengurangi risiko SQL injection.
+- Header deploy memblokir framing, sniffing, indexing, dan kebijakan lintas domain yang lemah.
+- Aturan Apache deploy menolak akses ke source file, dotfile, dan file konfigurasi sensitif.
+- Terdapat hardening session secret dan validasi environment untuk production.
 
-1. Set a strong `APP_SESSION_SECRET`.
-2. Set a strong `APP_PASSWORD_PEPPER`.
-3. Set `APP_TRUST_PROXY=true` when the app runs behind a trusted reverse proxy.
-4. Set `APP_ALLOWED_ORIGINS` to the exact production origin list.
-5. Enforce HTTPS on the final domain.
-6. Do not upload `.env`, `server/`, or source files into public web roots.
-7. Rotate admin passwords before go-live.
-8. Put the public domain behind a WAF/CDN if you need stronger DDoS resistance.
+## Checklist Production
 
-## Pentest Focus Areas
+1. Isi `APP_SESSION_SECRET` dengan nilai acak yang panjang dan kuat.
+2. Isi `APP_PASSWORD_PEPPER` dengan nilai acak yang berbeda dari session secret.
+3. Set `APP_TRUST_PROXY=true` jika aplikasi berada di belakang reverse proxy tepercaya.
+4. Set `APP_ALLOWED_ORIGINS` hanya ke origin production yang resmi.
+5. Pastikan domain production selalu memakai HTTPS.
+6. Jangan upload `.env`, `server/`, atau source code ke public web root.
+7. Ganti password admin bootstrap sebelum aplikasi benar-benar dipakai.
+8. Letakkan domain publik di belakang WAF/CDN jika membutuhkan ketahanan DDoS yang lebih kuat.
+9. Batasi akses panel admin hanya untuk role dan scope yang benar.
+10. Audit ulang webhook dan kredensial sebelum go-live.
 
-- Credential stuffing / brute-force attempts
-- Session theft and cookie flags
-- CSRF on authenticated write actions
-- SQL injection probes on auth/resource endpoints
-- Direct access to hidden deploy files or directory indexes
-- Broken access control between `pelatih` and `hco` scopes
+## Fokus Pengujian Pentest
+
+- brute force login dan credential stuffing
+- pencurian session dan validasi cookie flag
+- CSRF pada request tulis yang memerlukan autentikasi
+- SQL injection pada endpoint auth dan resource
+- akses langsung ke file deploy tersembunyi atau directory index
+- broken access control antara scope `pelatih` dan `hco`
+- validasi origin palsu dan probing referer
+- replay request pada endpoint sensitif
+
+## Rekomendasi Tambahan
+
+- Tambahkan audit log login dan perubahan data penting.
+- Pertimbangkan 2FA untuk akun dengan akses strategis.
+- Gunakan secret yang berbeda untuk lokal, beta, dan production.
+- Jangan pernah commit file `.env` ke repository publik.
+- Lakukan rotasi secret secara berkala untuk environment production.
+
+## Identitas dan Kepemilikan Internal
+
+Dokumentasi dan implementasi keamanan project ini dikelola secara internal oleh:
+
+- Team DUKUN PASKUS 791
+- Jevier — Frontend
+- Teddy — Backend
+- Lee — Cyber Sector
+- Osiris — Bot Manufactur

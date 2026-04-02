@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";

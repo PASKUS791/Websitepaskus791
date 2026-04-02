@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import paskusLogo from "../assets/paskus.webp";

@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import { RONOGRAD_MAP_DATA } from "./ronogradMapData";
 
 const MAP_WIDTH = RONOGRAD_MAP_DATA.mapBounds[1][0];

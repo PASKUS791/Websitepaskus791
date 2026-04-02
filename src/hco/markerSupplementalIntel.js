@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import { getThreatIntelForMarker, isThreatIntelMarker } from "./threatIntelData";
 
 const RAW_DESCRIPTION_TRANSLATIONS = {

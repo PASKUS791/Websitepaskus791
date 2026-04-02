@@ -1,3 +1,12 @@
+/*
+ * Team DUKUN PASKUS 791
+ * Jevier - Frontend
+ * Teddy - Backend
+ * Lee - Cyber Sector
+ * Osiris - Bot Manufactur
+ * Internal proprietary source notice.
+ */
+
 import js from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
 import react from "eslint-plugin-react";

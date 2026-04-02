@@ -2,6 +2,16 @@
   "name": "pelatihdash",
   "private": true,
   "version": "0.0.0",
+  "author": "Team DUKUN PASKUS 791",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/PASKUS791/PelatihWebPaskus",
+  "projectOwner": "Team DUKUN PASKUS 791",
+  "contributors": [
+    "Jevier - Frontend",
+    "Teddy - Backend",
+    "Lee - Cyber Sector",
+    "Osiris - Bot Manufactur"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
