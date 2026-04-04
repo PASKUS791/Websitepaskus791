@@ -13,9 +13,13 @@
     "Osiris - Bot Manufactur"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "api": "node server/index.mjs",
+    "start": "node server/index.mjs",
     "dev:client": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -24,6 +28,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "framer-motion": "^12.38.0",
+    "mongodb": "^7.1.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",

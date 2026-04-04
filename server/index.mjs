@@ -8,17 +8,25 @@
  */
 
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
+import { createStorage } from "./storage.mjs";
 
 process.loadEnvFile?.();
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value || "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function cloneValue(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
 }
 
 function normalizeOrigin(value) {
@@ -122,13 +130,6 @@ function loadProjectEnvFile(projectPath) {
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const projectRoot = resolve(__dirname, "..");
 loadProjectEnvFile(projectRoot);
-const databasePath = resolve(
-  projectRoot,
-  process.env.APP_DATABASE_PATH || "./server/data/pelatihdash.sqlite",
-);
-const dataDirectory = resolve(databasePath, "..");
-
-mkdirSync(dataDirectory, { recursive: true });
 
 const config = {
   port: Number.parseInt(process.env.API_PORT || "8787", 10),
@@ -162,7 +163,15 @@ const config = {
   primaryHcoAdminUsername: normalizeUsername(
     process.env.HCO_ADMIN_USERNAME || "CosmoHCO",
   ),
+  mongodbUri: String(process.env.MONGODB_URI || process.env.APP_MONGODB_URI || "").trim(),
+  mongodbDbName: String(
+    process.env.MONGODB_DB_NAME || process.env.APP_MONGODB_DB_NAME || "pelatihdash",
+  ).trim(),
 };
+
+if (!config.mongodbUri) {
+  throw new Error("MONGODB_URI wajib diisi. Backend sekarang hanya mendukung MongoDB.");
+}
 
 if (
   config.production &&
@@ -190,43 +199,6 @@ const LEGACY_HCO_ENEMY_CATEGORY_IDS = new Set([
   "enemy-minefield",
   "enemy-machine-gunner",
 ]);
-
-const db = new DatabaseSync(databasePath);
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    scope TEXT NOT NULL,
-    username TEXT NOT NULL,
-    label TEXT NOT NULL,
-    unit TEXT,
-    password_hash TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    UNIQUE(scope, username)
-  );
-
-  CREATE TABLE IF NOT EXISTS sessions (
-    session_id TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    scope TEXT NOT NULL,
-    ip_address TEXT,
-    user_agent TEXT,
-    created_at TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS resources (
-    name TEXT PRIMARY KEY,
-    scope TEXT NOT NULL,
-    value_json TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  );
-`);
 
 const RESOURCE_SCOPES = {
   "dashboard.candidates": "pelatih",
@@ -258,75 +230,12 @@ const requestRateBuckets = new Map();
 const loginAttemptBuckets = new Map();
 const sseClients = new Set();
 const strategicLogoBuffer = readFileSync(resolve(projectRoot, "src/assets/paskus.webp"));
-
-const resourceSelectStatement = db.prepare(
-  "SELECT name, scope, value_json AS valueJson, updated_at AS updatedAt FROM resources WHERE name = ?",
-);
-const resourceUpsertStatement = db.prepare(`
-  INSERT INTO resources (name, scope, value_json, updated_at)
-  VALUES (?, ?, ?, ?)
-  ON CONFLICT(name) DO UPDATE SET
-    scope = excluded.scope,
-    value_json = excluded.value_json,
-    updated_at = excluded.updated_at
-`);
-const deleteExpiredSessionsStatement = db.prepare(
-  "DELETE FROM sessions WHERE expires_at <= ?",
-);
-const sessionInsertStatement = db.prepare(`
-  INSERT INTO sessions (session_id, user_id, scope, ip_address, user_agent, created_at, expires_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`);
-const sessionSelectStatement = db.prepare(`
-  SELECT
-    sessions.session_id AS sessionId,
-    sessions.scope,
-    sessions.expires_at AS expiresAt,
-    sessions.ip_address AS ipAddress,
-    sessions.user_agent AS userAgent,
-    users.id AS userId,
-    users.username,
-    users.label,
-    users.unit,
-    users.active
-  FROM sessions
-  JOIN users ON users.id = sessions.user_id
-  WHERE sessions.session_id = ?
-`);
-const sessionDeleteStatement = db.prepare("DELETE FROM sessions WHERE session_id = ?");
-const sessionDeleteByUserStatement = db.prepare("DELETE FROM sessions WHERE user_id = ?");
-const updateUserPasswordStatement = db.prepare(
-  "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
-);
-const userByScopeAndUsernameStatement = db.prepare(`
-  SELECT id, scope, username, label, unit, password_hash AS passwordHash, active
-  FROM users
-  WHERE scope = ? AND username = ?
-`);
-const usersByScopeStatement = db.prepare(`
-  SELECT id, scope, username, label, unit
-  FROM users
-  WHERE scope = ? AND active = 1
-  ORDER BY label COLLATE NOCASE ASC, username COLLATE NOCASE ASC
-`);
-const deleteUserByScopeAndUsernameStatement = db.prepare(`
-  DELETE FROM users
-  WHERE scope = ? AND username = ?
-`);
-const createUserStatement = db.prepare(`
-  INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-`);
-const upsertUserStatement = db.prepare(`
-  INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-  ON CONFLICT(scope, username) DO UPDATE SET
-    label = excluded.label,
-    unit = excluded.unit,
-    password_hash = excluded.password_hash,
-    active = excluded.active,
-    updated_at = excluded.updated_at
-`);
+const storage = await createStorage({
+  resourceScopes: RESOURCE_SCOPES,
+  resourceDefaults: RESOURCE_DEFAULTS,
+  mongodbUri: config.mongodbUri,
+  mongodbDbName: config.mongodbDbName,
+});
 
 function nowIso() {
   return new Date().toISOString();
@@ -418,12 +327,12 @@ function isPasswordHashOutdated(storedHash) {
   );
 }
 
-function maybeUpgradePasswordHash(user, password) {
+async function maybeUpgradePasswordHash(user, password) {
   if (!user?.id || !isPasswordHashOutdated(user.passwordHash)) {
     return;
   }
 
-  updateUserPasswordStatement.run(hashPassword(password), nowIso(), user.id);
+  await storage.updateUserPassword(user.id, hashPassword(password), nowIso());
 }
 
 function normalizeUsername(username) {
@@ -432,7 +341,7 @@ function normalizeUsername(username) {
 
 const DUMMY_PASSWORD_HASH = hashPassword("pelatihdash-dummy-password");
 
-function seedAdminUser(scope, envPrefix, fallbackLabel, fallbackUnit = null) {
+async function seedAdminUser(scope, envPrefix, fallbackLabel, fallbackUnit = null) {
   const username = normalizeUsername(process.env[`${envPrefix}_USERNAME`]);
   const password = process.env[`${envPrefix}_PASSWORD`];
 
@@ -441,37 +350,24 @@ function seedAdminUser(scope, envPrefix, fallbackLabel, fallbackUnit = null) {
   }
 
   const timestamp = nowIso();
-  upsertUserStatement.run(
+  await storage.seedUser({
     scope,
     username,
-    process.env[`${envPrefix}_LABEL`] || fallbackLabel,
-    process.env[`${envPrefix}_UNIT`] || fallbackUnit,
-    hashPassword(password),
-    timestamp,
-    timestamp,
-  );
-}
-
-function ensureResourceDefaults() {
-  const timestamp = nowIso();
-
-  Object.entries(RESOURCE_DEFAULTS).forEach(([resourceName, defaultValue]) => {
-    const existing = resourceSelectStatement.get(resourceName);
-
-    if (!existing) {
-      resourceUpsertStatement.run(
-        resourceName,
-        RESOURCE_SCOPES[resourceName],
-        JSON.stringify(defaultValue),
-        timestamp,
-      );
-    }
+    label: process.env[`${envPrefix}_LABEL`] || fallbackLabel,
+    unit: process.env[`${envPrefix}_UNIT`] || fallbackUnit,
+    passwordHash: hashPassword(password),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   });
 }
 
-seedAdminUser("pelatih", "PELATIH_ADMIN", "Paskus Admin");
-seedAdminUser("hco", "HCO_ADMIN", "Strategic Admin", "HCO Strategic Command");
-ensureResourceDefaults();
+async function ensureResourceDefaults() {
+  await storage.ensureResourceDefaults();
+}
+
+await seedAdminUser("pelatih", "PELATIH_ADMIN", "Paskus Admin");
+await seedAdminUser("hco", "HCO_ADMIN", "Strategic Admin", "HCO Strategic Command");
+await ensureResourceDefaults();
 
 function getClientIp(request) {
   const forwardedFor = request.headers["x-forwarded-for"];
@@ -517,7 +413,7 @@ function maybeApplyCors(request, response) {
   response.setHeader("Access-Control-Allow-Origin", origin);
   response.setHeader("Access-Control-Allow-Credentials", "true");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
 }
 
 function sendJson(response, statusCode, payload) {
@@ -678,25 +574,25 @@ function clearSessionCookie() {
   return serializeSessionCookie("", 0);
 }
 
-function cleanupExpiredSessions() {
-  deleteExpiredSessionsStatement.run(nowIso());
+async function cleanupExpiredSessions() {
+  await storage.cleanupExpiredSessions(nowIso());
 }
 
-function createSession(user, request) {
-  cleanupExpiredSessions();
+async function createSession(user, request) {
+  await cleanupExpiredSessions();
   const sessionId = randomBytes(32).toString("base64url");
   const createdAt = nowIso();
   const expiresAt = new Date(Date.now() + config.sessionTtlMs).toISOString();
 
-  sessionInsertStatement.run(
+  await storage.createSession({
     sessionId,
-    user.id,
-    user.scope,
-    getClientIp(request),
-    request.headers["user-agent"] || "",
+    userId: user.id,
+    scope: user.scope,
+    ipAddress: getClientIp(request),
+    userAgent: request.headers["user-agent"] || "",
     createdAt,
     expiresAt,
-  );
+  });
 
   return {
     sessionId,
@@ -704,16 +600,16 @@ function createSession(user, request) {
   };
 }
 
-function destroySession(sessionId) {
+async function destroySession(sessionId) {
   if (!sessionId) {
     return;
   }
 
-  sessionDeleteStatement.run(sessionId);
+  await storage.deleteSession(sessionId);
 }
 
-function getAuthenticatedSession(request) {
-  cleanupExpiredSessions();
+async function getAuthenticatedSession(request) {
+  await cleanupExpiredSessions();
   const cookies = parseCookies(request);
   const sessionId = decodeSignedSessionId(cookies.pelatihdash_session);
 
@@ -721,22 +617,22 @@ function getAuthenticatedSession(request) {
     return null;
   }
 
-  const session = sessionSelectStatement.get(sessionId);
+  const session = await storage.getSessionWithUser(sessionId);
 
   if (!session || !session.active) {
-    destroySession(sessionId);
+    await destroySession(sessionId);
     return null;
   }
 
   if (new Date(session.expiresAt).getTime() <= Date.now()) {
-    destroySession(sessionId);
+    await destroySession(sessionId);
     return null;
   }
 
   const currentUserAgent = String(request.headers["user-agent"] || "");
 
   if (session.userAgent && currentUserAgent && session.userAgent !== currentUserAgent) {
-    destroySession(sessionId);
+    await destroySession(sessionId);
     return null;
   }
 
@@ -1116,45 +1012,40 @@ function sanitizeResourceValue(resourceName, value) {
   return Array.isArray(value) ? value : RESOURCE_DEFAULTS[resourceName];
 }
 
-function readResource(resourceName) {
-  const existing = resourceSelectStatement.get(resourceName);
+async function readResource(resourceName) {
+  const existing = await storage.getResource(resourceName);
 
   if (!existing) {
     return {
       name: resourceName,
       scope: RESOURCE_SCOPES[resourceName],
       updatedAt: nowIso(),
-      value: RESOURCE_DEFAULTS[resourceName],
+      value: cloneResourceDefault(resourceName),
     };
   }
 
-  try {
-    return {
-      name: existing.name,
-      scope: existing.scope,
-      updatedAt: existing.updatedAt,
-      value:
-        sanitizeResourceValue(existing.name, JSON.parse(existing.valueJson)) ??
-        RESOURCE_DEFAULTS[existing.name],
-    };
-  } catch {
-    return {
-      name: existing.name,
-      scope: existing.scope,
-      updatedAt: existing.updatedAt,
-      value: RESOURCE_DEFAULTS[existing.name],
-    };
-  }
+  return {
+    name: existing.name,
+    scope: existing.scope,
+    updatedAt: existing.updatedAt,
+    value:
+      sanitizeResourceValue(existing.name, existing.value) ??
+      cloneResourceDefault(existing.name),
+  };
 }
 
-function writeResource(resourceName, value) {
+function cloneResourceDefault(resourceName) {
+  return cloneValue(RESOURCE_DEFAULTS[resourceName]);
+}
+
+async function writeResource(resourceName, value) {
   const sanitizedValue = sanitizeResourceValue(resourceName, value);
   const updatedAt = nowIso();
 
-  resourceUpsertStatement.run(
+  await storage.putResource(
     resourceName,
     RESOURCE_SCOPES[resourceName],
-    JSON.stringify(sanitizedValue),
+    sanitizedValue,
     updatedAt,
   );
 
@@ -1195,7 +1086,7 @@ function isPrimaryHcoAdmin(session) {
   );
 }
 
-function getHcoAccessStateForUser(username) {
+async function getHcoAccessStateForUser(username) {
   const normalizedUsername = normalizeUsername(username);
 
   if (!normalizedUsername) {
@@ -1214,7 +1105,7 @@ function getHcoAccessStateForUser(username) {
     };
   }
 
-  const resource = readResource("hco.mapPlannerUsers");
+  const resource = await readResource("hco.mapPlannerUsers");
   const accessEntry = resource.value.find(
     (entry) => normalizeUsername(entry.username) === normalizedUsername,
   );
@@ -1234,7 +1125,7 @@ function getHcoAccessStateForUser(username) {
   };
 }
 
-function isAuthorizedForResource(session, resourceName, method = "GET") {
+async function isAuthorizedForResource(session, resourceName, method = "GET") {
   if (session?.user?.scope !== RESOURCE_SCOPES[resourceName]) {
     return false;
   }
@@ -1247,7 +1138,7 @@ function isAuthorizedForResource(session, resourceName, method = "GET") {
     return true;
   }
 
-  const accessState = getHcoAccessStateForUser(session.user.username);
+  const accessState = await getHcoAccessStateForUser(session.user.username);
 
   if (resourceName === "hco.plannerState") {
     return accessState.mainPlanner;
@@ -1388,7 +1279,7 @@ async function handleRequest(request, response) {
 
   const requestUrl = new URL(request.url, "http://localhost");
   const path = requestUrl.pathname;
-  const session = getAuthenticatedSession(request);
+  const session = await getAuthenticatedSession(request);
 
   if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
     if (!ensureTrustedOrigin(request, response)) {
@@ -1397,7 +1288,11 @@ async function handleRequest(request, response) {
   }
 
   if (path === "/api/health" && request.method === "GET") {
-    sendJson(response, 200, { ok: true, status: "online" });
+    sendJson(response, 200, {
+      ok: true,
+      status: "online",
+      database: storage.kind,
+    });
     return;
   }
 
@@ -1449,7 +1344,7 @@ async function handleRequest(request, response) {
         return;
       }
 
-      const user = userByScopeAndUsernameStatement.get(scope, username);
+      const user = await storage.getUserByScopeAndUsername(scope, username);
       const candidateHash = user?.passwordHash || DUMMY_PASSWORD_HASH;
       const isPasswordValid = verifyPassword(password, candidateHash);
 
@@ -1461,10 +1356,10 @@ async function handleRequest(request, response) {
         return;
       }
 
-      maybeUpgradePasswordHash(user, password);
+      await maybeUpgradePasswordHash(user, password);
       clearFailedLogins(username, request);
-      sessionDeleteByUserStatement.run(user.id);
-      const nextSession = createSession({ ...user, scope }, request);
+      await storage.deleteSessionsByUser(user.id);
+      const nextSession = await createSession({ ...user, scope }, request);
 
       appendSecurityHeaders(response);
       response.writeHead(200, {
@@ -1492,7 +1387,7 @@ async function handleRequest(request, response) {
   }
 
   if (path === "/api/auth/logout" && request.method === "POST") {
-    destroySession(session?.sessionId);
+    await destroySession(session?.sessionId);
     sendEmpty(response, 204, {
       "Set-Cookie": clearSessionCookie(),
     });
@@ -1505,8 +1400,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const operators = usersByScopeStatement
-      .all("pelatih")
+    const operators = (await storage.listUsersByScope("pelatih"))
       .map((user) => ({
         id: user.id,
         username: user.username,
@@ -1548,7 +1442,10 @@ async function handleRequest(request, response) {
       }
 
       const operator = validateOperatorPayload(body);
-      const existingUser = userByScopeAndUsernameStatement.get("pelatih", operator.username);
+      const existingUser = await storage.getUserByScopeAndUsername(
+        "pelatih",
+        operator.username,
+      );
 
       if (existingUser) {
         sendError(response, 409, "Username petugas sudah digunakan.");
@@ -1556,17 +1453,17 @@ async function handleRequest(request, response) {
       }
 
       const timestamp = nowIso();
-      createUserStatement.run(
-        "pelatih",
-        operator.username,
-        operator.label,
-        operator.unit,
-        hashPassword(operator.password),
-        timestamp,
-        timestamp,
-      );
+      await storage.createUser({
+        scope: "pelatih",
+        username: operator.username,
+        label: operator.label,
+        unit: operator.unit,
+        passwordHash: hashPassword(operator.password),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
 
-      const operators = usersByScopeStatement.all("pelatih").map((user) => ({
+      const operators = (await storage.listUsersByScope("pelatih")).map((user) => ({
         id: user.id,
         username: user.username,
         label: user.label,
@@ -1595,11 +1492,11 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const accessEntries = readResource("hco.mapPlannerUsers").value;
+    const accessEntries = (await readResource("hco.mapPlannerUsers")).value;
     const accessByUsername = new Map(
       accessEntries.map((entry) => [normalizeUsername(entry.username), entry]),
     );
-    const users = usersByScopeStatement.all("hco").map((user) => {
+    const users = (await storage.listUsersByScope("hco")).map((user) => {
       const accessEntry = accessByUsername.get(normalizeUsername(user.username));
 
       return {
@@ -1651,7 +1548,10 @@ async function handleRequest(request, response) {
       }
 
       const nextUser = validateHcoUserPayload(body);
-      const existingUser = userByScopeAndUsernameStatement.get("hco", nextUser.username);
+      const existingUser = await storage.getUserByScopeAndUsername(
+        "hco",
+        nextUser.username,
+      );
 
       if (existingUser) {
         sendError(response, 409, "Username HCO sudah digunakan.");
@@ -1659,17 +1559,17 @@ async function handleRequest(request, response) {
       }
 
       const timestamp = nowIso();
-      createUserStatement.run(
-        "hco",
-        nextUser.username,
-        nextUser.label,
-        nextUser.unit,
-        hashPassword(nextUser.password),
-        timestamp,
-        timestamp,
-      );
+      await storage.createUser({
+        scope: "hco",
+        username: nextUser.username,
+        label: nextUser.label,
+        unit: nextUser.unit,
+        passwordHash: hashPassword(nextUser.password),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
 
-      const currentAccessEntries = readResource("hco.mapPlannerUsers").value;
+      const currentAccessEntries = (await readResource("hco.mapPlannerUsers")).value;
       const nextAccessEntries = [
         ...currentAccessEntries.filter(
           (entry) => normalizeUsername(entry.username) !== nextUser.username,
@@ -1686,7 +1586,7 @@ async function handleRequest(request, response) {
       ].sort((firstEntry, secondEntry) =>
         String(firstEntry.username).localeCompare(String(secondEntry.username)),
       );
-      writeResource("hco.mapPlannerUsers", nextAccessEntries);
+      await writeResource("hco.mapPlannerUsers", nextAccessEntries);
 
       sendJson(response, 201, {
         ok: true,
@@ -1724,29 +1624,29 @@ async function handleRequest(request, response) {
         return;
       }
 
-      const existingUser = userByScopeAndUsernameStatement.get("hco", username);
+      const existingUser = await storage.getUserByScopeAndUsername("hco", username);
 
       if (!existingUser) {
         sendError(response, 404, "Anggota HCO tidak ditemukan.");
         return;
       }
 
-      sessionDeleteByUserStatement.run(existingUser.id);
-      deleteUserByScopeAndUsernameStatement.run("hco", username);
+      await storage.deleteSessionsByUser(existingUser.id);
+      await storage.deleteUserByScopeAndUsername("hco", username);
 
-      const currentAccessEntries = readResource("hco.mapPlannerUsers").value;
+      const currentAccessEntries = (await readResource("hco.mapPlannerUsers")).value;
       const nextAccessEntries = currentAccessEntries.filter(
         (entry) => normalizeUsername(entry.username) !== username,
       );
-      writeResource("hco.mapPlannerUsers", nextAccessEntries);
+      await writeResource("hco.mapPlannerUsers", nextAccessEntries);
 
-      const currentStrategicSaves = readResource("hco.strategicSaves").value;
+      const currentStrategicSaves = (await readResource("hco.strategicSaves")).value;
       const nextStrategicSaves = currentStrategicSaves.filter(
         (save) =>
           String(save.ownerId || "") !== String(existingUser.id) &&
           normalizeUsername(save.ownerUsername) !== username,
       );
-      writeResource("hco.strategicSaves", nextStrategicSaves);
+      await writeResource("hco.strategicSaves", nextStrategicSaves);
 
       sendJson(response, 200, {
         ok: true,
@@ -1819,13 +1719,13 @@ async function handleRequest(request, response) {
       return;
     }
 
-    if (!isAuthorizedForResource(session, resourceName, request.method)) {
+    if (!(await isAuthorizedForResource(session, resourceName, request.method))) {
       notAuthorized(response);
       return;
     }
 
     if (request.method === "GET") {
-      const resource = readResource(resourceName);
+      const resource = await readResource(resourceName);
       sendJson(response, 200, {
         ok: true,
         resource: resource.name,
@@ -1839,7 +1739,7 @@ async function handleRequest(request, response) {
       try {
         ensureJsonRequest(request);
         const body = await parseJsonBody(request);
-        const result = writeResource(resourceName, body.value);
+        const result = await writeResource(resourceName, body.value);
         sendJson(response, 200, {
           ok: true,
           resource: resourceName,
@@ -1871,7 +1771,7 @@ async function handleRequest(request, response) {
     const saveId = decodeURIComponent(
       path.replace("/api/hco/strategic-saves/", "").replace("/dispatch", ""),
     );
-    const strategicSavesResource = readResource("hco.strategicSaves");
+    const strategicSavesResource = await readResource("hco.strategicSaves");
     const strategicSave = strategicSavesResource.value.find(
       (save) =>
         save.id === saveId &&
@@ -1905,12 +1805,24 @@ async function handleRequest(request, response) {
   sendError(response, 404, "Route tidak ditemukan.");
 }
 
-createServer((request, response) => {
+const server = createServer((request, response) => {
   handleRequest(request, response).catch((error) => {
     sendError(response, 500, error.message || "Internal server error.");
   });
-}).listen(config.port, () => {
+});
+
+server.listen(config.port, () => {
   console.log(
-    `[api] PelatihDash API running on http://localhost:${config.port} using ${databasePath}`,
+    `[api] PelatihDash API running on http://localhost:${config.port} using mongodb:${storage.databaseName}`,
   );
 });
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, async () => {
+    try {
+      await storage.close?.();
+    } finally {
+      server.close(() => process.exit(0));
+    }
+  });
+}

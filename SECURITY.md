@@ -9,7 +9,7 @@ Dokumen ini merangkum proteksi yang sudah aktif di project dan hal-hal yang perl
 - Session login memakai cookie `HttpOnly`, signed, dan `SameSite=Strict`.
 - Endpoint login memiliki proteksi rate limit dan lockout brute force.
 - Request tulis ke API memvalidasi `Origin` dan `Referer` tepercaya untuk mengurangi risiko CSRF.
-- Akses SQLite memakai prepared statement untuk mengurangi risiko SQL injection.
+- Backend sekarang memakai MongoDB driver resmi dan tidak membangun query dari string mentah user.
 - Header deploy memblokir framing, sniffing, indexing, dan kebijakan lintas domain yang lemah.
 - Aturan Apache deploy menolak akses ke source file, dotfile, dan file konfigurasi sensitif.
 - Terdapat hardening session secret dan validasi environment untuk production.
@@ -32,7 +32,7 @@ Dokumen ini merangkum proteksi yang sudah aktif di project dan hal-hal yang perl
 - brute force login dan credential stuffing
 - pencurian session dan validasi cookie flag
 - CSRF pada request tulis yang memerlukan autentikasi
-- SQL injection pada endpoint auth dan resource
+- injection dan query abuse pada endpoint auth, resource, dan admin
 - akses langsung ke file deploy tersembunyi atau directory index
 - broken access control antara scope `pelatih` dan `hco`
 - validasi origin palsu dan probing referer

@@ -6,16 +6,15 @@
  * Osiris - Bot Manufactur
  * Internal proprietary source notice.
  *
- * Script: Reset and seed local dashboard database for testing.
+ * Script: Reset and seed dashboard data for MongoDB testing.
  */
 
 import { randomBytes, scryptSync } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { MongoClient } from "mongodb";
 
 const projectRoot = resolve(import.meta.dirname, "..");
-const databasePath = resolve(projectRoot, "server/data/pelatihdash.sqlite");
 const envPath = resolve(projectRoot, ".env");
 
 function parseEnvFile(path) {
@@ -51,7 +50,26 @@ function parseEnvFile(path) {
   return env;
 }
 
+function inferMongoDbName(uri, fallback = "pelatihdash") {
+  try {
+    const parsed = new URL(uri);
+    const pathName = parsed.pathname.replace(/^\/+/, "").trim();
+    return pathName || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const env = parseEnvFile(envPath);
+const mongodbUri = String(env.MONGODB_URI || env.APP_MONGODB_URI || "").trim();
+const mongodbDbName = String(
+  env.MONGODB_DB_NAME || env.APP_MONGODB_DB_NAME || "pelatihdash",
+).trim();
+
+if (!mongodbUri) {
+  throw new Error("MONGODB_URI wajib diisi sebelum menjalankan reset seed MongoDB.");
+}
+
 const pepper = env.APP_PASSWORD_PEPPER || "";
 const scryptN = Number.parseInt(env.APP_HASH_SCRYPT_N || "16384", 10);
 const scryptR = Number.parseInt(env.APP_HASH_SCRYPT_R || "8", 10);
@@ -207,89 +225,99 @@ const trainerSeeds = [
   { username: "wo.delta", label: "WO. Delta", unit: "Ops Chamber Vanguard" },
 ];
 
-const db = new DatabaseSync(databasePath);
-db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
-
-const upsertResourceStatement = db.prepare(`
-  INSERT INTO resources (name, scope, value_json, updated_at)
-  VALUES (?, ?, ?, ?)
-  ON CONFLICT(name) DO UPDATE SET
-    scope = excluded.scope,
-    value_json = excluded.value_json,
-    updated_at = excluded.updated_at
-`);
-const deletePelatihSessionsStatement = db.prepare(
-  "DELETE FROM sessions WHERE scope = 'pelatih'",
-);
-const deletePelatihUsersStatement = db.prepare(
-  "DELETE FROM users WHERE scope = 'pelatih'",
-);
-const insertUserStatement = db.prepare(`
-  INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
-  VALUES ('pelatih', ?, ?, ?, ?, 1, ?, ?)
-`);
-
 const candidates = buildCandidateSeeds();
+const client = new MongoClient(mongodbUri, {
+  ignoreUndefined: true,
+});
 
-db.exec("BEGIN");
+await client.connect();
+
 try {
-  deletePelatihSessionsStatement.run();
-  deletePelatihUsersStatement.run();
+  const database = client.db(inferMongoDbName(mongodbUri, mongodbDbName));
+  const users = database.collection("users");
+  const sessions = database.collection("sessions");
+  const resources = database.collection("resources");
 
-  trainerSeeds.forEach((trainer) => {
-    insertUserStatement.run(
-      trainer.username,
-      trainer.label,
-      trainer.unit,
-      hashPassword(commonPassword),
-      nowIso,
-      nowIso,
-    );
+  await Promise.all([
+    users.createIndex({ scope: 1, username: 1 }, { unique: true }),
+    sessions.createIndex({ sessionId: 1 }, { unique: true }),
+    resources.createIndex({ name: 1 }, { unique: true }),
+  ]);
+
+  await sessions.deleteMany({ scope: "pelatih" });
+  await users.deleteMany({ scope: "pelatih" });
+
+  await users.insertMany(
+    trainerSeeds.map((trainer) => ({
+      scope: "pelatih",
+      username: trainer.username,
+      label: trainer.label,
+      unit: trainer.unit,
+      passwordHash: hashPassword(commonPassword),
+      active: true,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    })),
+  );
+
+  const resourceEntries = [
+    {
+      name: "dashboard.candidates",
+      scope: "pelatih",
+      value: candidates,
+    },
+    {
+      name: "dashboard.schedules",
+      scope: "pelatih",
+      value: [],
+    },
+    {
+      name: "dashboard.reports",
+      scope: "pelatih",
+      value: [],
+    },
+    {
+      name: "dashboard.trainingSessions",
+      scope: "pelatih",
+      value: [],
+    },
+  ];
+
+  await Promise.all(
+    resourceEntries.map((entry) =>
+      resources.updateOne(
+        { name: entry.name },
+        {
+          $set: {
+            scope: entry.scope,
+            value: entry.value,
+            updatedAt: nowIso,
+          },
+        },
+        { upsert: true },
+      ),
+    ),
+  );
+
+  const trainerCount = await users.countDocuments({
+    scope: "pelatih",
+    active: { $ne: false },
   });
 
-  upsertResourceStatement.run(
-    "dashboard.candidates",
-    "pelatih",
-    JSON.stringify(candidates),
-    nowIso,
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        database: "mongodb",
+        databaseName: inferMongoDbName(mongodbUri, mongodbDbName),
+        trainerCount,
+        candidateCount: candidates.length,
+        password: commonPassword,
+      },
+      null,
+      2,
+    ),
   );
-  upsertResourceStatement.run(
-    "dashboard.schedules",
-    "pelatih",
-    JSON.stringify([]),
-    nowIso,
-  );
-  upsertResourceStatement.run(
-    "dashboard.reports",
-    "pelatih",
-    JSON.stringify([]),
-    nowIso,
-  );
-  upsertResourceStatement.run(
-    "dashboard.trainingSessions",
-    "pelatih",
-    JSON.stringify([]),
-    nowIso,
-  );
-  db.exec("COMMIT");
-} catch (error) {
-  db.exec("ROLLBACK");
-  throw error;
+} finally {
+  await client.close();
 }
-
-const trainerCount = db
-  .prepare("SELECT COUNT(*) AS count FROM users WHERE scope = 'pelatih' AND active = 1")
-  .get().count;
-
-console.log(
-  JSON.stringify(
-    {
-      ok: true,
-      trainerCount,
-      candidateCount: candidates.length,
-      password: commonPassword,
-    },
-    null,
-    2,
-  ),
-);

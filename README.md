@@ -5,7 +5,7 @@ Dashboard operasional internal `PASKUS 791` dengan dua portal utama:
 - `Staff / Pelatih` untuk seleksi kandidat, pembukaan sesi pelatihan, pelaporan hasil, tindakan lanjutan, manajemen petugas, dan SOP operasional.
 - `HCO Center` untuk `Ronograd Map Planner`, intel layer, annotation board, strategic saves, dan workflow tactical planning.
 
-Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js + SQLite` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time lokal.
+Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time. Backend sekarang memakai `MongoDB` sebagai storage utama untuk lokal maupun deploy.
 
 ## Stack
 
@@ -15,7 +15,7 @@ Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js + SQLite`
 - Framer Motion
 - Tailwind CSS 4
 - Node.js HTTP server
-- SQLite (`node:sqlite`)
+- MongoDB (`mongodb`)
 
 ## Fitur Saat Ini
 
@@ -38,7 +38,6 @@ Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js + SQLite`
 ```text
 server/
   index.mjs                 API server, auth, session, resource storage
-  data/                     SQLite database lokal
 
 scripts/
   reset-seed-dashboard.mjs  Reset dan isi data test kandidat + pelatih
@@ -69,6 +68,9 @@ public/
 - `/dashboard/sop` : SOP
 - `/hco` : Login HCO
 - `/hco/dashboard` : HCO Map Planner
+- `/hco/dashboard/custom-maps` : Gallery Map Custom
+- `/hco/dashboard/custom-maps/:mapId` : Planner Map Custom
+- `/hco/dashboard/users` : Manajemen user Map Planner HCO
 - `/hco/dashboard/saves` : Strategic Saves
 
 ## Menjalankan Project Lokal
@@ -100,7 +102,14 @@ HCO_ADMIN_LABEL=Strategic Admin
 HCO_ADMIN_UNIT=HCO Strategic Command
 DISCORD_STRATEGIC_WEBHOOK_URL=
 PUBLIC_APP_URL=http://localhost:5173
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
+MONGODB_DB_NAME=pelatihdash
 ```
+
+Catatan:
+
+- backend sekarang wajib memakai `MongoDB`
+- gunakan database terpisah untuk lokal, beta, dan production
 
 ### 3. Jalankan backend
 
@@ -133,6 +142,11 @@ Untuk reset database dashboard lokal dan mengisi data uji:
 node scripts/reset-seed-dashboard.mjs
 ```
 
+Catatan:
+
+- script ini sekarang reset data dashboard langsung ke `MongoDB`
+- bootstrap akun admin tetap dibuat otomatis dari env saat backend start
+
 Isi default hasil seed:
 
 - `50` pendaftar
@@ -160,6 +174,7 @@ Contoh akun:
 ```bash
 npm run dev       # Jalankan Vite client
 npm run api       # Jalankan backend Node server
+npm start         # Jalankan backend untuk mode deploy / hosting Node
 npm run build     # Build production frontend
 npm run preview   # Preview build Vite
 npm run lint      # Lint project
@@ -181,7 +196,8 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_API_RATE_LIMIT_PER_MINUTE` | Rate limit umum API |
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
-| `APP_DATABASE_PATH` | Path file SQLite |
+| `MONGODB_URI` | URI MongoDB untuk deploy / production |
+| `MONGODB_DB_NAME` | Nama database MongoDB |
 | `DISCORD_STRATEGIC_WEBHOOK_URL` | Webhook dispatch strategic save |
 | `PUBLIC_APP_URL` | URL aplikasi publik |
 | `PELATIH_ADMIN_*` | Bootstrap akun admin pelatih |
@@ -189,7 +205,7 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 
 ## Arsitektur Data
 
-Backend saat ini menyimpan data utama di tabel:
+Backend memakai collection MongoDB utama:
 
 - `users`
 - `sessions`
@@ -206,17 +222,61 @@ Resource yang aktif sekarang:
 
 Frontend memakai `useSyncedResource()` untuk load, save, dan update real-time lewat SSE.
 
+## Deploy MongoDB
+
+Alur production yang direkomendasikan:
+
+1. Deploy frontend hasil `npm run build` ke hosting static atau CDN.
+2. Deploy backend `server/index.mjs` ke hosting Node / VPS.
+3. Sambungkan backend ke `MongoDB Atlas` atau MongoDB server lain lewat `MONGODB_URI`.
+4. Set `APP_ALLOWED_ORIGINS` ke domain frontend production.
+5. Jalankan backend dengan:
+
+```bash
+npm start
+```
+
+Minimal env production yang wajib:
+
+```env
+NODE_ENV=production
+API_PORT=8787
+APP_ALLOWED_ORIGINS=https://domain-kamu.com
+APP_SESSION_SECRET=secret-random-panjang-dan-unik
+APP_PASSWORD_PEPPER=pepper-random-panjang-dan-unik
+APP_TRUST_PROXY=true
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
+MONGODB_DB_NAME=pelatihdash
+PELATIH_ADMIN_USERNAME=PaskusAdmin
+PELATIH_ADMIN_PASSWORD=ganti-password-production
+HCO_ADMIN_USERNAME=CosmoHCO
+HCO_ADMIN_PASSWORD=ganti-password-production
+PUBLIC_APP_URL=https://domain-kamu.com
+```
+
+Health check backend:
+
+```bash
+curl http://localhost:8787/api/health
+```
+
+Jika mode MongoDB aktif, response akan mengandung:
+
+```json
+{"ok":true,"status":"online","database":"mongodb"}
+```
+
 ## Catatan Untuk Tim Backend
 
 Area yang paling siap untuk dilanjutkan:
 
-1. Ganti SQLite ke database production seperti PostgreSQL atau MySQL.
+1. Tambahkan test integrasi untuk mode `MongoDB`.
 2. Pisahkan HTTP server sederhana ini ke framework backend pilihan tim jika perlu.
 3. Tambahkan manajemen akun admin selain bootstrap dari env.
 4. Tambahkan audit log login, perubahan data, dan dispatch Discord.
 5. Tambahkan reset password, role management, dan 2FA jika project lanjut ke production penuh.
 6. Pisahkan resource API menjadi endpoint domain-specific agar lebih mudah dipelihara.
-7. Tambahkan test untuk auth, rate-limit, dan resource mutation.
+7. Tambahkan migrasi resource jika nanti struktur data planner berubah.
 
 ## Catatan Untuk Tim Frontend
 
@@ -294,7 +354,7 @@ Lihat juga:
 Project ini sudah siap dipakai sebagai base aplikasi internal dan siap dilanjutkan oleh tim backend untuk:
 
 - penguatan auth production
-- migrasi database
+- penguatan operasional MongoDB production
 - API domain-specific
 - monitoring dan audit
 - deployment full-stack
