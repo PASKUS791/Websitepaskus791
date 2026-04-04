@@ -9,6 +9,818 @@
 
 import mapImage from "../assets/hco/ronograd-city.webp";
 
+const ENEMY_CATEGORY_ID_MAP = {
+  "1": "enemy-rocketeer",
+  "2": "enemy-sniper",
+  "3": "enemy-unit",
+  "4": "enemy-vip-target",
+  "5": "enemy-camp-ambush",
+  "6": "enemy-mortar",
+  "7": "enemy-anti-air-launcher",
+  "8": "enemy-explosive-target",
+  "9": "enemy-heli-landing",
+  "10": "enemy-minefield",
+  "11": "enemy-machine-gunner",
+};
+
+const ENEMY_CATEGORY_FALLBACK_DESCRIPTIONS = {
+  "enemy-rocketeer":
+    "Operator peluncur roket anti-kendaraan yang biasanya menjaga lane terbuka dan approach kendaraan.",
+  "enemy-sniper":
+    "Pos sniper jarak jauh yang mengunci jalur masuk, elevasi, atau titik overwatch sekitar area target.",
+  "enemy-unit":
+    "Kontak musuh umum di area ini; kemungkinan terdiri dari rifleman atau penjaga perimeter.",
+  "enemy-vip-target":
+    "Target VIP atau HVT prioritas tinggi yang perlu dieliminasi di sektor ini.",
+  "enemy-camp-ambush":
+    "Lokasi kamp atau ambush yang berpotensi dipakai sebagai penyergapan dan screening lane.",
+  "enemy-mortar":
+    "Pos mortar aktif yang memberi suppressive fire ke lane masuk dan objective sekitar.",
+  "enemy-anti-air-launcher":
+    "Peluncur anti-air yang menutup dukungan udara dan approach helikopter di sektor ini.",
+  "enemy-explosive-target":
+    "Target peledakan yang harus dihancurkan untuk melemahkan pertahanan atau menyelesaikan objective.",
+  "enemy-heli-landing":
+    "Titik pendaratan heli reinforcement yang dapat dipakai untuk memasukkan bala bantuan musuh.",
+  "enemy-minefield":
+    "Ladang ranjau aktif di jalur masuk; perlu diwaspadai sebelum rotasi kendaraan atau infantry.",
+  "enemy-machine-gunner":
+    "Pos machine gunner yang mengunci lane terbuka dan memberi suppressive fire kuat.",
+};
+
+const SUPPLEMENTAL_ENEMY_FILTER_CATEGORY = {
+  id: "enemy-intel",
+  listId: 8,
+  name: "Enemy Intel",
+  color: "#fa005a",
+  symbol: "E",
+  symbolColor: "#fff",
+  iconKey: "enemy-unit",
+};
+
+const SUPPLEMENTAL_ENEMY_CATEGORIES = [
+  {
+    id: "enemy-rocketeer",
+    listId: 101,
+    name: "Rocketeer",
+    color: "#fa005a",
+    symbol: "R",
+    symbolColor: "#fff",
+    iconKey: "rocketeer",
+  },
+  {
+    id: "enemy-sniper",
+    listId: 102,
+    name: "Sniper",
+    color: "#fa005a",
+    symbol: "S",
+    symbolColor: "#fff",
+    iconKey: "sniper",
+  },
+  {
+    id: "enemy-unit",
+    listId: 103,
+    name: "Enemy",
+    color: "#fa005a",
+    symbol: "E",
+    symbolColor: "#fff",
+    iconKey: "enemy-unit",
+  },
+  {
+    id: "enemy-vip-target",
+    listId: 104,
+    name: "VIP Target",
+    color: "#fa005a",
+    symbol: "V",
+    symbolColor: "#fff",
+    iconKey: "vip-target",
+  },
+  {
+    id: "enemy-camp-ambush",
+    listId: 105,
+    name: "Camp / Ambush",
+    color: "#fa005a",
+    symbol: "C",
+    symbolColor: "#fff",
+    iconKey: "camp-ambush",
+  },
+  {
+    id: "enemy-mortar",
+    listId: 106,
+    name: "Mortar",
+    color: "#fa005a",
+    symbol: "M",
+    symbolColor: "#fff",
+    iconKey: "enemy-mortar",
+  },
+  {
+    id: "enemy-anti-air-launcher",
+    listId: 107,
+    name: "Anti-Air Launcher",
+    color: "#fa005a",
+    symbol: "A",
+    symbolColor: "#fff",
+    iconKey: "enemy-anti-air-launcher",
+  },
+  {
+    id: "enemy-explosive-target",
+    listId: 108,
+    name: "Explosive Target",
+    color: "#00e6fa",
+    symbol: "X",
+    symbolColor: "#001018",
+    iconKey: "enemy-explosive-target",
+  },
+  {
+    id: "enemy-heli-landing",
+    listId: 109,
+    name: "PoD Heli Landing Point",
+    color: "#fa005a",
+    symbol: "H",
+    symbolColor: "#fff",
+    iconKey: "enemy-heli-landing",
+  },
+  {
+    id: "enemy-minefield",
+    listId: 110,
+    name: "Minefield",
+    color: "#fa0000",
+    symbol: "M",
+    symbolColor: "#fff",
+    iconKey: "enemy-minefield",
+  },
+  {
+    id: "enemy-machine-gunner",
+    listId: 111,
+    name: "Machine Gunner",
+    color: "#fa005a",
+    symbol: "G",
+    symbolColor: "#fff",
+    iconKey: "enemy-machine-gunner",
+  },
+];
+
+const SUPPLEMENTAL_ENEMY_CATEGORIES_BY_ID = Object.fromEntries(
+  SUPPLEMENTAL_ENEMY_CATEGORIES.map((category) => [category.id, category]),
+);
+
+const SUPPLEMENTAL_ENEMY_MARKERS = [
+  {
+    categoryId: "2",
+    position: [3459.3435480088942, 1803.0753787975411],
+    popup: {
+      title: "Sochraina sniper 1",
+      description: "Located on top of the lighthouse.",
+      link: { url: "", label: "" },
+    },
+    id: "1",
+  },
+  {
+    categoryId: "2",
+    position: [6256.259736742669, 3782.25],
+    popup: {
+      title: "Naval Sniper 1",
+      description: "Located in a watchtower at the initial checkpoint",
+      link: { url: "", label: "" },
+    },
+    id: "2",
+  },
+  {
+    categoryId: "1",
+    position: [2710.055187586185, 1779],
+    popup: {
+      title: "Sochraina anti-tank rocketeer",
+      description:
+        "Anti-tank rocketeer located on the western approach road to Sochraina.",
+      link: { url: "", label: "" },
+    },
+    id: "3",
+  },
+  {
+    categoryId: "4",
+    position: [5073.496248160829, 3405.0727048038198],
+    popup: {
+      title: "Ronongrad City VIP 4",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "5",
+  },
+  {
+    categoryId: "4",
+    position: [6214.764699152964, 3275.75],
+    popup: {
+      title: "Naval VIP 1",
+      description: "Located in this logistics area",
+      link: { url: "", label: "" },
+    },
+    id: "6",
+  },
+  {
+    categoryId: "5",
+    position: [2896.3093757400984, 3476.1369363130675],
+    popup: {
+      title: "Roadway encampment",
+      description:
+        "Small RLF encampment blocking the roadway. Consists of 4 riflemen huddled around a campfire and one near the boulder.",
+      link: { url: "", label: "" },
+    },
+    id: "7",
+  },
+  {
+    categoryId: "5",
+    position: [4265.268104117255, 3934.3421305219504],
+    popup: {
+      title: "RLF ambush",
+      description:
+        "Small RLF ambush on the approach road to Lesdolina/DOU/Mountain. Consists of 2 riflemen on the cliffs to the northeast, 1 in the trees to the west and 1 in the trees to the east.",
+      link: { url: "", label: "" },
+    },
+    id: "8",
+  },
+  {
+    categoryId: "5",
+    position: [2992.4758979814687, 5003.48758367601],
+    popup: {
+      title: "RLF-occupied village",
+      description: "Located in the small village near DOU and Mountain.",
+      link: { url: "", label: "" },
+    },
+    id: "9",
+  },
+  {
+    categoryId: "5",
+    position: [5781.305042981212, 3832.518754031087],
+    popup: {
+      title: "PoD checkpoint",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "10",
+  },
+  {
+    categoryId: "2",
+    position: [3395.9876580144, 2623.158005400378],
+    popup: {
+      title: "Quarry sniper 4",
+      description: "Located on the main road.",
+      link: { url: "", label: "" },
+    },
+    id: "12",
+  },
+  {
+    categoryId: "2",
+    position: [3184.951078087941, 2634.6296141693815],
+    popup: {
+      title: "Quarry sniper 3",
+      description: "Located in the back of the upper area on a watchtower.",
+      link: { url: "", label: "" },
+    },
+    id: "13",
+  },
+  {
+    categoryId: "4",
+    position: [3214.507427274045, 2071.822868876584],
+    popup: {
+      title: "Sochraina VIP 1",
+      description: "Top floor of this building.",
+      link: { url: "", label: "" },
+    },
+    id: "14",
+  },
+  {
+    categoryId: "4",
+    position: [3119.7551185950474, 1782.6161953712863],
+    popup: {
+      title: "Sochraina VIP 2",
+      description: "Located in this plaza",
+      link: { url: "", label: "" },
+    },
+    id: "15",
+  },
+  {
+    categoryId: "6",
+    position: [3267.540435863036, 1905.6527752977454],
+    popup: {
+      title: "Sochraina Mortar 1",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "16",
+  },
+  {
+    categoryId: "6",
+    position: [2825.952251012037, 2042.8314908479356],
+    popup: {
+      title: "Sochraina Mortar 2",
+      description: "On top of hill near houses",
+      link: { url: "", label: "" },
+    },
+    id: "17",
+  },
+  {
+    categoryId: "6",
+    position: [3107.0271965336897, 2175.7675657110067],
+    popup: {
+      title: "Sochraina Mortar 3",
+      description: "Located around the center of this farm area",
+      link: { url: "", label: "" },
+    },
+    id: "18",
+  },
+  {
+    categoryId: "6",
+    position: [6253.75, 3560],
+    popup: {
+      title: "Naval Mortar 1",
+      description:
+        "Located at the far end of this parking lot near a sniper tower",
+      link: { url: "", label: "" },
+    },
+    id: "19",
+  },
+  {
+    categoryId: "2",
+    position: [6303.75, 3561.875],
+    popup: {
+      title: "Naval Sniper 2",
+      description: "Located in a watchtower in the parking lot.",
+      link: { url: "", label: "" },
+    },
+    id: "20",
+  },
+  {
+    categoryId: "4",
+    position: [6143.697268339318, 3344.2615216217764],
+    popup: {
+      title: "Naval VIP 2",
+      description: "Located in the top floor of the HQ building",
+      link: { url: "", label: "" },
+    },
+    id: "21",
+  },
+  {
+    categoryId: "6",
+    position: [6132.737113230926, 3373.606453041018],
+    popup: {
+      title: "Naval Mortar 2",
+      description: "Located on the rooftop of the HQ building",
+      link: { url: "", label: "" },
+    },
+    id: "22",
+  },
+  {
+    categoryId: "1",
+    position: [6761.70859509636, 3168.191933106326],
+    popup: {
+      title: "Naval Anti-Air RPGer",
+      description: "Armed with 9K38 Igla, stands on top of silo",
+      link: { url: "", label: "" },
+    },
+    id: "23",
+  },
+  {
+    categoryId: "2",
+    position: [6384.467127333337, 2834.083978995682],
+    popup: {
+      title: "Naval Sniper 3",
+      description: "On top of cell tower in this parking lot",
+      link: { url: "", label: "" },
+    },
+    id: "24",
+  },
+  {
+    categoryId: "6",
+    position: [6308.806701746376, 2822.7702704966973],
+    popup: {
+      title: "Naval Mortar 3",
+      description: "On elevated platform at far end of this parking lot",
+      link: { url: "", label: "" },
+    },
+    id: "25",
+  },
+  {
+    categoryId: "8",
+    position: [7109, 2992],
+    popup: {
+      title: "Naval anti-air radar 1",
+      description: "Located on this dock. Needs to be destroyed via explosive.",
+      link: { url: "", label: "" },
+    },
+    id: "26",
+  },
+  {
+    categoryId: "8",
+    position: [5862, 2605],
+    popup: {
+      title: "Naval anti-air radar 2",
+      description:
+        "Located on the end of this dock. Needs to be destroyed via explosive charge.",
+      link: { url: "", label: "" },
+    },
+    id: "27",
+  },
+  {
+    categoryId: "8",
+    position: [6385, 3279],
+    popup: {
+      title: "Enemy submarine 1",
+      description:
+        "Located inside the submarine dock in the cave. Needs to be destroyed via 8 explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "28",
+  },
+  {
+    categoryId: "8",
+    position: [6621, 2913],
+    popup: {
+      title: "Enemy submarine 2",
+      description:
+        "Located inside the submarine dock in this cave. Needs to be destroyed via 8 explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "29",
+  },
+  {
+    categoryId: "8",
+    position: [6334, 4574],
+    popup: {
+      title: "Unknown explosive target",
+      description: "TBA",
+      link: { url: "", label: "" },
+    },
+    id: "30",
+  },
+  {
+    categoryId: "7",
+    position: [6781.8611383601765, 4497.906235127629],
+    popup: {
+      title: "Fort SAM Launcher 1",
+      description:
+        "While all anti-air radars are active, this will shoot down any UNJTF helicopters in the area, including in Ronongrad City. Must be destroyed via explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "31",
+  },
+  {
+    categoryId: "7",
+    position: [6814.388050294758, 4943.3835072751535],
+    popup: {
+      title: "Fort SAM Launcher 2",
+      description:
+        "While anti-air radars are active, this will shoot down any UNJTF aircraft in the area, including in Ronongrad City. Must be destroyed via explosive charge.",
+      link: { url: "", label: "" },
+    },
+    id: "32",
+  },
+  {
+    categoryId: "4",
+    position: [6737.313411145425, 4846.5098782525965],
+    popup: {
+      title: "Fort VIP",
+      description:
+        "Located in the top floor of the HQ building, in the auditorium.",
+      link: { url: "", label: "" },
+    },
+    id: "33",
+  },
+  {
+    categoryId: "8",
+    position: [6672.259587276262, 4452.651401131689],
+    popup: {
+      title: "Fort artillery cannons",
+      description:
+        "A series of 4 artillery cannons in a line. All 4 must be destroyed via explosive charges. The 4 cannons are under the same objective, so the charges will not detonate until one is placed on every cannon.",
+      link: { url: "", label: "" },
+    },
+    id: "34",
+  },
+  {
+    categoryId: "9",
+    position: [6558.415395505228, 4926.412944526676],
+    popup: {
+      title: "Fort helipad",
+      description:
+        "PoD heli will land here when deploying reinforcements.",
+      link: { url: "", label: "" },
+    },
+    id: "35",
+  },
+  {
+    categoryId: "4",
+    position: [4997.123622645331, 3504.421207560529],
+    popup: {
+      title: "Ronongrad City VIP 1",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "36",
+  },
+  {
+    categoryId: "4",
+    position: [5073.491155013478, 3502.2998872169696],
+    popup: {
+      title: "Ronongrad City VIP 2",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "37",
+  },
+  {
+    categoryId: "4",
+    position: [4996.4165158641445, 3413.2044327874646],
+    popup: {
+      title: "Ronongrad City VIP 3",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "38",
+  },
+  {
+    categoryId: "8",
+    position: [3282, 2833],
+    popup: {
+      title: "Quarry generator",
+      description:
+        "A power generator inside a warehouse. Must be destroyed via 4 explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "39",
+  },
+  {
+    categoryId: "4",
+    position: [3261, 2695],
+    popup: {
+      title: "Quarry VIP",
+      description: "Located in a small room in the mineshaft break area.",
+      link: { url: "", label: "" },
+    },
+    id: "40",
+  },
+  {
+    categoryId: "8",
+    position: [3195, 1496],
+    popup: {
+      title: "Sochraina anti-air radar",
+      description:
+        "Located at the end of the pier. Must be destroyed via explosive charge. Provides target data to the SAM launchers at Fort Ronongrad.",
+      link: { url: "", label: "" },
+    },
+    id: "41",
+  },
+  {
+    categoryId: "9",
+    position: [3156, 1579],
+    popup: {
+      title: "Heli landing area",
+      description:
+        "Heli will land in the parking lot and deploy reinforcements here.",
+      link: { url: "", label: "" },
+    },
+    id: "42",
+  },
+  {
+    categoryId: "10",
+    position: [2547, 1453],
+    popup: {
+      title: "Sochraina/Pushkino minefield",
+      description: "Series of mines laid on the western approach road to Sochraina",
+      link: { url: "", label: "" },
+    },
+    id: "43",
+  },
+  {
+    categoryId: "5",
+    position: [1415, 2499],
+    popup: {
+      title: "RLF outpost",
+      description:
+        "A small lot occupied by RLF forces. Acts as an impromptu early warning post for Kozlovka.",
+      link: { url: "", label: "" },
+    },
+    id: "44",
+  },
+  {
+    categoryId: "2",
+    position: [695, 1684],
+    popup: {
+      title: "Kozlovka sniper",
+      description: "On top of the church steeple.",
+      link: { url: "", label: "" },
+    },
+    id: "45",
+  },
+  {
+    categoryId: "4",
+    position: [623, 1430],
+    popup: {
+      title: "Kozlovka VIP",
+      description:
+        "Located on the top floor in a room next to the roof stairwell.",
+      link: { url: "", label: "" },
+    },
+    id: "46",
+  },
+  {
+    categoryId: "8",
+    position: [578, 1622],
+    popup: {
+      title: "Kozlovka anti-air radar",
+      description:
+        "Anti-air radar located a short distance from the church. Needs to be destroyed via explosive charge. Provides target data to the SAM launchers at Fort Ronongrad.",
+      link: { url: "", label: "" },
+    },
+    id: "47",
+  },
+  {
+    categoryId: "2",
+    position: [3506, 5735],
+    popup: {
+      title: "D.O.U. sniper 1",
+      description: "Located on top of the tower here.",
+      link: { url: "", label: "" },
+    },
+    id: "48",
+  },
+  {
+    categoryId: "1",
+    position: [3607, 5683],
+    popup: {
+      title: "D.O.U. anti-tank RPGer",
+      description: "Armed with an RPG-7, stationed on top of this pipe.",
+      link: { url: "", label: "" },
+    },
+    id: "49",
+  },
+  {
+    categoryId: "8",
+    position: [2505, 6072],
+    popup: {
+      title: "Mountain radar array",
+      description:
+        "The largest anti-air radar on the island. Requires 8 explosive charges to destroy. Provides target data to the SAM launchers at Fort Ronongrad.",
+      link: { url: "", label: "" },
+    },
+    id: "50",
+  },
+  {
+    categoryId: "8",
+    position: [2403, 6032],
+    popup: {
+      title: "Mountain artillery cannons",
+      description:
+        "A group of artillery cannons. Non-functional but must be destroyed via explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "51",
+  },
+  {
+    categoryId: "9",
+    position: [2575, 6117],
+    popup: {
+      title: "Mountain helipad 1",
+      description:
+        "PoD heli will land here and deploy reinforcements.",
+      link: { url: "", label: "" },
+    },
+    id: "52",
+  },
+  {
+    categoryId: "10",
+    position: [5362.697828518776, 3826.8618997815947],
+    popup: {
+      title: "Bridge minefield",
+      description:
+        "A minefield on the bridge from Ronongrad City. Located just before a set of tank traps.",
+      link: { url: "", label: "" },
+    },
+    id: "53",
+  },
+  {
+    categoryId: "10",
+    position: [6298.907206809765, 4516.998118219665],
+    popup: {
+      title: "Fort minefield 1",
+      description:
+        "Visible minefield at the main gate to Fort Ronongrad.",
+      link: { url: "", label: "" },
+    },
+    id: "54",
+  },
+  {
+    categoryId: "10",
+    position: [6407, 4516],
+    popup: {
+      title: "Fort minefield 2",
+      description: "Small minefield concealed under a debris pile.",
+      link: { url: "", label: "" },
+    },
+    id: "55",
+  },
+  {
+    categoryId: "10",
+    position: [6602, 4548],
+    popup: {
+      title: "Fort minefield 3",
+      description:
+        "Small minefield located just before the archway into the HQ compound.",
+      link: { url: "", label: "" },
+    },
+    id: "56",
+  },
+  {
+    categoryId: "2",
+    position: [3620, 2957],
+    popup: {
+      title: "Quarry sniper 1",
+      description: "Located in a watchtower near the barracks.",
+      link: { url: "", label: "" },
+    },
+    id: "57",
+  },
+  {
+    categoryId: "2",
+    position: [3345, 2908],
+    popup: {
+      title: "Quarry sniper 2",
+      description: "Located just before the warehouse.",
+      link: { url: "", label: "" },
+    },
+    id: "58",
+  },
+  {
+    categoryId: "10",
+    position: [3606, 3019],
+    popup: {
+      title: "Quarry minefield 1",
+      description:
+        "Small minefield at the start of the approach road to the warehouse area.",
+      link: { url: "", label: "" },
+    },
+    id: "59",
+  },
+  {
+    categoryId: "10",
+    position: [3381, 2934],
+    popup: {
+      title: "Quarry minefield 2",
+      description:
+        "Small minefield located at the end of the approach road.",
+      link: { url: "", label: "" },
+    },
+    id: "60",
+  },
+  {
+    categoryId: "11",
+    position: [3424.850359196282, 5758.756919808563],
+    popup: {
+      title: "Machine Gunner",
+      description: "On vehicle",
+      link: { url: "", label: "" },
+    },
+    id: "61",
+  },
+  {
+    categoryId: "7",
+    position: [6314.378244145317, 2801.873297400216],
+    popup: {
+      title: "Naval Base SAM site",
+      description:
+        "While all anti-air radars are active, this will shoot down any UNJTF helicopters in the area, including in Ronongrad City. Must be destroyed via explosive charges.",
+      link: { url: "", label: "" },
+    },
+    id: "62",
+  },
+  {
+    categoryId: "6",
+    position: [2994.75, 1686],
+    popup: {
+      title: "Sochraina Mortar 4",
+      description: "",
+      link: { url: "", label: "" },
+    },
+    id: "63",
+  },
+].map((marker) => {
+  const visualCategoryId = ENEMY_CATEGORY_ID_MAP[marker.categoryId];
+
+  return {
+    ...marker,
+    id: `enemy-${marker.id}`,
+    categoryId: SUPPLEMENTAL_ENEMY_FILTER_CATEGORY.id,
+    visualCategory:
+      SUPPLEMENTAL_ENEMY_CATEGORIES_BY_ID[visualCategoryId] ?? null,
+    popup: {
+      ...marker.popup,
+      description:
+        marker.popup?.description ||
+        ENEMY_CATEGORY_FALLBACK_DESCRIPTIONS[visualCategoryId] ||
+        "",
+    },
+  };
+});
+
 export const RONOGRAD_MAP_DATA = {
   mapImage,
   pageCategories: [],
@@ -86,6 +898,7 @@ export const RONOGRAD_MAP_DATA = {
       symbolColor: "#fff",
       iconKey: "bunker",
     },
+    SUPPLEMENTAL_ENEMY_FILTER_CATEGORY,
   ],
   markers: [
     {
@@ -1137,6 +1950,7 @@ export const RONOGRAD_MAP_DATA = {
         },
       },
     },
+    ...SUPPLEMENTAL_ENEMY_MARKERS,
   ],
   markerProgress: true,
 };

@@ -8,11 +8,13 @@
  */
 
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import DashboardLayout from "./dashboard/DashboardLayout";
+import DashboardNavbar from "./dashboard/DashboardNavbar";
 import {
   DashboardHome,
-  JadwalPage,
-  LaporanPage,
+  HasilLaporanPage,
+  PelatihanPage,
+  RecruitmentReportPage,
+  TambahPetugasPage,
   SopPage,
   TindakanPage,
 } from "./dashboard/pages";
@@ -77,10 +79,16 @@ export default function App() {
       <Route
         element={<ProtectedRoute requiredScope="pelatih" redirectTo="/" />}
       >
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route path="/dashboard" element={<DashboardNavbar />}>
           <Route index element={<DashboardHome />} />
-          <Route path="jadwal" element={<JadwalPage />} />
-          <Route path="laporan" element={<LaporanPage />} />
+          <Route path="jadwal" element={<Navigate to="/dashboard/laporan" replace />} />
+          <Route path="laporan" element={<HasilLaporanPage />} />
+          <Route
+            path="laporan-perekrutan/:sessionId"
+            element={<RecruitmentReportPage />}
+          />
+          <Route path="pelatihan/:sessionId" element={<PelatihanPage />} />
+          <Route path="petugas" element={<TambahPetugasPage />} />
           <Route path="tindakan" element={<TindakanPage />} />
           <Route path="sop" element={<SopPage />} />
         </Route>

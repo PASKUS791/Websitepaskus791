@@ -29,6 +29,52 @@ function normalizeOrigin(value) {
   }
 }
 
+function isLoopbackHostname(hostname) {
+  return ["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"].includes(
+    String(hostname || "").toLowerCase(),
+  );
+}
+
+function expandAllowedOrigins(rawOrigins, production = false) {
+  const origins = String(rawOrigins || "http://localhost:5173")
+    .split(",")
+    .map((origin) => normalizeOrigin(origin.trim()))
+    .filter(Boolean);
+  const expandedOrigins = new Set();
+
+  origins.forEach((origin) => {
+    expandedOrigins.add(origin);
+
+    if (production) {
+      return;
+    }
+
+    try {
+      const parsedOrigin = new URL(origin);
+
+      if (!isLoopbackHostname(parsedOrigin.hostname)) {
+        return;
+      }
+
+      const port = parsedOrigin.port ? `:${parsedOrigin.port}` : "";
+      const protocol = parsedOrigin.protocol;
+
+      [
+        `${protocol}//localhost${port}`,
+        `${protocol}//127.0.0.1${port}`,
+        `${protocol}//[::1]${port}`,
+      ]
+        .map((candidate) => normalizeOrigin(candidate))
+        .filter(Boolean)
+        .forEach((candidate) => expandedOrigins.add(candidate));
+    } catch {
+      // Ignore malformed origin entries.
+    }
+  });
+
+  return [...expandedOrigins];
+}
+
 function normalizeScryptCost(value, fallback) {
   const parsed = parsePositiveInt(value, fallback);
   return parsed > 1 && (parsed & (parsed - 1)) === 0 ? parsed : fallback;
@@ -95,10 +141,10 @@ const config = {
     60 *
     1000,
   trustProxy: process.env.APP_TRUST_PROXY === "true",
-  allowedOrigins: (process.env.APP_ALLOWED_ORIGINS || "http://localhost:5173")
-    .split(",")
-    .map((origin) => normalizeOrigin(origin.trim()))
-    .filter(Boolean),
+  allowedOrigins: expandAllowedOrigins(
+    process.env.APP_ALLOWED_ORIGINS || "http://localhost:5173",
+    process.env.NODE_ENV === "production",
+  ),
   discordWebhookUrl: process.env.DISCORD_STRATEGIC_WEBHOOK_URL || "",
   publicAppUrl: process.env.PUBLIC_APP_URL || "",
   passwordHashN: normalizeScryptCost(process.env.APP_HASH_SCRYPT_N, 16384),
@@ -127,7 +173,20 @@ if (config.production && !config.passwordPepper) {
   throw new Error("APP_PASSWORD_PEPPER wajib diisi di production.");
 }
 
-const DEFAULT_HCO_CATEGORY_IDS = ["2", "3", "4", "5", "6", "7", "8"];
+const DEFAULT_HCO_CATEGORY_IDS = ["2", "3", "4", "5", "6", "7", "8", "enemy-intel"];
+const LEGACY_HCO_ENEMY_CATEGORY_IDS = new Set([
+  "enemy-rocketeer",
+  "enemy-sniper",
+  "enemy-unit",
+  "enemy-vip-target",
+  "enemy-camp-ambush",
+  "enemy-mortar",
+  "enemy-anti-air-launcher",
+  "enemy-explosive-target",
+  "enemy-heli-landing",
+  "enemy-minefield",
+  "enemy-machine-gunner",
+]);
 
 const db = new DatabaseSync(databasePath);
 db.exec(`
@@ -170,6 +229,7 @@ const RESOURCE_SCOPES = {
   "dashboard.candidates": "pelatih",
   "dashboard.schedules": "pelatih",
   "dashboard.reports": "pelatih",
+  "dashboard.trainingSessions": "pelatih",
   "hco.plannerState": "hco",
   "hco.strategicSaves": "hco",
 };
@@ -178,6 +238,7 @@ const RESOURCE_DEFAULTS = {
   "dashboard.candidates": [],
   "dashboard.schedules": [],
   "dashboard.reports": [],
+  "dashboard.trainingSessions": [],
   "hco.plannerState": {
     actions: [],
     enabledCategoryIds: DEFAULT_HCO_CATEGORY_IDS,
@@ -234,6 +295,16 @@ const userByScopeAndUsernameStatement = db.prepare(`
   SELECT id, scope, username, label, unit, password_hash AS passwordHash, active
   FROM users
   WHERE scope = ? AND username = ?
+`);
+const usersByScopeStatement = db.prepare(`
+  SELECT id, scope, username, label, unit
+  FROM users
+  WHERE scope = ? AND active = 1
+  ORDER BY label COLLATE NOCASE ASC, username COLLATE NOCASE ASC
+`);
+const createUserStatement = db.prepare(`
+  INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, 1, ?, ?)
 `);
 const upsertUserStatement = db.prepare(`
   INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
@@ -838,6 +909,45 @@ function validateLoginPayload(body) {
   return { scope, username, password };
 }
 
+function validateOperatorPayload(body) {
+  const username = normalizeUsername(body?.username);
+  const label = String(body?.label || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  const unit = String(body?.unit || "PASKUS 791")
+    .trim()
+    .replace(/\s+/g, " ");
+  const password = String(body?.password || "");
+
+  if (
+    !username ||
+    username.length < 3 ||
+    username.length > 64 ||
+    !/^[a-z0-9._@-]+$/i.test(username)
+  ) {
+    throw createHttpError(400, "Username petugas tidak valid.");
+  }
+
+  if (!label || label.length < 3 || label.length > 80) {
+    throw createHttpError(400, "Nama petugas wajib diisi dengan benar.");
+  }
+
+  if (!unit || unit.length < 3 || unit.length > 80) {
+    throw createHttpError(400, "Unit petugas wajib diisi.");
+  }
+
+  if (password.length < 8 || password.length > 256) {
+    throw createHttpError(400, "Password petugas minimal 8 karakter.");
+  }
+
+  return {
+    username,
+    label,
+    unit,
+    password,
+  };
+}
+
 function detectThreatSignature(values) {
   const combined = values
     .map((value) => String(value || ""))
@@ -891,9 +1001,13 @@ function sanitizeResourceValue(resourceName, value) {
   if (resourceName === "hco.plannerState") {
     const source = value && typeof value === "object" ? value : {};
     const enabledCategoryIds = Array.isArray(source.enabledCategoryIds)
-      ? source.enabledCategoryIds.filter((id) =>
-          RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds.includes(id),
-        )
+      ? [...new Set(source.enabledCategoryIds)]
+          .map((id) =>
+            LEGACY_HCO_ENEMY_CATEGORY_IDS.has(id) ? "enemy-intel" : id,
+          )
+          .filter((id) =>
+            RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds.includes(id),
+          )
       : RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds;
 
     const viewport =
@@ -911,10 +1025,7 @@ function sanitizeResourceValue(resourceName, value) {
 
     return {
       actions: Array.isArray(source.actions) ? source.actions : [],
-      enabledCategoryIds:
-        enabledCategoryIds.length > 0
-          ? enabledCategoryIds
-          : RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds,
+      enabledCategoryIds,
       viewport,
     };
   }
@@ -1227,6 +1338,96 @@ async function handleRequest(request, response) {
       "Set-Cookie": clearSessionCookie(),
     });
     return;
+  }
+
+  if (path === "/api/pelatih/operators" && request.method === "GET") {
+    if (!session || session.user.scope !== "pelatih") {
+      notAuthorized(response);
+      return;
+    }
+
+    const operators = usersByScopeStatement
+      .all("pelatih")
+      .map((user) => ({
+        id: user.id,
+        username: user.username,
+        label: user.label,
+        unit: user.unit,
+      }));
+
+    sendJson(response, 200, {
+      ok: true,
+      operators,
+    });
+    return;
+  }
+
+  if (path === "/api/pelatih/operators" && request.method === "POST") {
+    if (!session || session.user.scope !== "pelatih") {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request);
+      const detectedThreat = detectThreatSignature([
+        body?.username,
+        body?.label,
+        body?.unit,
+        body?.password,
+      ]);
+
+      if (detectedThreat) {
+        sendSecurityBlock(
+          response,
+          403,
+          "Payload petugas diblokir oleh sistem keamanan.",
+          detectedThreat,
+        );
+        return;
+      }
+
+      const operator = validateOperatorPayload(body);
+      const existingUser = userByScopeAndUsernameStatement.get("pelatih", operator.username);
+
+      if (existingUser) {
+        sendError(response, 409, "Username petugas sudah digunakan.");
+        return;
+      }
+
+      const timestamp = nowIso();
+      createUserStatement.run(
+        "pelatih",
+        operator.username,
+        operator.label,
+        operator.unit,
+        hashPassword(operator.password),
+        timestamp,
+        timestamp,
+      );
+
+      const operators = usersByScopeStatement.all("pelatih").map((user) => ({
+        id: user.id,
+        username: user.username,
+        label: user.label,
+        unit: user.unit,
+      }));
+
+      sendJson(response, 201, {
+        ok: true,
+        message: "Petugas baru berhasil ditambahkan.",
+        operators,
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal menambahkan petugas.",
+      );
+      return;
+    }
   }
 
   if (path === "/api/events" && request.method === "GET") {

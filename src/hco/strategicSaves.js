@@ -17,6 +17,34 @@ export const DEFAULT_PLANNER_STATE = {
   viewport: null,
 };
 
+const LEGACY_ENEMY_CATEGORY_IDS = [
+  "enemy-rocketeer",
+  "enemy-sniper",
+  "enemy-unit",
+  "enemy-vip-target",
+  "enemy-camp-ambush",
+  "enemy-mortar",
+  "enemy-anti-air-launcher",
+  "enemy-explosive-target",
+  "enemy-heli-landing",
+  "enemy-minefield",
+  "enemy-machine-gunner",
+];
+
+function remapLegacyCategoryId(categoryId) {
+  return LEGACY_ENEMY_CATEGORY_IDS.includes(categoryId) ? "enemy-intel" : categoryId;
+}
+
+function normalizeEnabledCategoryIds(enabledCategoryIds) {
+  if (!Array.isArray(enabledCategoryIds)) {
+    return DEFAULT_PLANNER_STATE.enabledCategoryIds;
+  }
+
+  return [...new Set(enabledCategoryIds.map(remapLegacyCategoryId))].filter((id) =>
+    DEFAULT_PLANNER_STATE.enabledCategoryIds.includes(id),
+  );
+}
+
 export function normalizePlannerState(value) {
   if (!value || typeof value !== "object") {
     return DEFAULT_PLANNER_STATE;
@@ -24,11 +52,7 @@ export function normalizePlannerState(value) {
 
   return {
     actions: Array.isArray(value.actions) ? value.actions : [],
-    enabledCategoryIds: Array.isArray(value.enabledCategoryIds)
-      ? value.enabledCategoryIds.filter((id) =>
-          DEFAULT_PLANNER_STATE.enabledCategoryIds.includes(id),
-        )
-      : DEFAULT_PLANNER_STATE.enabledCategoryIds,
+    enabledCategoryIds: normalizeEnabledCategoryIds(value.enabledCategoryIds),
     viewport:
       value.viewport &&
       typeof value.viewport === "object" &&
@@ -55,9 +79,9 @@ export async function applyStrategicSaveToPlanner(save) {
 
   return saveResource(RESOURCE_KEYS.hcoPlannerState, {
     actions: Array.isArray(save.snapshot.actions) ? save.snapshot.actions : [],
-    enabledCategoryIds: Array.isArray(save.snapshot.enabledCategoryIds)
-      ? save.snapshot.enabledCategoryIds
-      : DEFAULT_PLANNER_STATE.enabledCategoryIds,
+    enabledCategoryIds: normalizeEnabledCategoryIds(
+      save.snapshot.enabledCategoryIds,
+    ),
     viewport: save.snapshot.viewport ?? null,
   });
 }

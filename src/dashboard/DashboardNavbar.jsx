@@ -5,6 +5,9 @@
  * Lee - Cyber Sector
  * Osiris - Bot Manufactur
  * Internal proprietary source notice.
+ *
+ * Module: Dashboard / Navbar Shell
+ * Purpose: Sidebar shell untuk semua route staff recruiter.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -20,11 +23,6 @@ const NAV_ITEMS = [
     icon: "dashboard",
   },
   {
-    label: "Jadwal",
-    to: "/dashboard/jadwal",
-    icon: "jadwal",
-  },
-  {
     label: "Hasil Laporan",
     to: "/dashboard/laporan",
     icon: "laporan",
@@ -35,19 +33,52 @@ const NAV_ITEMS = [
     icon: "tindakan",
   },
   {
+    label: "Tambah Petugas",
+    to: "/dashboard/petugas",
+    icon: "petugas",
+  },
+  {
     label: "SOP",
     to: "/dashboard/sop",
     icon: "sop",
   },
 ];
 
-const PAGE_TITLES = {
-  "/dashboard": "SO-791 Data Center",
-  "/dashboard/jadwal": "Jadwal Rekrutmen",
-  "/dashboard/laporan": "Hasil Laporan",
-  "/dashboard/tindakan": "Butuh Tindakan",
-  "/dashboard/sop": "Standard Operating Procedure",
-};
+function resolvePageTitle(pathname) {
+  if (pathname === "/dashboard") {
+    return "SO-791 Data Center";
+  }
+
+  if (pathname === "/dashboard/jadwal") {
+    return "Hasil Laporan";
+  }
+
+  if (pathname === "/dashboard/laporan") {
+    return "Hasil Laporan";
+  }
+
+  if (pathname.startsWith("/dashboard/pelatihan/")) {
+    return "Dashboard Pelatih";
+  }
+
+  if (pathname.startsWith("/dashboard/laporan-perekrutan/")) {
+    return "Laporan Perekrutan";
+  }
+
+  if (pathname === "/dashboard/tindakan") {
+    return "Butuh Tindakan";
+  }
+
+  if (pathname === "/dashboard/petugas") {
+    return "Tambah Petugas";
+  }
+
+  if (pathname === "/dashboard/sop") {
+    return "Standard Operating Procedure";
+  }
+
+  return "SO-791 Data Center";
+}
 
 function DashboardNavIcon({ name }) {
   const className = "h-5 w-5 fill-none stroke-current stroke-[1.7]";
@@ -94,6 +125,17 @@ function DashboardNavIcon({ name }) {
     );
   }
 
+  if (name === "petugas") {
+    return (
+      <svg viewBox="0 0 20 20" className={className}>
+        <path d="M10 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
+        <path d="M4.5 15c.8-2.3 2.8-3.5 5.5-3.5s4.7 1.2 5.5 3.5" />
+        <path d="M15.5 5.5v4" />
+        <path d="M13.5 7.5h4" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 20 20" className={className}>
       <path d="M4 11.5 10 5l6 6.5" />
@@ -102,7 +144,7 @@ function DashboardNavIcon({ name }) {
   );
 }
 
-export default function DashboardLayout() {
+export default function DashboardNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -113,10 +155,8 @@ export default function DashboardLayout() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const pageTitle = useMemo(
-    () => PAGE_TITLES[location.pathname] ?? "SO-791 Data Center",
-    [location.pathname],
-  );
+  const pageTitle = useMemo(() => resolvePageTitle(location.pathname), [location.pathname]);
+  const canGoBack = location.pathname !== "/dashboard";
 
   const handleSignOut = async () => {
     await logout();
@@ -124,9 +164,9 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090b0c] font-sans text-stone-100">
-      <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="w-full shrink-0 border-b border-white/10 bg-[#111315]/95 backdrop-blur-xl lg:w-72 lg:border-b-0 lg:border-r">
+    <div className="min-h-screen overflow-x-hidden bg-[#090b0c] font-sans text-stone-100">
+      <div className="flex min-h-screen w-full overflow-x-hidden flex-col lg:flex-row">
+        <aside className="w-full shrink-0 overflow-hidden border-b border-white/10 bg-[#111315]/95 backdrop-blur-xl lg:w-72 lg:border-b-0 lg:border-r">
           <div className="flex h-full flex-col gap-5 p-4 sm:p-5 lg:justify-between">
             <div>
               <div className="flex items-center justify-between gap-3">
@@ -162,7 +202,7 @@ export default function DashboardLayout() {
                   Tactical Node
                 </p>
                 <p className="mt-2 text-sm leading-6 text-stone-300">
-                  Panel rekrutmen untuk sortir kandidat, reviewer, jadwal, dan SOP.
+                  Panel pelatih untuk seleksi kandidat, pelatihan, hasil laporan, dan SOP.
                 </p>
               </div>
 
@@ -200,16 +240,28 @@ export default function DashboardLayout() {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">
-          <header className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden bg-[#090b0c]">
+          <header className="overflow-hidden border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.32em] text-emerald-400/80">
                   Tactical Overview
                 </p>
-                <h2 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">
-                  {pageTitle}
-                </h2>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {canGoBack ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-300 transition hover:bg-white/[0.06] hover:text-stone-100"
+                    >
+                      <span aria-hidden="true">←</span>
+                      Back
+                    </button>
+                  ) : null}
+                  <h2 className="text-xl font-black tracking-tight sm:text-2xl">
+                    {pageTitle}
+                  </h2>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-white/6 bg-white/[0.02] px-4 py-3 text-left lg:text-right">
@@ -226,7 +278,7 @@ export default function DashboardLayout() {
             </div>
           </header>
 
-          <section className="p-4 sm:p-6 lg:p-8">
+          <section className="min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
             <Outlet />
           </section>
         </main>

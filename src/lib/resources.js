@@ -14,6 +14,7 @@ export const RESOURCE_KEYS = {
   dashboardCandidates: "dashboard.candidates",
   dashboardSchedules: "dashboard.schedules",
   dashboardReports: "dashboard.reports",
+  dashboardTrainingSessions: "dashboard.trainingSessions",
   hcoPlannerState: "hco.plannerState",
   hcoStrategicSaves: "hco.strategicSaves",
 };

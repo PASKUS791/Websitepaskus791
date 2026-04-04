@@ -1,11 +1,11 @@
 # PelatihWebPaskus
 
-Dashboard operasional `PASKUS 791` dengan dua portal utama:
+Dashboard operasional internal `PASKUS 791` dengan dua portal utama:
 
-- `Staff / Pelatih` untuk monitoring kandidat, jadwal, laporan, tindakan, dan SOP.
-- `HCO Center` untuk `Ronograd Map Planner`, intel layer, annotation board, dan strategic saves.
+- `Staff / Pelatih` untuk seleksi kandidat, pembukaan sesi pelatihan, pelaporan hasil, tindakan lanjutan, manajemen petugas, dan SOP operasional.
+- `HCO Center` untuk `Ronograd Map Planner`, intel layer, annotation board, strategic saves, dan workflow tactical planning.
 
-Project ini sudah tidak lagi murni frontend. Saat ini aplikasi memakai arsitektur `React + Vite` di frontend dan `Node.js + SQLite` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data.
+Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js + SQLite` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time lokal.
 
 ## Stack
 
@@ -23,11 +23,14 @@ Project ini sudah tidak lagi murni frontend. Saat ini aplikasi memakai arsitektu
 - Password di-hash dengan `scrypt`
 - Session cookie `HttpOnly`
 - Rate limiting, lockout brute force, validasi origin/referer, dan hardening header keamanan
-- Dashboard kandidat dan halaman monitoring staff
-- Kalender jadwal rekrutmen yang bisa diedit
-- Hasil laporan kandidat dengan arsip, tambahan laporan, dan dispatch
-- Halaman `Perlu Tindakan`
-- Library SOP
+- Dashboard kandidat dengan multi-select dan pembukaan sesi pelatihan
+- Page `Pelatihan` untuk petugas, kandidat aktif, pelaporan per kandidat, dan kontrol sesi
+- `Cancel Sesi` yang mengembalikan kandidat ke dashboard jika sesi batal
+- `Eliminasi Kandidat` yang menghapus kandidat dari data aktif
+- `Hasil Laporan` berbasis kalender histori dengan detail per tanggal dan detail per sesi
+- Halaman `Tambah Petugas`
+- Halaman `Butuh Tindakan`
+- Library SOP operasional BRM5, roleplay, dan penggunaan web perekrutan
 - `HCO Map Planner` dengan marker intel, draw/text tool, fullscreen, strategic saves, dan dispatch Discord dari backend
 
 ## Struktur Project
@@ -36,6 +39,9 @@ Project ini sudah tidak lagi murni frontend. Saat ini aplikasi memakai arsitektu
 server/
   index.mjs                 API server, auth, session, resource storage
   data/                     SQLite database lokal
+
+scripts/
+  reset-seed-dashboard.mjs  Reset dan isi data test kandidat + pelatih
 
 src/
   dashboard/                Halaman portal staff
@@ -54,8 +60,11 @@ public/
 
 - `/` : Login Staff / Pelatih
 - `/dashboard` : Dashboard utama staff
-- `/dashboard/jadwal` : Kalender jadwal
-- `/dashboard/laporan` : Arsip hasil laporan
+- `/dashboard/jadwal` : Redirect ke `Hasil Laporan`
+- `/dashboard/laporan` : Kalender histori hasil laporan
+- `/dashboard/pelatihan/:sessionId` : Sesi pelatihan aktif
+- `/dashboard/laporan-perekrutan/:sessionId` : Detail laporan per sesi
+- `/dashboard/petugas` : Tambah petugas
 - `/dashboard/tindakan` : Reminder perlu tindakan
 - `/dashboard/sop` : SOP
 - `/hco` : Login HCO
@@ -114,6 +123,38 @@ Frontend: http://localhost:5173
 API:      http://localhost:8787
 ```
 
+Jika `5173` sedang dipakai, Vite bisa pindah ke port lain seperti `5174`.
+
+## Reset dan Isi Data Test
+
+Untuk reset database dashboard lokal dan mengisi data uji:
+
+```bash
+node scripts/reset-seed-dashboard.mjs
+```
+
+Isi default hasil seed:
+
+- `50` pendaftar
+- `10` akun pelatih aktif
+- `0` sesi aktif
+- `0` histori laporan
+
+Password default semua akun pelatih hasil seed:
+
+```text
+Paskus123
+```
+
+Contoh akun:
+
+- `PaskusAdmin`
+- `cpt.nova`
+- `cpt.price`
+- `lt.ghost`
+- `maj.payne`
+- `sgt.miller`
+
 ## Script
 
 ```bash
@@ -122,6 +163,7 @@ npm run api       # Jalankan backend Node server
 npm run build     # Build production frontend
 npm run preview   # Preview build Vite
 npm run lint      # Lint project
+node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 ```
 
 ## Environment Variable Penting
@@ -157,6 +199,7 @@ Resource yang aktif sekarang:
 
 - `dashboard.candidates`
 - `dashboard.schedules`
+- `dashboard.trainingSessions`
 - `dashboard.reports`
 - `hco.plannerState`
 - `hco.strategicSaves`
@@ -178,9 +221,24 @@ Area yang paling siap untuk dilanjutkan:
 ## Catatan Untuk Tim Frontend
 
 - Fokus UI utama ada di `src/dashboard` dan `src/hco`
+- Shell staff ada di `src/dashboard/DashboardNavbar.jsx`
+- View staff utama sudah dipisah ke `src/dashboard/views`
+- Komponen modal dan laporan ada di `src/dashboard/components`
+- Helper data dashboard ada di `src/dashboard/data/recruitmentData.js`
 - `HCO Map Planner` memakai data map dan marker dari `src/hco/ronogradMapData.js`
 - Strategic snapshot dan planner state ada di `src/hco/strategicSaves.js`
 - Portal login ada di `src/pages/LoginPortal.jsx` dan `src/pages/HcoLoginPortal.jsx`
+
+## Alur Staff Saat Ini
+
+1. Pilih kandidat `Sipil` atau `PMC` dari dashboard.
+2. Klik `Buka Pelatihan`.
+3. Pilih beberapa petugas dan tentukan golongan.
+4. Sesi baru akan muncul di page `Pelatihan`.
+5. Isi `Laporkan` untuk tiap kandidat.
+6. Kirim laporan penuh agar sesi masuk ke histori `Hasil Laporan`.
+7. Jika sesi gagal, gunakan `Cancel Sesi` agar kandidat kembali ke dashboard.
+8. Jika kandidat dieliminasi, data kandidat dihapus dari daftar aktif.
 
 ## Deploy
 
@@ -226,9 +284,10 @@ Lihat juga:
 1. Pastikan `.env` tidak ikut ke Git.
 2. Jalankan `npm run lint`.
 3. Jalankan `npm run build`.
-4. Uji login staff dan HCO.
-5. Uji route penting di desktop dan mobile.
-6. Pastikan webhook production dan `APP_SESSION_SECRET` sudah diisi.
+4. Jika perlu data test baru, jalankan `node scripts/reset-seed-dashboard.mjs`.
+5. Uji login staff dan HCO.
+6. Uji route penting di desktop dan mobile.
+7. Pastikan webhook production dan `APP_SESSION_SECRET` sudah diisi.
 
 ## Status
 
@@ -239,4 +298,3 @@ Project ini sudah siap dipakai sebagai base aplikasi internal dan siap dilanjutk
 - API domain-specific
 - monitoring dan audit
 - deployment full-stack
-

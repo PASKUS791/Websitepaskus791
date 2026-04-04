@@ -12,6 +12,7 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -142,6 +143,26 @@ function getViewportSignature(viewport) {
   ].join(":");
 }
 
+function getBoardActionsSignature(actions = []) {
+  return JSON.stringify(
+    actions.map((action) => ({
+      id: action.id ?? "",
+      type: action.type ?? "",
+      color: action.color ?? "",
+      size: Number(action.size) || 0,
+      x: Number(action.x) || 0,
+      y: Number(action.y) || 0,
+      text: action.text ?? "",
+      points: Array.isArray(action.points)
+        ? action.points.map((point) => [
+            Number(point?.x) || 0,
+            Number(point?.y) || 0,
+          ])
+        : [],
+    })),
+  );
+}
+
 function createActionId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -206,10 +227,7 @@ function loadStoredPlannerState(value = DEFAULT_PLANNER_STATE) {
 
   return {
     actions,
-    enabledCategoryIds:
-      plannerState.enabledCategoryIds.length > 0
-        ? plannerState.enabledCategoryIds
-        : DEFAULT_ENABLED_CATEGORY_IDS,
+    enabledCategoryIds: plannerState.enabledCategoryIds,
     viewport: storedViewport,
   };
 }
@@ -252,6 +270,18 @@ function getMarkerBadgeText(category) {
   }
 
   return getMarkerAbbreviation(category?.name ?? "MR");
+}
+
+function areCategoryIdListsEqual(firstList = [], secondList = []) {
+  if (firstList === secondList) {
+    return true;
+  }
+
+  if (firstList.length !== secondList.length) {
+    return false;
+  }
+
+  return firstList.every((value, index) => value === secondList[index]);
 }
 
 function MarkerBadge({
@@ -1014,12 +1044,9 @@ function ThreatIntelModal({ marker, intel, onClose }) {
       }
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
@@ -1029,7 +1056,7 @@ function ThreatIntelModal({ marker, intel, onClose }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[290] flex items-center justify-center bg-black/66 p-5 backdrop-blur-md md:p-8"
+      className="fixed inset-0 z-[290] flex items-start justify-center overflow-y-auto bg-black/66 px-5 pb-8 pt-6 backdrop-blur-md md:px-8 md:pb-10 md:pt-10"
       onClick={onClose}
     >
       <motion.div
@@ -1038,7 +1065,7 @@ function ThreatIntelModal({ marker, intel, onClose }) {
         exit={{ opacity: 0, y: 18, scale: 0.98, filter: "blur(10px)" }}
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
         onClick={(event) => event.stopPropagation()}
-        className="my-6 w-full max-w-2xl max-h-[82vh] overflow-y-auto rounded-[28px] border border-lime-300/14 bg-[#101518]/72 shadow-[0_28px_120px_rgba(0,0,0,0.54)] backdrop-blur-2xl"
+        className="w-full max-w-2xl rounded-[28px] border border-lime-300/14 bg-[#101518]/72 shadow-[0_28px_120px_rgba(0,0,0,0.54)] backdrop-blur-2xl"
       >
         <div className="border-b border-white/6 bg-[linear-gradient(135deg,rgba(190,242,100,0.09),rgba(16,21,24,0.4),rgba(16,21,24,0.9))] px-5 py-4 md:px-6">
           <div className="flex items-start justify-between gap-4">
@@ -1186,6 +1213,7 @@ function ThreatIntelModal({ marker, intel, onClose }) {
 }
 
 export default function HcoDashboardPage() {
+  // Function Group: synced resources, runtime refs, and UI state.
   const {
     data: plannerResource,
     setData: setPlannerResource,
@@ -1205,7 +1233,10 @@ export default function HcoDashboardPage() {
     normalize: normalizeStrategicSaves,
   });
   const viewportRef = useRef(null);
-  const canvasRef = useRef(null);
+  const boardCanvasRef = useRef(null);
+  const previewCanvasRef = useRef(null);
+  const boardCanvasRenderFrameRef = useRef(null);
+  const renderBoardCanvasRef = useRef(() => {});
   const panSessionRef = useRef(null);
   const strokeRef = useRef(null);
   const fullscreenToolbarHideTimeoutRef = useRef(null);
@@ -1233,7 +1264,6 @@ export default function HcoDashboardPage() {
     },
   );
   const [hasFittedMap, setHasFittedMap] = useState(Boolean(plannerResource.viewport));
-  const [currentStroke, setCurrentStroke] = useState(null);
   const [textDraft, setTextDraft] = useState(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [saveDraft, setSaveDraft] = useState({
@@ -1247,6 +1277,8 @@ export default function HcoDashboardPage() {
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [isFullscreenToolbarVisible, setIsFullscreenToolbarVisible] = useState(true);
   const [isFullscreenToolbarHovered, setIsFullscreenToolbarHovered] = useState(false);
+  const [isTemporaryPanActive, setIsTemporaryPanActive] = useState(false);
+  const boardActionsSignatureRef = useRef("");
 
   const categoriesById = useMemo(
     () =>
@@ -1259,12 +1291,14 @@ export default function HcoDashboardPage() {
   const normalizedMarkers = useMemo(
     () =>
       RONOGRAD_MAP_DATA.markers.map((marker) => {
-        const category = categoriesById.get(marker.categoryId);
+        const filterCategory = categoriesById.get(marker.categoryId);
+        const category = marker.visualCategory ?? filterCategory;
         const supplementalIntel = getSupplementalMarkerIntel(marker);
 
         return {
           ...marker,
           category,
+          filterCategory,
           resolvedDescription:
             supplementalIntel.resolvedDescription ||
             "Tidak ada deskripsi intel yang terekam untuk node ini.",
@@ -1278,6 +1312,7 @@ export default function HcoDashboardPage() {
             marker.popup.link?.url,
             marker.popup.image,
             category?.name ?? "",
+            filterCategory?.name ?? "",
             category?.symbol ?? "",
             supplementalIntel.secretIntel.join(" "),
           ]
@@ -1315,6 +1350,18 @@ export default function HcoDashboardPage() {
       })),
     [filteredMarkers, viewport],
   );
+  const boardActionsSignature = useMemo(
+    () => getBoardActionsSignature(boardActions),
+    [boardActions],
+  );
+  const plannerResourceActionsSignature = useMemo(
+    () => getBoardActionsSignature(plannerResource.actions),
+    [plannerResource.actions],
+  );
+
+  useEffect(() => {
+    boardActionsSignatureRef.current = boardActionsSignature;
+  }, [boardActionsSignature]);
 
   const selectedMarker =
     normalizedMarkers.find((marker) => marker.id === selectedMarkerId) ?? null;
@@ -1358,6 +1405,134 @@ export default function HcoDashboardPage() {
     return counts;
   }, [filteredMarkers]);
 
+  const renderBoardCanvasNow = useCallback(() => {
+    if (boardCanvasRenderFrameRef.current) {
+      window.cancelAnimationFrame(boardCanvasRenderFrameRef.current);
+      boardCanvasRenderFrameRef.current = null;
+    }
+
+    renderBoardCanvasRef.current?.();
+  }, []);
+
+  const renderPreviewCanvasNow = useCallback(() => {
+    const canvas = previewCanvasRef.current;
+
+    if (!canvas || !viewportSize.width || !viewportSize.height) {
+      return;
+    }
+
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    context.globalAlpha = 1;
+    context.imageSmoothingEnabled = true;
+
+    const stroke = strokeRef.current;
+
+    if (!stroke || stroke.type !== "stroke" || stroke.points.length === 0) {
+      return;
+    }
+
+    context.save();
+    context.globalCompositeOperation = "source-over";
+    context.strokeStyle =
+      stroke.tool === "eraser" ? "rgba(248,250,252,0.82)" : stroke.color;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.lineWidth = Math.max(2.4, stroke.size * Math.max(viewport.scale, 0.18));
+    context.globalAlpha = stroke.tool === "eraser" ? 0.85 : 1;
+    if (stroke.tool === "eraser") {
+      context.setLineDash([8, 6]);
+    }
+    context.beginPath();
+
+    const firstPoint = worldToScreen(stroke.points[0], viewport);
+    context.moveTo(firstPoint.x, firstPoint.y);
+
+    if (stroke.points.length === 1) {
+      context.lineTo(firstPoint.x + 0.01, firstPoint.y + 0.01);
+    } else {
+      stroke.points.slice(1).forEach((point) => {
+        const screenPoint = worldToScreen(point, viewport);
+        context.lineTo(screenPoint.x, screenPoint.y);
+      });
+    }
+
+    context.stroke();
+    context.restore();
+  }, [viewport, viewportSize.height, viewportSize.width]);
+
+  const commitStrokeToBoardCanvas = useCallback(
+    (stroke) => {
+      const canvas = boardCanvasRef.current;
+
+      if (
+        !canvas ||
+        !stroke ||
+        stroke.type !== "stroke" ||
+        stroke.points.length === 0 ||
+        !viewportSize.width ||
+        !viewportSize.height
+      ) {
+        return;
+      }
+
+      const context = canvas.getContext("2d");
+      const devicePixelRatio = window.devicePixelRatio || 1;
+
+      if (!context) {
+        return;
+      }
+
+      context.save();
+      context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      context.globalCompositeOperation =
+        stroke.tool === "eraser" ? "destination-out" : "source-over";
+      context.strokeStyle = stroke.color;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.lineWidth = Math.max(2.4, stroke.size * Math.max(viewport.scale, 0.18));
+
+      if (stroke.tool === "pen") {
+        context.shadowColor = stroke.color;
+        context.shadowBlur = 4;
+      }
+
+      context.beginPath();
+      const firstPoint = worldToScreen(stroke.points[0], viewport);
+      context.moveTo(firstPoint.x, firstPoint.y);
+
+      if (stroke.points.length === 1) {
+        context.lineTo(firstPoint.x + 0.01, firstPoint.y + 0.01);
+      } else {
+        stroke.points.slice(1).forEach((point) => {
+          const screenPoint = worldToScreen(point, viewport);
+          context.lineTo(screenPoint.x, screenPoint.y);
+        });
+      }
+
+      context.stroke();
+      context.restore();
+    },
+    [viewport, viewportSize.height, viewportSize.width],
+  );
+
+  useEffect(
+    () => () => {
+      if (boardCanvasRenderFrameRef.current) {
+        window.cancelAnimationFrame(boardCanvasRenderFrameRef.current);
+      }
+    },
+    [],
+  );
+
   const fitMapToViewport = () => {
     if (!viewportSize.width || !viewportSize.height) {
       return;
@@ -1399,29 +1574,32 @@ export default function HcoDashboardPage() {
     }
   };
 
-  const centerOnMarker = (marker, targetScale = viewport.scale) => {
-    if (!viewportSize.width || !viewportSize.height) {
-      return;
-    }
+  const centerOnMarker = useCallback(
+    (marker, targetScale = viewport.scale) => {
+      if (!viewportSize.width || !viewportSize.height) {
+        return;
+      }
 
-    const nextScale = clamp(targetScale, MIN_SCALE, MAX_SCALE);
+      const nextScale = clamp(targetScale, MIN_SCALE, MAX_SCALE);
 
-    setViewport((currentViewport) => {
-      const nextViewport = constrainViewport(
-        {
-          scale: nextScale,
-          offsetX: viewportSize.width / 2 - marker.mapX * nextScale,
-          offsetY: viewportSize.height / 2 - marker.mapY * nextScale,
-        },
-        viewportSize.width,
-        viewportSize.height,
-      );
+      setViewport((currentViewport) => {
+        const nextViewport = constrainViewport(
+          {
+            scale: nextScale,
+            offsetX: viewportSize.width / 2 - marker.mapX * nextScale,
+            offsetY: viewportSize.height / 2 - marker.mapY * nextScale,
+          },
+          viewportSize.width,
+          viewportSize.height,
+        );
 
-      return areViewportsEqual(currentViewport, nextViewport)
-        ? currentViewport
-        : nextViewport;
-    });
-  };
+        return areViewportsEqual(currentViewport, nextViewport)
+          ? currentViewport
+          : nextViewport;
+      });
+    },
+    [viewport.scale, viewportSize.height, viewportSize.width],
+  );
 
   const adjustZoom = (factor, focusPoint) => {
     if (!viewportSize.width || !viewportSize.height) {
@@ -1492,6 +1670,27 @@ export default function HcoDashboardPage() {
       return undefined;
     }
 
+    const updateViewportDimensions = () => {
+      const bounds = element.getBoundingClientRect();
+
+      setViewportSize((currentSize) => {
+        const nextWidth = Math.round(bounds.width);
+        const nextHeight = Math.round(bounds.height);
+
+        if (
+          currentSize.width === nextWidth &&
+          currentSize.height === nextHeight
+        ) {
+          return currentSize;
+        }
+
+        return {
+          width: nextWidth,
+          height: nextHeight,
+        };
+      });
+    };
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
 
@@ -1499,15 +1698,32 @@ export default function HcoDashboardPage() {
         return;
       }
 
-      setViewportSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
+      setViewportSize((currentSize) => {
+        const nextWidth = Math.round(entry.contentRect.width);
+        const nextHeight = Math.round(entry.contentRect.height);
+
+        if (
+          currentSize.width === nextWidth &&
+          currentSize.height === nextHeight
+        ) {
+          return currentSize;
+        }
+
+        return {
+          width: nextWidth,
+          height: nextHeight,
+        };
       });
     });
 
+    updateViewportDimensions();
     observer.observe(element);
+    window.addEventListener("resize", updateViewportDimensions);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateViewportDimensions);
+    };
   }, []);
 
   useEffect(() => {
@@ -1625,13 +1841,24 @@ export default function HcoDashboardPage() {
   }, []);
 
   useEffect(() => {
+    // Function Group: hydrate server planner state into local interactive state.
     if (plannerLoading) {
       return;
     }
 
     plannerHydratedRef.current = true;
-    setBoardActions(plannerResource.actions);
-    setEnabledCategoryIds(plannerResource.enabledCategoryIds);
+    if (boardActionsSignatureRef.current !== plannerResourceActionsSignature) {
+      setBoardActions(plannerResource.actions);
+      setRedoStack([]);
+    }
+    setEnabledCategoryIds((currentCategoryIds) =>
+      areCategoryIdListsEqual(
+        currentCategoryIds,
+        plannerResource.enabledCategoryIds,
+      )
+        ? currentCategoryIds
+        : plannerResource.enabledCategoryIds,
+    );
     const nextViewportSignature = getViewportSignature(plannerResource.viewport);
 
     if (
@@ -1652,104 +1879,165 @@ export default function HcoDashboardPage() {
     }
 
     lastHydratedViewportSignatureRef.current = nextViewportSignature;
-    setRedoStack([]);
-  }, [plannerLoading, plannerResource, viewportSize]);
+  }, [
+    plannerLoading,
+    plannerResource,
+    plannerResourceActionsSignature,
+    viewportSize,
+  ]);
 
   useEffect(() => {
+    if (selectedMarker && !enabledCategoryIds.includes(selectedMarker.categoryId)) {
+      setSelectedMarkerId(null);
+    }
+
+    if (hoveredMarker && !enabledCategoryIds.includes(hoveredMarker.categoryId)) {
+      setHoveredMarkerId(null);
+    }
+
+    if (
+      intelModalMarker &&
+      !enabledCategoryIds.includes(intelModalMarker.categoryId)
+    ) {
+      setIntelModalMarkerId(null);
+    }
+  }, [enabledCategoryIds, hoveredMarker, intelModalMarker, selectedMarker]);
+
+  useEffect(() => {
+    // Function Group: persist local planner changes back to synced resource storage.
     if (!plannerHydratedRef.current) {
       return;
     }
 
-    setPlannerResource((currentPlannerResource) => ({
-      actions: boardActions,
-      enabledCategoryIds,
-      viewport: currentPlannerResource?.viewport ?? null,
-    }));
-  }, [boardActions, enabledCategoryIds, setPlannerResource]);
+    setPlannerResource((currentPlannerResource) => {
+      const currentActions = currentPlannerResource?.actions ?? [];
+      const currentCategoryIds =
+        currentPlannerResource?.enabledCategoryIds ?? DEFAULT_ENABLED_CATEGORY_IDS;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
+      if (
+        getBoardActionsSignature(currentActions) === boardActionsSignature &&
+        areCategoryIdListsEqual(currentCategoryIds, enabledCategoryIds)
+      ) {
+        return currentPlannerResource;
+      }
 
-    if (!canvas || !viewportSize.width || !viewportSize.height) {
+      return {
+        actions: boardActions,
+        enabledCategoryIds,
+        viewport: currentPlannerResource?.viewport ?? null,
+      };
+    });
+  }, [boardActions, boardActionsSignature, enabledCategoryIds, setPlannerResource]);
+
+  useLayoutEffect(() => {
+    // Function Group: canvas sizing only, kept separate to avoid draw/erase blink.
+    const canvases = [boardCanvasRef.current, previewCanvasRef.current].filter(Boolean);
+
+    if (canvases.length === 0 || !viewportSize.width || !viewportSize.height) {
       return;
     }
 
     const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(viewportSize.width * devicePixelRatio);
-    canvas.height = Math.floor(viewportSize.height * devicePixelRatio);
-    canvas.style.width = `${viewportSize.width}px`;
-    canvas.style.height = `${viewportSize.height}px`;
-
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      return;
-    }
-
-    context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    context.clearRect(0, 0, viewportSize.width, viewportSize.height);
-
-    const drawStroke = (stroke) => {
-      if (stroke.type !== "stroke" || stroke.points.length === 0) {
-        return;
-      }
-
-      context.save();
-      context.globalCompositeOperation =
-        stroke.tool === "eraser" ? "destination-out" : "source-over";
-      context.strokeStyle = stroke.color;
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      context.lineWidth = Math.max(2.4, stroke.size * Math.max(viewport.scale, 0.18));
-      context.beginPath();
-
-      const firstPoint = worldToScreen(stroke.points[0], viewport);
-      context.moveTo(firstPoint.x, firstPoint.y);
-
-      if (stroke.points.length === 1) {
-        context.lineTo(firstPoint.x + 0.01, firstPoint.y + 0.01);
-      } else {
-        stroke.points.slice(1).forEach((point) => {
-          const screenPoint = worldToScreen(point, viewport);
-          context.lineTo(screenPoint.x, screenPoint.y);
-        });
-      }
-
-      context.stroke();
-      context.restore();
-    };
-
-    const drawText = (textAction) => {
-      if (textAction.type !== "text" || !textAction.text.trim()) {
-        return;
-      }
-
-      const lines = textAction.text.split("\n");
-      const screenPoint = worldToScreen(textAction, viewport);
-      const textSize = Math.max(14, textAction.size * Math.max(viewport.scale, 0.2));
-
-      context.save();
-      context.font = `700 ${textSize}px "Space Grotesk", sans-serif`;
-      context.fillStyle = textAction.color;
-      context.textBaseline = "top";
-      lines.forEach((line, index) => {
-        context.fillText(line, screenPoint.x, screenPoint.y + index * textSize * 1.22);
-      });
-      context.restore();
-    };
-
-    boardActions.forEach((action) => {
-      if (action.type === "stroke") {
-        drawStroke(action);
-      } else {
-        drawText(action);
-      }
+    canvases.forEach((canvas) => {
+      canvas.width = Math.floor(viewportSize.width * devicePixelRatio);
+      canvas.height = Math.floor(viewportSize.height * devicePixelRatio);
+      canvas.style.width = `${viewportSize.width}px`;
+      canvas.style.height = `${viewportSize.height}px`;
     });
+    renderBoardCanvasNow();
+    renderPreviewCanvasNow();
+  }, [renderBoardCanvasNow, renderPreviewCanvasNow, viewportSize.height, viewportSize.width]);
 
-    if (currentStroke) {
-      drawStroke(currentStroke);
-    }
-  }, [boardActions, currentStroke, viewport, viewportSize.height, viewportSize.width]);
+  useLayoutEffect(() => {
+    // Function Group: committed board canvas renderer.
+    renderBoardCanvasRef.current = () => {
+      const canvas = boardCanvasRef.current;
+
+      if (!canvas || !viewportSize.width || !viewportSize.height) {
+        return;
+      }
+
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        return;
+      }
+
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      context.globalAlpha = 1;
+      context.imageSmoothingEnabled = true;
+
+      const drawStroke = (stroke) => {
+        if (stroke.type !== "stroke" || stroke.points.length === 0) {
+          return;
+        }
+
+        context.save();
+        context.globalCompositeOperation =
+          stroke.tool === "eraser" ? "destination-out" : "source-over";
+        context.strokeStyle = stroke.color;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        context.lineWidth = Math.max(2.4, stroke.size * Math.max(viewport.scale, 0.18));
+        if (stroke.tool === "pen") {
+          context.shadowColor = stroke.color;
+          context.shadowBlur = 4;
+        }
+        context.beginPath();
+
+        const firstPoint = worldToScreen(stroke.points[0], viewport);
+        context.moveTo(firstPoint.x, firstPoint.y);
+
+        if (stroke.points.length === 1) {
+          context.lineTo(firstPoint.x + 0.01, firstPoint.y + 0.01);
+        } else {
+          stroke.points.slice(1).forEach((point) => {
+            const screenPoint = worldToScreen(point, viewport);
+            context.lineTo(screenPoint.x, screenPoint.y);
+          });
+        }
+
+        context.stroke();
+        context.restore();
+      };
+
+      const drawText = (textAction) => {
+        if (textAction.type !== "text" || !textAction.text.trim()) {
+          return;
+        }
+
+        const lines = textAction.text.split("\n");
+        const screenPoint = worldToScreen(textAction, viewport);
+        const textSize = Math.max(14, textAction.size * Math.max(viewport.scale, 0.2));
+
+        context.save();
+        context.font = `700 ${textSize}px "Space Grotesk", sans-serif`;
+        context.fillStyle = textAction.color;
+        context.textBaseline = "top";
+        lines.forEach((line, index) => {
+          context.fillText(line, screenPoint.x, screenPoint.y + index * textSize * 1.22);
+        });
+        context.restore();
+      };
+
+      boardActions.forEach((action) => {
+        if (action.type === "stroke") {
+          drawStroke(action);
+        } else {
+          drawText(action);
+        }
+      });
+    };
+
+    renderBoardCanvasNow();
+  }, [boardActions, renderBoardCanvasNow, viewport, viewportSize.height, viewportSize.width]);
+
+  useLayoutEffect(() => {
+    renderPreviewCanvasNow();
+  }, [renderPreviewCanvasNow]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -1787,14 +2075,16 @@ export default function HcoDashboardPage() {
 
       if (event.key === "Escape") {
         strokeRef.current = null;
-        setCurrentStroke(null);
+        panSessionRef.current = null;
+        setIsTemporaryPanActive(false);
+        renderPreviewCanvasNow();
         setTextDraft(null);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [renderPreviewCanvasNow]);
 
   useEffect(() => {
     if (!saveFeedback) {
@@ -1880,6 +2170,10 @@ export default function HcoDashboardPage() {
       return;
     }
 
+    viewportRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
     setIntelModalMarkerId(marker.id);
   };
 
@@ -1973,23 +2267,46 @@ export default function HcoDashboardPage() {
           ]
         : stroke.points;
 
+    const committedStroke = {
+      ...stroke,
+      points,
+    };
+
+    commitStrokeToBoardCanvas(committedStroke);
+    strokeRef.current = null;
+    renderPreviewCanvasNow();
+
     setBoardActions((currentActions) => [
       ...currentActions,
-      {
-        ...stroke,
-        points,
-      },
+      committedStroke,
     ]);
     setRedoStack([]);
-    strokeRef.current = null;
-    setCurrentStroke(null);
   };
 
+  const focusMarkerOnMap = useCallback(
+    (marker, targetScale = viewport.scale < 0.18 ? 0.18 : viewport.scale) => {
+      centerOnMarker(marker, targetScale);
+
+      if (viewportRef.current) {
+        window.requestAnimationFrame(() => {
+          viewportRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
+      }
+    },
+    [centerOnMarker, viewport.scale],
+  );
+
   const handleViewportPointerDown = (event) => {
+    // Function Group: map navigation interactions.
+    const isTemporaryPan = event.button === 2;
+
     if (
-      activeTool !== "pan" ||
       !viewportRef.current ||
-      event.button !== 0 ||
+      (!isTemporaryPan && activeTool !== "pan") ||
+      (![0, 2].includes(event.button)) ||
       event.isPrimary === false ||
       event.target.closest?.("[data-map-toolbar='true']")
     ) {
@@ -2004,8 +2321,11 @@ export default function HcoDashboardPage() {
       startY: point.y,
       offsetX: viewport.offsetX,
       offsetY: viewport.offsetY,
+      mode: isTemporaryPan ? "context-pan" : "pan",
     };
+    setIsTemporaryPanActive(isTemporaryPan);
 
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -2032,7 +2352,12 @@ export default function HcoDashboardPage() {
 
     const panSession = panSessionRef.current;
 
-    if (!panSession || activeTool !== "pan" || !viewportRef.current) {
+    if (
+      !panSession ||
+      (!["pan", "context-pan"].includes(panSession.mode)) ||
+      (panSession.mode !== "context-pan" && activeTool !== "pan") ||
+      !viewportRef.current
+    ) {
       return;
     }
 
@@ -2057,6 +2382,7 @@ export default function HcoDashboardPage() {
       if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
+      setIsTemporaryPanActive(false);
       panSessionRef.current = null;
     }
   };
@@ -2076,6 +2402,11 @@ export default function HcoDashboardPage() {
   };
 
   const handleCanvasPointerDown = (event) => {
+    // Function Group: drawing, erasing, and tactical note input interactions.
+    if (event.button === 2) {
+      return;
+    }
+
     if (!viewportRef.current) {
       return;
     }
@@ -2110,11 +2441,29 @@ export default function HcoDashboardPage() {
     };
 
     strokeRef.current = nextStroke;
-    setCurrentStroke(nextStroke);
+    event.preventDefault();
+    renderPreviewCanvasNow();
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handleCanvasPointerMove = (event) => {
+    if (panSessionRef.current?.mode === "context-pan" && viewportRef.current) {
+      const point = getRelativePoint(event, viewportRef.current);
+      const panSession = panSessionRef.current;
+
+      setViewport((currentViewport) =>
+        normalizeViewportForFrame(
+          {
+            ...currentViewport,
+            offsetX: panSession.offsetX + point.x - panSession.startX,
+            offsetY: panSession.offsetY + point.y - panSession.startY,
+          },
+          viewportSize,
+        ),
+      );
+      return;
+    }
+
     if (!strokeRef.current || !viewportRef.current) {
       return;
     }
@@ -2142,11 +2491,34 @@ export default function HcoDashboardPage() {
     };
 
     strokeRef.current = nextStroke;
-    setCurrentStroke(nextStroke);
+    renderPreviewCanvasNow();
   };
 
-  const handleCanvasPointerUp = () => {
+  const handleCanvasPointerUp = (event) => {
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    if (isTemporaryPanActive) {
+      setIsTemporaryPanActive(false);
+      panSessionRef.current = null;
+      return;
+    }
+
     finalizeStroke();
+  };
+
+  const handleCanvasPointerCancel = (event) => {
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    strokeRef.current = null;
+    if (isTemporaryPanActive) {
+      setIsTemporaryPanActive(false);
+      panSessionRef.current = null;
+    }
+    renderPreviewCanvasNow();
   };
 
   const textDraftScreenPosition = textDraft
@@ -2242,7 +2614,13 @@ export default function HcoDashboardPage() {
             isMapFullscreen
               ? "mt-0 h-screen min-h-screen rounded-none border-0 shadow-none"
               : "mt-5 h-[58vh] min-h-[480px] rounded-[28px] border border-white/8 shadow-[0_24px_90px_rgba(0,0,0,0.32)] md:h-[64vh] xl:h-[70vh]",
-            activeTool === "pan" ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair",
+            isTemporaryPanActive
+              ? "cursor-grabbing"
+              : activeTool === "pan"
+                ? "cursor-grab active:cursor-grabbing"
+                : activeTool === "text"
+                  ? "cursor-copy"
+                  : "cursor-crosshair",
           ].join(" ")}
           style={{ touchAction: "none" }}
         >
@@ -2350,15 +2728,23 @@ export default function HcoDashboardPage() {
             </div>
 
             <canvas
-              ref={canvasRef}
+              ref={boardCanvasRef}
+              className="pointer-events-none absolute inset-0 z-[13]"
+              style={{ touchAction: "none" }}
+            />
+
+            <canvas
+              ref={previewCanvasRef}
               onPointerDown={handleCanvasPointerDown}
               onPointerMove={handleCanvasPointerMove}
               onPointerUp={handleCanvasPointerUp}
-              onPointerCancel={handleCanvasPointerUp}
+              onPointerCancel={handleCanvasPointerCancel}
+              onContextMenu={(event) => event.preventDefault()}
               className={[
-                "absolute inset-0",
+                "absolute inset-0 z-[14]",
                 activeTool === "pan" ? "pointer-events-none" : "pointer-events-auto",
               ].join(" ")}
+              style={{ touchAction: "none" }}
             />
 
             <AnimatePresence>
@@ -2777,7 +3163,7 @@ export default function HcoDashboardPage() {
                 </span>
               ) : null}
               <p className="font-public text-[10px] uppercase tracking-[0.18em] text-lime-300">
-                Drag = Pan • Pencil = Gambar • Delete = Hapus Coretan • Text = Klik Map
+                Drag = Pan • Klik Kanan = Pan Cepat • Pencil = Gambar • Delete = Hapus Coretan • Text = Klik Map
               </p>
             </div>
           </div>
@@ -2987,12 +3373,7 @@ export default function HcoDashboardPage() {
                     active={false}
                     icon="focus"
                     label="Focus Marker"
-                    onClick={() =>
-                      centerOnMarker(
-                        selectedMarker,
-                        viewport.scale < 0.18 ? 0.18 : viewport.scale,
-                      )
-                    }
+                    onClick={() => focusMarkerOnMap(selectedMarker)}
                   />
                   <PlannerButton
                     active={false}
@@ -3029,10 +3410,7 @@ export default function HcoDashboardPage() {
                   type="button"
                   onClick={() => {
                     setSelectedMarkerId(marker.id);
-                    centerOnMarker(
-                      marker,
-                      viewport.scale < 0.18 ? 0.18 : viewport.scale,
-                    );
+                    focusMarkerOnMap(marker);
                     openThreatIntel(marker);
                   }}
                   className="rounded-[18px] border border-white/8 bg-[#151a1d]/90 px-4 py-3 text-left backdrop-blur-xl transition hover:border-lime-300/20 hover:bg-lime-300/[0.06]"
