@@ -26,7 +26,7 @@ Catatan penting dari sisi Hostinger:
 
 - Hostinger memang support `Node.js app`
 - tapi `MongoDB` bukan database bawaan di hosting biasa mereka
-- jadi jalur paling aman adalah `MongoDB Atlas` atau VPS yang memang kamu kelola sendiri
+- jadi jalur paling aman adalah `MongoDB Atlas` atau VPS yang memang Kita kelola sendiri
 
 Kenapa saya saranin begitu:
 
