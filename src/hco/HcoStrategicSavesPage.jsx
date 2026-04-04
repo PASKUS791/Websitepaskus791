@@ -10,7 +10,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import paskusLogo from "../assets/paskus.webp";
+import { useAuth } from "../lib/auth";
 import { RESOURCE_KEYS, useSyncedResource } from "../lib/resources";
+import DeleteBurstOverlay from "./DeleteBurstOverlay";
+import { normalizeCustomMaps } from "./customMaps";
+import { isPrimaryHcoAdminUser } from "./hcoAccess";
 import {
   applyStrategicSaveToPlanner,
   dispatchStrategicSave,
@@ -33,6 +37,7 @@ function formatSaveDate(isoString) {
 
 export default function HcoStrategicSavesPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     data: saves,
     setData: setSaves,
@@ -43,11 +48,27 @@ export default function HcoStrategicSavesPage() {
     saveDelay: 550,
     normalize: normalizeStrategicSaves,
   });
+  const { setData: setCustomMaps } = useSyncedResource(RESOURCE_KEYS.hcoCustomMaps, {
+    defaultValue: [],
+    normalize: normalizeCustomMaps,
+  });
   const [sendStatus, setSendStatus] = useState({});
+  const [pendingDeleteSaveId, setPendingDeleteSaveId] = useState(null);
 
+  const visibleSaves = useMemo(
+    () =>
+      saves.filter(
+        (save) =>
+          String(save.ownerId || "") === String(user?.id || "") ||
+          String(save.ownerUsername || "").toLowerCase() ===
+            String(user?.username || "").toLowerCase() ||
+          ((!save.ownerId && !save.ownerUsername) && isPrimaryHcoAdminUser(user)),
+      ),
+    [saves, user],
+  );
   const totalActions = useMemo(
-    () => saves.reduce((count, save) => count + (save.actionCount ?? 0), 0),
-    [saves],
+    () => visibleSaves.reduce((count, save) => count + (save.actionCount ?? 0), 0),
+    [visibleSaves],
   );
 
   const handleDelete = (saveId) => {
@@ -55,6 +76,27 @@ export default function HcoStrategicSavesPage() {
   };
 
   const handleApply = async (save) => {
+    if (save.sourceType === "custom-map" && save.sourceMapId) {
+      setCustomMaps((currentMaps) =>
+        currentMaps.map((entry) =>
+          entry.id === save.sourceMapId
+            ? {
+                ...entry,
+                updatedAt: new Date().toISOString(),
+                board: {
+                  actions: Array.isArray(save.snapshot?.actions)
+                    ? save.snapshot.actions
+                    : [],
+                  viewport: save.snapshot?.viewport ?? null,
+                },
+              }
+            : entry,
+        ),
+      );
+      navigate(`/hco/dashboard/custom-maps/${encodeURIComponent(save.sourceMapId)}`);
+      return;
+    }
+
     await applyStrategicSaveToPlanner(save);
     navigate("/hco/dashboard");
   };
@@ -100,8 +142,9 @@ export default function HcoStrategicSavesPage() {
               Strategic Saves
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-stone-400">
-              Semua snapshot strategi dari map planner disimpan di database
-              server dan dapat langsung di-apply kembali ke board Ronograd.
+              Semua snapshot strategi dari map planner utama dan custom map
+              disimpan di database server dan dapat langsung di-apply kembali ke
+              board sumbernya.
             </p>
 
             <div className="mt-5 max-w-3xl rounded-[24px] border border-white/8 bg-gradient-to-r from-white/[0.05] to-lime-300/[0.06] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
@@ -138,7 +181,7 @@ export default function HcoStrategicSavesPage() {
                 Saved Strategies
               </p>
               <p className="mt-2 font-sans text-2xl font-bold text-stone-100">
-                {saves.length}
+                {visibleSaves.length}
               </p>
             </div>
             <div className="rounded-[22px] border border-white/8 bg-white/[0.03] px-5 py-4 backdrop-blur-xl">
@@ -170,7 +213,7 @@ export default function HcoStrategicSavesPage() {
         </section>
       ) : null}
 
-      {!loading && saves.length === 0 ? (
+      {!loading && visibleSaves.length === 0 ? (
         <section className="rounded-[30px] border border-dashed border-white/10 bg-white/[0.03] p-8 text-center backdrop-blur-xl">
           <p className="font-public text-[10px] uppercase tracking-[0.24em] text-lime-300/80">
             No Snapshot
@@ -183,7 +226,7 @@ export default function HcoStrategicSavesPage() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-        {saves.map((save) => (
+        {visibleSaves.map((save) => (
           <article
             key={save.id}
             role="button"
@@ -217,6 +260,11 @@ export default function HcoStrategicSavesPage() {
                   <h2 className="mt-2 font-sans text-xl font-bold uppercase text-stone-100">
                     {save.title}
                   </h2>
+                  <p className="mt-2 font-public text-[9px] uppercase tracking-[0.18em] text-stone-500">
+                    {save.sourceType === "custom-map"
+                      ? `Custom Map • ${save.sourceMapTitle || "Custom Board"}`
+                      : "Map Planner • Ronograd"}
+                  </p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 font-public text-[9px] uppercase tracking-[0.18em] text-stone-300">
                   {formatSaveDate(save.updatedAt || save.createdAt)}
@@ -238,10 +286,10 @@ export default function HcoStrategicSavesPage() {
                 </div>
                 <div className="rounded-[18px] border border-white/8 bg-black/20 px-4 py-3">
                   <p className="font-public text-[8px] uppercase tracking-[0.18em] text-stone-500">
-                    Categories
+                    Source
                   </p>
                   <p className="mt-2 font-sans text-2xl font-bold text-stone-100">
-                    {save.categoryCount ?? 0}
+                    {save.sourceType === "custom-map" ? "CSTM" : "MAIN"}
                   </p>
                 </div>
                 <div className="rounded-[18px] border border-white/8 bg-black/20 px-4 py-3">
@@ -294,7 +342,7 @@ export default function HcoStrategicSavesPage() {
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    handleDelete(save.id);
+                    setPendingDeleteSaveId(save.id);
                   }}
                   className="rounded-[18px] border border-rose-500/18 bg-rose-500/10 px-4 py-3 font-public text-[10px] font-bold uppercase tracking-[0.16em] text-rose-100 transition hover:bg-rose-500/16"
                 >
@@ -305,6 +353,16 @@ export default function HcoStrategicSavesPage() {
           </article>
         ))}
       </div>
+
+      <DeleteBurstOverlay
+        visible={Boolean(pendingDeleteSaveId)}
+        onComplete={() => {
+          if (pendingDeleteSaveId) {
+            handleDelete(pendingDeleteSaveId);
+          }
+          setPendingDeleteSaveId(null);
+        }}
+      />
     </div>
   );
 }

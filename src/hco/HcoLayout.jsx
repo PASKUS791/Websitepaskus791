@@ -12,7 +12,13 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import paskusLogo from "../assets/paskus.webp";
 import { useAuth } from "../lib/auth";
+import { RESOURCE_KEYS, useSyncedResource } from "../lib/resources";
 import { useAnimatedFavicon } from "../lib/useAnimatedFavicon";
+import {
+  getHcoAccessForUser,
+  isPrimaryHcoAdminUser,
+  normalizeHcoAccessEntries,
+} from "./hcoAccess";
 
 const NAV_ITEMS = [
   {
@@ -21,6 +27,15 @@ const NAV_ITEMS = [
     to: "/hco/dashboard",
     end: true,
     icon: "map",
+    permission: "mainPlanner",
+  },
+  {
+    label: "Map Custom",
+    hint: "Draw-only custom board",
+    to: "/hco/dashboard/custom-maps",
+    end: false,
+    icon: "custom-map",
+    permission: "customMaps",
   },
   {
     label: "Strategic Saves",
@@ -28,15 +43,70 @@ const NAV_ITEMS = [
     to: "/hco/dashboard/saves",
     end: false,
     icon: "save",
+    permission: "saves",
+  },
+  {
+    label: "Tambah User Map Planner",
+    hint: "Grant HCO access control",
+    to: "/hco/dashboard/users",
+    end: false,
+    icon: "users",
+    adminOnly: true,
   },
 ];
 
-const PAGE_TITLES = {
-  "/hco/dashboard": "HCO Map Planner",
-  "/hco/dashboard/saves": "Strategic Saves",
-};
+function resolvePageTitle(pathname) {
+  if (pathname === "/hco/dashboard") {
+    return "HCO Map Planner";
+  }
+
+  if (pathname.startsWith("/hco/dashboard/custom-maps/")) {
+    return "Custom Map Planner";
+  }
+
+  if (pathname === "/hco/dashboard/custom-maps") {
+    return "Map Custom";
+  }
+
+  if (pathname === "/hco/dashboard/saves") {
+    return "Strategic Saves";
+  }
+
+  if (pathname === "/hco/dashboard/users") {
+    return "Tambah User Map Planner";
+  }
+
+  return "HCO Center";
+}
 
 function HcoNavIcon({ name }) {
+  if (name === "custom-map") {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        className="h-5 w-5 fill-none stroke-current stroke-[1.6]"
+      >
+        <rect x="3.5" y="4.5" width="13" height="11" rx="1.8" />
+        <path d="m6.5 12 2.6-2.8 2.4 2.2 2-1.8 2 2.4" />
+        <circle cx="7.2" cy="7.7" r="1.1" />
+      </svg>
+    );
+  }
+
+  if (name === "users") {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        className="h-5 w-5 fill-none stroke-current stroke-[1.6]"
+      >
+        <path d="M7 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+        <path d="M13.5 9a1.8 1.8 0 1 0 0-3.6A1.8 1.8 0 0 0 13.5 9Z" />
+        <path d="M3.8 14.8c.7-1.9 2.2-2.9 4.2-2.9s3.5 1 4.2 2.9" />
+        <path d="M11.8 14.6c.45-1.35 1.45-2.1 2.95-2.1 1.4 0 2.4.65 2.95 1.95" />
+      </svg>
+    );
+  }
+
   if (name === "save") {
     return (
       <svg
@@ -67,6 +137,10 @@ export default function HcoLayout() {
   const navigate = useNavigate();
   const outlet = useOutlet();
   const { logout, user } = useAuth();
+  const { data: accessEntries } = useSyncedResource(RESOURCE_KEYS.hcoMapPlannerUsers, {
+    defaultValue: [],
+    normalize: normalizeHcoAccessEntries,
+  });
   useAnimatedFavicon();
   const [time, setTime] = useState(new Date());
 
@@ -75,15 +149,52 @@ export default function HcoLayout() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const pageTitle = useMemo(
-    () => PAGE_TITLES[location.pathname] ?? "HCO Center",
-    [location.pathname],
+  const pageTitle = useMemo(() => resolvePageTitle(location.pathname), [location.pathname]);
+  const isPrimaryAdmin = useMemo(() => isPrimaryHcoAdminUser(user), [user]);
+  const accessState = useMemo(
+    () => getHcoAccessForUser(user, accessEntries),
+    [accessEntries, user],
   );
+  const navItems = useMemo(
+    () =>
+      NAV_ITEMS.filter((item) => {
+        if (item.adminOnly && !isPrimaryAdmin) {
+          return false;
+        }
+
+        if (item.permission && !accessState[item.permission]) {
+          return false;
+        }
+
+        return true;
+      }),
+    [accessState, isPrimaryAdmin],
+  );
+  const firstAllowedPath = navItems[0]?.to || "/hco";
+  const isRouteBlocked = useMemo(() => {
+    const isPlannerRoute = location.pathname === "/hco/dashboard";
+    const isCustomMapRoute = location.pathname.startsWith("/hco/dashboard/custom-maps");
+    const isSaveRoute = location.pathname.startsWith("/hco/dashboard/saves");
+    const isUsersRoute = location.pathname.startsWith("/hco/dashboard/users");
+
+    return (
+      (isPlannerRoute && !accessState.mainPlanner) ||
+      (isCustomMapRoute && !accessState.customMaps) ||
+      (isSaveRoute && !accessState.saves) ||
+      (isUsersRoute && !isPrimaryAdmin)
+    );
+  }, [accessState, isPrimaryAdmin, location.pathname]);
 
   const handleSignOut = async () => {
     await logout();
     navigate("/hco", { replace: true });
   };
+
+  useEffect(() => {
+    if (isRouteBlocked && firstAllowedPath && location.pathname !== firstAllowedPath) {
+      navigate(firstAllowedPath, { replace: true });
+    }
+  }, [firstAllowedPath, isRouteBlocked, location.pathname, navigate]);
 
   return (
     <div className="min-h-screen bg-[#090d0f] font-sans text-stone-100">
@@ -119,7 +230,7 @@ export default function HcoLayout() {
 
               <LayoutGroup id="hco-nav">
                 <nav className="mt-8 flex flex-col gap-3">
-                {NAV_ITEMS.map((item) => (
+                {navItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
@@ -207,7 +318,7 @@ export default function HcoLayout() {
                 exit={{ opacity: 0, y: -18, filter: "blur(16px)" }}
                 transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
               >
-                {outlet}
+                {isRouteBlocked ? null : outlet}
               </motion.div>
             </AnimatePresence>
           </section>

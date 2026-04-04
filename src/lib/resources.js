@@ -17,6 +17,8 @@ export const RESOURCE_KEYS = {
   dashboardTrainingSessions: "dashboard.trainingSessions",
   hcoPlannerState: "hco.plannerState",
   hcoStrategicSaves: "hco.strategicSaves",
+  hcoCustomMaps: "hco.customMaps",
+  hcoMapPlannerUsers: "hco.mapPlannerUsers",
 };
 
 function cloneDefaultValue(defaultValue) {

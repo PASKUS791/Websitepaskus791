@@ -19,7 +19,10 @@ import {
   TindakanPage,
 } from "./dashboard/pages";
 import HcoLayout from "./hco/HcoLayout";
+import HcoCustomMapPlannerPage from "./hco/HcoCustomMapPlannerPage";
+import HcoCustomMapsPage from "./hco/HcoCustomMapsPage";
 import HcoDashboardPage from "./hco/HcoDashboardPage";
+import HcoMapPlannerUsersPage from "./hco/HcoMapPlannerUsersPage";
 import HcoStrategicSavesPage from "./hco/HcoStrategicSavesPage";
 import { useAuth } from "./lib/auth";
 import HcoLoginPortal from "./pages/HcoLoginPortal";
@@ -99,7 +102,10 @@ export default function App() {
       >
         <Route path="/hco/dashboard" element={<HcoLayout />}>
           <Route index element={<HcoDashboardPage />} />
+          <Route path="custom-maps" element={<HcoCustomMapsPage />} />
+          <Route path="custom-maps/:mapId" element={<HcoCustomMapPlannerPage />} />
           <Route path="saves" element={<HcoStrategicSavesPage />} />
+          <Route path="users" element={<HcoMapPlannerUsersPage />} />
         </Route>
       </Route>
 

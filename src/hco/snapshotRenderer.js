@@ -17,6 +17,36 @@ const DEFAULT_FRAME = {
 };
 const imageCache = new Map();
 
+function getSnapshotMapConfig(save) {
+  const customMap = save?.snapshot?.customMap;
+
+  if (
+    customMap &&
+    typeof customMap.imageDataUrl === "string" &&
+    customMap.imageDataUrl.startsWith("data:image/") &&
+    Number.isFinite(customMap.width) &&
+    Number.isFinite(customMap.height) &&
+    customMap.width > 0 &&
+    customMap.height > 0
+  ) {
+    return {
+      sourceType: "custom-map",
+      width: customMap.width,
+      height: customMap.height,
+      imageSource: customMap.imageDataUrl,
+      includeMarkers: false,
+    };
+  }
+
+  return {
+    sourceType: "main-planner",
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT,
+    imageSource: RONOGRAD_MAP_DATA.mapImage,
+    includeMarkers: true,
+  };
+}
+
 function loadImage(source) {
   if (imageCache.has(source)) {
     return imageCache.get(source);
@@ -62,6 +92,8 @@ function worldToScreen(point, viewport) {
 }
 
 function getViewport(snapshot) {
+  const mapConfig = getSnapshotMapConfig({ snapshot });
+
   if (
     snapshot?.viewport &&
     Number.isFinite(snapshot.viewport.scale) &&
@@ -76,14 +108,14 @@ function getViewport(snapshot) {
   }
 
   const fittedScale = Math.min(
-    DEFAULT_FRAME.width / MAP_WIDTH,
-    DEFAULT_FRAME.height / MAP_HEIGHT,
+    DEFAULT_FRAME.width / mapConfig.width,
+    DEFAULT_FRAME.height / mapConfig.height,
   );
 
   return {
     scale: fittedScale,
-    offsetX: (DEFAULT_FRAME.width - MAP_WIDTH * fittedScale) / 2,
-    offsetY: (DEFAULT_FRAME.height - MAP_HEIGHT * fittedScale) / 2,
+    offsetX: (DEFAULT_FRAME.width - mapConfig.width * fittedScale) / 2,
+    offsetY: (DEFAULT_FRAME.height - mapConfig.height * fittedScale) / 2,
   };
 }
 
@@ -114,10 +146,11 @@ async function renderViewportCanvas(save) {
   const snapshot = save?.snapshot ?? {};
   const frame = getFrame(snapshot);
   const viewport = getViewport(snapshot);
+  const mapConfig = getSnapshotMapConfig(save);
   const enabledCategoryIds = Array.isArray(snapshot.enabledCategoryIds)
     ? snapshot.enabledCategoryIds
     : [];
-  const mapImage = await loadImage(RONOGRAD_MAP_DATA.mapImage);
+  const mapImage = await loadImage(mapConfig.imageSource);
   const canvas = document.createElement("canvas");
 
   canvas.width = Math.round(frame.width);
@@ -131,7 +164,7 @@ async function renderViewportCanvas(save) {
   context.save();
   context.translate(viewport.offsetX, viewport.offsetY);
   context.scale(viewport.scale, viewport.scale);
-  context.drawImage(mapImage, 0, 0, MAP_WIDTH, MAP_HEIGHT);
+  context.drawImage(mapImage, 0, 0, mapConfig.width, mapConfig.height);
   context.restore();
 
   context.save();
@@ -151,45 +184,47 @@ async function renderViewportCanvas(save) {
   }
   context.restore();
 
-  const categoriesById = new Map(
-    RONOGRAD_MAP_DATA.categories.map((category) => [category.id, category]),
-  );
-
-  RONOGRAD_MAP_DATA.markers.forEach((marker) => {
-    if (!enabledCategoryIds.includes(marker.categoryId)) {
-      return;
-    }
-
-    const category = categoriesById.get(marker.categoryId);
-    const position = worldToScreen(
-      {
-        x: marker.position[0],
-        y: MAP_HEIGHT - marker.position[1],
-      },
-      viewport,
+  if (mapConfig.includeMarkers) {
+    const categoriesById = new Map(
+      RONOGRAD_MAP_DATA.categories.map((category) => [category.id, category]),
     );
 
-    if (
-      position.x < -24 ||
-      position.x > canvas.width + 24 ||
-      position.y < -24 ||
-      position.y > canvas.height + 24
-    ) {
-      return;
-    }
+    RONOGRAD_MAP_DATA.markers.forEach((marker) => {
+      if (!enabledCategoryIds.includes(marker.categoryId)) {
+        return;
+      }
 
-    context.save();
-    context.fillStyle = category?.color ?? "#E9C349";
-    context.strokeStyle = "rgba(248,250,252,0.92)";
-    context.lineWidth = 1.4;
-    context.shadowColor = "rgba(0,0,0,0.45)";
-    context.shadowBlur = 16;
-    context.beginPath();
-    context.arc(position.x, position.y, 7.5, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-    context.restore();
-  });
+      const category = categoriesById.get(marker.categoryId);
+      const position = worldToScreen(
+        {
+          x: marker.position[0],
+          y: mapConfig.height - marker.position[1],
+        },
+        viewport,
+      );
+
+      if (
+        position.x < -24 ||
+        position.x > canvas.width + 24 ||
+        position.y < -24 ||
+        position.y > canvas.height + 24
+      ) {
+        return;
+      }
+
+      context.save();
+      context.fillStyle = category?.color ?? "#E9C349";
+      context.strokeStyle = "rgba(248,250,252,0.92)";
+      context.lineWidth = 1.4;
+      context.shadowColor = "rgba(0,0,0,0.45)";
+      context.shadowBlur = 16;
+      context.beginPath();
+      context.arc(position.x, position.y, 7.5, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.restore();
+    });
+  }
 
   const actions = Array.isArray(snapshot.actions) ? snapshot.actions : [];
 

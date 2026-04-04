@@ -18,7 +18,9 @@ import {
   useState,
 } from "react";
 import RotatingPaskusLogo from "../components/RotatingPaskusLogo";
+import { useAuth } from "../lib/auth";
 import { RESOURCE_KEYS, useSyncedResource } from "../lib/resources";
+import { getHcoAccessForUser, normalizeHcoAccessEntries } from "./hcoAccess";
 import { MarkerCategoryGlyph } from "./markerIcons";
 import { getSupplementalMarkerIntel } from "./markerSupplementalIntel";
 import { RONOGRAD_MAP_DATA } from "./ronogradMapData";
@@ -55,6 +57,7 @@ const DRAW_TOOL_OPTIONS = [
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 3.4;
 const MAP_INTRO_MIN_DURATION = 8000;
+const QUICK_INTEL_PAGE_SIZE = 10;
 const PANEL_SHELL_CLASS =
   "rounded-[28px] border border-white/8 bg-white/[0.035] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:border-lime-300/16";
 
@@ -1214,6 +1217,7 @@ function ThreatIntelModal({ marker, intel, onClose }) {
 
 export default function HcoDashboardPage() {
   // Function Group: synced resources, runtime refs, and UI state.
+  const { user } = useAuth();
   const {
     data: plannerResource,
     setData: setPlannerResource,
@@ -1225,12 +1229,24 @@ export default function HcoDashboardPage() {
     normalize: loadStoredPlannerState,
   });
   const {
+    data: accessEntries,
+    ready: accessEntriesReady,
+  } = useSyncedResource(RESOURCE_KEYS.hcoMapPlannerUsers, {
+    defaultValue: [],
+    normalize: normalizeHcoAccessEntries,
+  });
+  const hcoAccess = useMemo(
+    () => getHcoAccessForUser(user, accessEntries),
+    [accessEntries, user],
+  );
+  const {
     data: strategicSaves,
     setData: setStrategicSaves,
   } = useSyncedResource(RESOURCE_KEYS.hcoStrategicSaves, {
     defaultValue: [],
     saveDelay: 550,
     normalize: normalizeStrategicSaves,
+    enabled: accessEntriesReady ? hcoAccess.saves : false,
   });
   const viewportRef = useRef(null);
   const boardCanvasRef = useRef(null);
@@ -1278,6 +1294,7 @@ export default function HcoDashboardPage() {
   const [isFullscreenToolbarVisible, setIsFullscreenToolbarVisible] = useState(true);
   const [isFullscreenToolbarHovered, setIsFullscreenToolbarHovered] = useState(false);
   const [isTemporaryPanActive, setIsTemporaryPanActive] = useState(false);
+  const [quickIntelPage, setQuickIntelPage] = useState(1);
   const boardActionsSignatureRef = useRef("");
 
   const categoriesById = useMemo(
@@ -1404,6 +1421,15 @@ export default function HcoDashboardPage() {
 
     return counts;
   }, [filteredMarkers]);
+  const quickIntelTotalPages = Math.max(
+    1,
+    Math.ceil(filteredMarkers.length / QUICK_INTEL_PAGE_SIZE),
+  );
+  const normalizedQuickIntelPage = clamp(quickIntelPage, 1, quickIntelTotalPages);
+  const pagedQuickIntelMarkers = useMemo(() => {
+    const startIndex = (normalizedQuickIntelPage - 1) * QUICK_INTEL_PAGE_SIZE;
+    return filteredMarkers.slice(startIndex, startIndex + QUICK_INTEL_PAGE_SIZE);
+  }, [filteredMarkers, normalizedQuickIntelPage]);
 
   const renderBoardCanvasNow = useCallback(() => {
     if (boardCanvasRenderFrameRef.current) {
@@ -1904,6 +1930,16 @@ export default function HcoDashboardPage() {
   }, [enabledCategoryIds, hoveredMarker, intelModalMarker, selectedMarker]);
 
   useEffect(() => {
+    setQuickIntelPage(1);
+  }, [deferredSearchTerm, enabledCategoryIds]);
+
+  useEffect(() => {
+    if (quickIntelPage > quickIntelTotalPages) {
+      setQuickIntelPage(quickIntelTotalPages);
+    }
+  }, [quickIntelPage, quickIntelTotalPages]);
+
+  useEffect(() => {
     // Function Group: persist local planner changes back to synced resource storage.
     if (!plannerHydratedRef.current) {
       return;
@@ -2151,6 +2187,11 @@ export default function HcoDashboardPage() {
   };
 
   const handleOpenSaveModal = () => {
+    if (!hcoAccess.saves) {
+      setSaveFeedback("Akses strategic save tidak tersedia untuk akun ini.");
+      return;
+    }
+
     const timestamp = new Date().toLocaleString("id-ID", {
       day: "2-digit",
       month: "short",
@@ -2180,6 +2221,12 @@ export default function HcoDashboardPage() {
   const handleSaveStrategy = async (event) => {
     event.preventDefault();
 
+    if (!hcoAccess.saves) {
+      setIsSaveModalOpen(false);
+      setSaveFeedback("Akun ini tidak memiliki izin menyimpan strategic save.");
+      return;
+    }
+
     const title = saveDraft.title.trim();
 
     if (!title) {
@@ -2188,6 +2235,9 @@ export default function HcoDashboardPage() {
 
     const nextSave = {
       id: createActionId("strategy"),
+      ownerId: user?.id ?? null,
+      ownerUsername: user?.username ?? "",
+      ownerLabel: user?.label ?? "HCO User",
       title,
       note: saveDraft.note.trim(),
       createdAt: new Date().toISOString(),
@@ -2216,7 +2266,7 @@ export default function HcoDashboardPage() {
     });
     nextSave.thumbnailDataUrl = thumbnailDataUrl;
 
-    const nextSaves = [nextSave, ...strategicSaves].slice(0, 32);
+    const nextSaves = [nextSave, ...strategicSaves].slice(0, 64);
     setStrategicSaves(nextSaves);
     setIsSaveModalOpen(false);
     setSaveFeedback(`Strategy saved: ${title}`);
@@ -3404,7 +3454,7 @@ export default function HcoDashboardPage() {
               Quick Intel List
             </p>
             <div className="mt-4 grid gap-2 md:grid-cols-2">
-              {filteredMarkers.slice(0, 10).map((marker) => (
+              {pagedQuickIntelMarkers.map((marker) => (
                 <button
                   key={marker.id}
                   type="button"
@@ -3437,6 +3487,33 @@ export default function HcoDashboardPage() {
                   </div>
                 </button>
               ))}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-4">
+              <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Page {normalizedQuickIntelPage} / {quickIntelTotalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <PlannerButton
+                  active={false}
+                  icon="undo"
+                  label="Prev"
+                  disabled={normalizedQuickIntelPage <= 1}
+                  onClick={() =>
+                    setQuickIntelPage((currentPage) => Math.max(1, currentPage - 1))
+                  }
+                />
+                <PlannerButton
+                  active={false}
+                  icon="redo"
+                  label="Next"
+                  disabled={normalizedQuickIntelPage >= quickIntelTotalPages}
+                  onClick={() =>
+                    setQuickIntelPage((currentPage) =>
+                      Math.min(quickIntelTotalPages, currentPage + 1),
+                    )
+                  }
+                />
+              </div>
             </div>
           </section>
         </section>

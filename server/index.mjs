@@ -159,6 +159,9 @@ const config = {
     12,
   ),
   production: process.env.NODE_ENV === "production",
+  primaryHcoAdminUsername: normalizeUsername(
+    process.env.HCO_ADMIN_USERNAME || "CosmoHCO",
+  ),
 };
 
 if (
@@ -232,6 +235,8 @@ const RESOURCE_SCOPES = {
   "dashboard.trainingSessions": "pelatih",
   "hco.plannerState": "hco",
   "hco.strategicSaves": "hco",
+  "hco.customMaps": "hco",
+  "hco.mapPlannerUsers": "hco",
 };
 
 const RESOURCE_DEFAULTS = {
@@ -245,6 +250,8 @@ const RESOURCE_DEFAULTS = {
     viewport: null,
   },
   "hco.strategicSaves": [],
+  "hco.customMaps": [],
+  "hco.mapPlannerUsers": [],
 };
 
 const requestRateBuckets = new Map();
@@ -301,6 +308,10 @@ const usersByScopeStatement = db.prepare(`
   FROM users
   WHERE scope = ? AND active = 1
   ORDER BY label COLLATE NOCASE ASC, username COLLATE NOCASE ASC
+`);
+const deleteUserByScopeAndUsernameStatement = db.prepare(`
+  DELETE FROM users
+  WHERE scope = ? AND username = ?
 `);
 const createUserStatement = db.prepare(`
   INSERT INTO users (scope, username, label, unit, password_hash, active, created_at, updated_at)
@@ -948,6 +959,70 @@ function validateOperatorPayload(body) {
   };
 }
 
+function validateHcoUserPayload(body) {
+  const username = normalizeUsername(body?.username);
+  const label = String(body?.label || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  const unit = String(body?.unit || "HCO Strategic Command")
+    .trim()
+    .replace(/\s+/g, " ");
+  const password = String(body?.password || "");
+
+  if (
+    !username ||
+    username.length < 3 ||
+    username.length > 64 ||
+    !/^[a-z0-9._@-]+$/i.test(username)
+  ) {
+    throw createHttpError(400, "Username user map planner tidak valid.");
+  }
+
+  if (!label || label.length < 3 || label.length > 80) {
+    throw createHttpError(400, "Nama user map planner wajib diisi dengan benar.");
+  }
+
+  if (!unit || unit.length < 3 || unit.length > 80) {
+    throw createHttpError(400, "Unit user map planner wajib diisi.");
+  }
+
+  if (password.length < 8 || password.length > 256) {
+    throw createHttpError(400, "Password user map planner minimal 8 karakter.");
+  }
+
+  return {
+    username,
+    label,
+    unit,
+    password,
+  };
+}
+
+function normalizeHcoAccessRecord(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const username = normalizeUsername(entry.username);
+
+  if (!username) {
+    return null;
+  }
+
+  return {
+    username,
+    access: {
+      mainPlanner: entry.access?.mainPlanner !== false,
+      customMaps: entry.access?.customMaps !== false,
+      saves: entry.access?.saves !== false,
+    },
+    updatedAt:
+      typeof entry.updatedAt === "string" && entry.updatedAt
+        ? entry.updatedAt
+        : nowIso(),
+  };
+}
+
 function detectThreatSignature(values) {
   const combined = values
     .map((value) => String(value || ""))
@@ -1030,6 +1105,14 @@ function sanitizeResourceValue(resourceName, value) {
     };
   }
 
+  if (resourceName === "hco.mapPlannerUsers") {
+    return Array.isArray(value)
+      ? value
+          .map((entry) => normalizeHcoAccessRecord(entry))
+          .filter(Boolean)
+      : [];
+  }
+
   return Array.isArray(value) ? value : RESOURCE_DEFAULTS[resourceName];
 }
 
@@ -1105,8 +1188,84 @@ function broadcastResourceChange(resourceName) {
   }
 }
 
-function isAuthorizedForResource(session, resourceName) {
-  return session?.user?.scope === RESOURCE_SCOPES[resourceName];
+function isPrimaryHcoAdmin(session) {
+  return (
+    session?.user?.scope === "hco" &&
+    normalizeUsername(session?.user?.username) === config.primaryHcoAdminUsername
+  );
+}
+
+function getHcoAccessStateForUser(username) {
+  const normalizedUsername = normalizeUsername(username);
+
+  if (!normalizedUsername) {
+    return {
+      mainPlanner: false,
+      customMaps: false,
+      saves: false,
+    };
+  }
+
+  if (normalizedUsername === config.primaryHcoAdminUsername) {
+    return {
+      mainPlanner: true,
+      customMaps: true,
+      saves: true,
+    };
+  }
+
+  const resource = readResource("hco.mapPlannerUsers");
+  const accessEntry = resource.value.find(
+    (entry) => normalizeUsername(entry.username) === normalizedUsername,
+  );
+
+  if (!accessEntry) {
+    return {
+      mainPlanner: true,
+      customMaps: true,
+      saves: true,
+    };
+  }
+
+  return {
+    mainPlanner: accessEntry.access?.mainPlanner !== false,
+    customMaps: accessEntry.access?.customMaps !== false,
+    saves: accessEntry.access?.saves !== false,
+  };
+}
+
+function isAuthorizedForResource(session, resourceName, method = "GET") {
+  if (session?.user?.scope !== RESOURCE_SCOPES[resourceName]) {
+    return false;
+  }
+
+  if (resourceName === "hco.mapPlannerUsers") {
+    return method === "GET" ? session?.user?.scope === "hco" : isPrimaryHcoAdmin(session);
+  }
+
+  if (session.user.scope !== "hco") {
+    return true;
+  }
+
+  const accessState = getHcoAccessStateForUser(session.user.username);
+
+  if (resourceName === "hco.plannerState") {
+    return accessState.mainPlanner;
+  }
+
+  if (resourceName === "hco.customMaps") {
+    if (method !== "GET" && !accessState.customMaps) {
+      return false;
+    }
+
+    return accessState.customMaps;
+  }
+
+  if (resourceName === "hco.strategicSaves") {
+    return accessState.saves;
+  }
+
+  return true;
 }
 
 function notAuthorized(response) {
@@ -1430,6 +1589,180 @@ async function handleRequest(request, response) {
     }
   }
 
+  if (path === "/api/hco/users" && request.method === "GET") {
+    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    const accessEntries = readResource("hco.mapPlannerUsers").value;
+    const accessByUsername = new Map(
+      accessEntries.map((entry) => [normalizeUsername(entry.username), entry]),
+    );
+    const users = usersByScopeStatement.all("hco").map((user) => {
+      const accessEntry = accessByUsername.get(normalizeUsername(user.username));
+
+      return {
+        id: user.id,
+        username: user.username,
+        label: user.label,
+        unit: user.unit,
+        access: accessEntry?.access ?? {
+          mainPlanner: true,
+          customMaps: true,
+          saves: true,
+        },
+        isPrimaryAdmin:
+          normalizeUsername(user.username) === config.primaryHcoAdminUsername,
+      };
+    });
+
+    sendJson(response, 200, {
+      ok: true,
+      users,
+    });
+    return;
+  }
+
+  if (path === "/api/hco/users" && request.method === "POST") {
+    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request);
+      const detectedThreat = detectThreatSignature([
+        body?.username,
+        body?.label,
+        body?.unit,
+        body?.password,
+      ]);
+
+      if (detectedThreat) {
+        sendSecurityBlock(
+          response,
+          403,
+          "Payload user map planner diblokir oleh sistem keamanan.",
+          detectedThreat,
+        );
+        return;
+      }
+
+      const nextUser = validateHcoUserPayload(body);
+      const existingUser = userByScopeAndUsernameStatement.get("hco", nextUser.username);
+
+      if (existingUser) {
+        sendError(response, 409, "Username HCO sudah digunakan.");
+        return;
+      }
+
+      const timestamp = nowIso();
+      createUserStatement.run(
+        "hco",
+        nextUser.username,
+        nextUser.label,
+        nextUser.unit,
+        hashPassword(nextUser.password),
+        timestamp,
+        timestamp,
+      );
+
+      const currentAccessEntries = readResource("hco.mapPlannerUsers").value;
+      const nextAccessEntries = [
+        ...currentAccessEntries.filter(
+          (entry) => normalizeUsername(entry.username) !== nextUser.username,
+        ),
+        {
+          username: nextUser.username,
+          access: {
+            mainPlanner: true,
+            customMaps: true,
+            saves: true,
+          },
+          updatedAt: timestamp,
+        },
+      ].sort((firstEntry, secondEntry) =>
+        String(firstEntry.username).localeCompare(String(secondEntry.username)),
+      );
+      writeResource("hco.mapPlannerUsers", nextAccessEntries);
+
+      sendJson(response, 201, {
+        ok: true,
+        message: "User map planner baru berhasil ditambahkan.",
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal menambahkan user map planner.",
+      );
+      return;
+    }
+  }
+
+  if (path.startsWith("/api/hco/users/") && request.method === "DELETE") {
+    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      const username = normalizeUsername(
+        decodeURIComponent(path.replace("/api/hco/users/", "")),
+      );
+
+      if (!username) {
+        sendError(response, 400, "Username user map planner tidak valid.");
+        return;
+      }
+
+      if (username === config.primaryHcoAdminUsername) {
+        sendError(response, 400, "Akun HCO utama tidak bisa dihapus.");
+        return;
+      }
+
+      const existingUser = userByScopeAndUsernameStatement.get("hco", username);
+
+      if (!existingUser) {
+        sendError(response, 404, "Anggota HCO tidak ditemukan.");
+        return;
+      }
+
+      sessionDeleteByUserStatement.run(existingUser.id);
+      deleteUserByScopeAndUsernameStatement.run("hco", username);
+
+      const currentAccessEntries = readResource("hco.mapPlannerUsers").value;
+      const nextAccessEntries = currentAccessEntries.filter(
+        (entry) => normalizeUsername(entry.username) !== username,
+      );
+      writeResource("hco.mapPlannerUsers", nextAccessEntries);
+
+      const currentStrategicSaves = readResource("hco.strategicSaves").value;
+      const nextStrategicSaves = currentStrategicSaves.filter(
+        (save) =>
+          String(save.ownerId || "") !== String(existingUser.id) &&
+          normalizeUsername(save.ownerUsername) !== username,
+      );
+      writeResource("hco.strategicSaves", nextStrategicSaves);
+
+      sendJson(response, 200, {
+        ok: true,
+        message: `Anggota ${existingUser.label} berhasil dihapus.`,
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal menghapus anggota HCO.",
+      );
+      return;
+    }
+  }
+
   if (path === "/api/events" && request.method === "GET") {
     if (!session) {
       notAuthorized(response);
@@ -1486,7 +1819,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    if (!isAuthorizedForResource(session, resourceName)) {
+    if (!isAuthorizedForResource(session, resourceName, request.method)) {
       notAuthorized(response);
       return;
     }
@@ -1539,7 +1872,13 @@ async function handleRequest(request, response) {
       path.replace("/api/hco/strategic-saves/", "").replace("/dispatch", ""),
     );
     const strategicSavesResource = readResource("hco.strategicSaves");
-    const strategicSave = strategicSavesResource.value.find((save) => save.id === saveId);
+    const strategicSave = strategicSavesResource.value.find(
+      (save) =>
+        save.id === saveId &&
+        (String(save.ownerId || "") === String(session.user.id) ||
+          normalizeUsername(save.ownerUsername) ===
+            normalizeUsername(session.user.username)),
+    );
 
     if (!strategicSave) {
       sendError(response, 404, "Strategic save tidak ditemukan.");
