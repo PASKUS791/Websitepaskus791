@@ -7,6 +7,12 @@ Dashboard operasional internal `PASKUS 791` dengan dua portal utama:
 
 Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time. Backend sekarang memakai `MongoDB` sebagai storage utama untuk lokal maupun deploy.
 
+Setup deploy yang direkomendasikan sekarang:
+
+- domain utama app: `https://staff.paskus791.cloud`
+- backend internal project ini: `/api`
+- proxy backend staff tim lain: `/staff-api` -> `https://api.paskus791.cloud`
+
 ## Stack
 
 - React 19
@@ -134,6 +140,11 @@ API:      http://localhost:8787
 
 Jika `5173` sedang dipakai, Vite bisa pindah ke port lain seperti `5174`.
 
+Catatan:
+
+- frontend lokal memakai proxy Vite untuk `/staff-api`
+- saat production, default `staffApi` sekarang juga bisa memakai `/staff-api` dari domain yang sama
+
 ## Reset dan Isi Data Test
 
 Untuk reset database dashboard lokal dan mengisi data uji:
@@ -196,6 +207,7 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_API_RATE_LIMIT_PER_MINUTE` | Rate limit umum API |
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
+| `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |
 | `DISCORD_STRATEGIC_WEBHOOK_URL` | Webhook dispatch strategic save |
@@ -226,11 +238,12 @@ Frontend memakai `useSyncedResource()` untuk load, save, dan update real-time le
 
 Alur production yang direkomendasikan:
 
-1. Deploy frontend hasil `npm run build` ke hosting static atau CDN.
+1. Build frontend dengan `npm run build`.
 2. Deploy backend `server/index.mjs` ke hosting Node / VPS.
 3. Sambungkan backend ke `MongoDB Atlas` atau MongoDB server lain lewat `MONGODB_URI`.
-4. Set `APP_ALLOWED_ORIGINS` ke domain frontend production.
-5. Jalankan backend dengan:
+4. Arahkan domain `staff.paskus791.cloud` ke server ini.
+5. Biarkan server ini melayani frontend build sekaligus endpoint `/api` dan proxy `/staff-api`.
+6. Jalankan backend dengan:
 
 ```bash
 npm start
@@ -241,17 +254,18 @@ Minimal env production yang wajib:
 ```env
 NODE_ENV=production
 API_PORT=8787
-APP_ALLOWED_ORIGINS=https://domain-kamu.com
+APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
 APP_SESSION_SECRET=secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
+STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=ganti-password-production
 HCO_ADMIN_USERNAME=CosmoHCO
 HCO_ADMIN_PASSWORD=ganti-password-production
-PUBLIC_APP_URL=https://domain-kamu.com
+PUBLIC_APP_URL=https://staff.paskus791.cloud
 ```
 
 Health check backend:

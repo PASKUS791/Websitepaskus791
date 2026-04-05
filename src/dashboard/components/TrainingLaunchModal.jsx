@@ -12,11 +12,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../../lib/api";
-import {
-  normalizeOperatorEntry,
-  TRAINING_GOLONGAN_OPTIONS,
-} from "../data/recruitmentData";
+import { TRAINING_GOLONGAN_OPTIONS } from "../data/recruitmentData";
 
 const MODAL_SELECTED_CANDIDATE_PAGE_SIZE = 5;
 
@@ -61,14 +57,15 @@ function OperatorChoiceCard({ operator, selected, onToggle }) {
 export default function TrainingLaunchModal({
   selectedCount,
   selectedCandidates = [],
+  operators = [],
+  loadingOperators = false,
+  operatorError = "",
   submitting = false,
   onClose,
   onSubmit,
 }) {
-  const [operators, setOperators] = useState([]);
   const [selectedOperatorIds, setSelectedOperatorIds] = useState([]);
   const [golongan, setGolongan] = useState(TRAINING_GOLONGAN_OPTIONS[0]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedCandidatePage, setSelectedCandidatePage] = useState(1);
 
@@ -89,49 +86,6 @@ export default function TrainingLaunchModal({
     };
   }, [onClose]);
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadOperators() {
-      try {
-        setLoading(true);
-        const payload = await apiFetch("/api/pelatih/operators");
-
-        if (!active) {
-          return;
-        }
-
-        const nextOperators = Array.isArray(payload?.operators)
-          ? payload.operators.map((operator, index) =>
-              normalizeOperatorEntry(operator, index),
-            )
-          : [];
-
-        setOperators(nextOperators);
-        setSelectedOperatorIds([]);
-        setError("");
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setOperators([]);
-        setSelectedOperatorIds([]);
-        setError(loadError.message || "Gagal memuat daftar petugas.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadOperators();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const selectedOperators = useMemo(
     () =>
       operators.filter((operator) => selectedOperatorIds.includes(String(operator.id))),
@@ -141,14 +95,18 @@ export default function TrainingLaunchModal({
     1,
     Math.ceil(selectedCandidates.length / MODAL_SELECTED_CANDIDATE_PAGE_SIZE),
   );
+  const resolvedSelectedCandidatePage = Math.min(
+    selectedCandidatePage,
+    selectedCandidatePageCount,
+  );
   const visibleSelectedCandidates = useMemo(() => {
     const startIndex =
-      (selectedCandidatePage - 1) * MODAL_SELECTED_CANDIDATE_PAGE_SIZE;
+      (resolvedSelectedCandidatePage - 1) * MODAL_SELECTED_CANDIDATE_PAGE_SIZE;
     return selectedCandidates.slice(
       startIndex,
       startIndex + MODAL_SELECTED_CANDIDATE_PAGE_SIZE,
     );
-  }, [selectedCandidatePage, selectedCandidates]);
+  }, [resolvedSelectedCandidatePage, selectedCandidates]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -171,12 +129,6 @@ export default function TrainingLaunchModal({
         : [...currentIds, operatorId],
     );
   };
-
-  useEffect(() => {
-    setSelectedCandidatePage((currentPage) =>
-      currentPage > selectedCandidatePageCount ? selectedCandidatePageCount : currentPage,
-    );
-  }, [selectedCandidatePageCount]);
 
   return (
     <motion.div
@@ -224,14 +176,24 @@ export default function TrainingLaunchModal({
               Pilihan Pelatih
             </span>
             <div className="grid max-h-[320px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-              {operators.map((operator) => (
-                <OperatorChoiceCard
-                  key={operator.id}
-                  operator={operator}
-                  selected={selectedOperatorIds.includes(String(operator.id))}
-                  onToggle={() => handleToggleOperator(String(operator.id))}
-                />
-              ))}
+              {loadingOperators ? (
+                <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
+                  Memuat data petugas dari database...
+                </div>
+              ) : operators.length > 0 ? (
+                operators.map((operator) => (
+                  <OperatorChoiceCard
+                    key={operator.id}
+                    operator={operator}
+                    selected={selectedOperatorIds.includes(String(operator.id))}
+                    onToggle={() => handleToggleOperator(String(operator.id))}
+                  />
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
+                  Belum ada petugas yang tersedia.
+                </div>
+              )}
             </div>
             <p className="font-public text-[9px] uppercase tracking-[0.12em] text-stone-500">
               Klik beberapa box pelatih untuk memilih lebih dari satu petugas.
@@ -333,13 +295,13 @@ export default function TrainingLaunchModal({
                           Math.max(1, currentPage - 1),
                         )
                       }
-                      disabled={selectedCandidatePage === 1}
+                      disabled={resolvedSelectedCandidatePage === 1}
                       className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Prev
                     </button>
                     <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300">
-                      Page {selectedCandidatePage} / {selectedCandidatePageCount}
+                      Page {resolvedSelectedCandidatePage} / {selectedCandidatePageCount}
                     </div>
                     <button
                       type="button"
@@ -348,7 +310,9 @@ export default function TrainingLaunchModal({
                           Math.min(selectedCandidatePageCount, currentPage + 1),
                         )
                       }
-                      disabled={selectedCandidatePage === selectedCandidatePageCount}
+                      disabled={
+                        resolvedSelectedCandidatePage === selectedCandidatePageCount
+                      }
                       className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Next
@@ -360,15 +324,9 @@ export default function TrainingLaunchModal({
           </div>
         </div>
 
-        {loading ? (
-          <p className="mt-4 font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
-            Memuat data petugas dari database...
-          </p>
-        ) : null}
-
-        {error ? (
+        {operatorError || error ? (
           <p className="mt-4 font-public text-[9px] uppercase tracking-[0.16em] text-rose-300">
-            {error}
+            {operatorError || error}
           </p>
         ) : null}
 
@@ -382,7 +340,7 @@ export default function TrainingLaunchModal({
           </button>
           <button
             type="submit"
-            disabled={loading || submitting || selectedCount === 0}
+            disabled={loadingOperators || submitting || selectedCount === 0}
             className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Membuka Pelatihan..." : "Simpan dan Buka Pelatihan"}

@@ -23,43 +23,22 @@ import {
   formatOperationalDateLabel,
   formatRelativeMinutes,
   isArchivePendingDispatch,
-  loadDashboardCandidates,
-  loadRecruitmentReports,
-  loadTrainingSessions,
   normalizeArchiveSupplement,
   normalizeRecruitmentReport,
-  normalizeTrainingSession,
 } from "../data/recruitmentData";
-import { RESOURCE_KEYS, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 export default function RecruitmentReportPage() {
   const { sessionId = "" } = useParams();
   const {
-    data: reports,
-    setData: setReports,
+    reports,
+    trainingSessions,
     loading: reportsLoading,
     error: reportsError,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadRecruitmentReports,
-  });
-  const {
-    data: trainingSessions,
-    setData: setTrainingSessions,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardTrainingSessions, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadTrainingSessions,
-  });
-  const { setData: setCandidates } = useSyncedResource(
-    RESOURCE_KEYS.dashboardCandidates,
-    {
-      defaultValue: [],
-      saveDelay: 450,
-      normalize: loadDashboardCandidates,
-    },
-  );
+    saveRecruitmentReport,
+    dispatchTrainingSession,
+    eliminateCandidate,
+  } = useStaffPortalData();
 
   const [systemTime, setSystemTime] = useState(new Date());
   const [editorReport, setEditorReport] = useState(null);
@@ -108,7 +87,7 @@ export default function RecruitmentReportPage() {
     ? "Memuat arsip laporan dari database..."
     : reportsError || archiveNotice;
 
-  const handleDispatchReports = () => {
+  const handleDispatchReports = async () => {
     const dispatchTimestamp = new Date().toISOString();
 
     if (pendingDispatchCount === 0) {
@@ -116,85 +95,73 @@ export default function RecruitmentReportPage() {
       return;
     }
 
-    setReports((currentReports) =>
-      currentReports.map((report) =>
-        report.sessionId === sessionId && isArchivePendingDispatch(report)
-          ? normalizeRecruitmentReport({
-              ...report,
-              sentAt: dispatchTimestamp,
-            })
-          : report,
-      ),
-    );
-    setTrainingSessions((currentSessions) =>
-      currentSessions.map((session) =>
-        session.id === sessionId
-          ? normalizeTrainingSession({
-              ...session,
-              status: "TERKIRIM",
-              dispatchedAt: dispatchTimestamp,
-              updatedAt: dispatchTimestamp,
-            })
-          : session,
-      ),
-    );
-    setArchiveNotice(
-      `${pendingDispatchCount} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
-        new Date(dispatchTimestamp),
-      )}.`,
-    );
+    try {
+      await dispatchTrainingSession(sessionId, sessionReports);
+      setArchiveNotice(
+        `${pendingDispatchCount} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
+          new Date(dispatchTimestamp),
+        )}.`,
+      );
+    } catch (dispatchError) {
+      setArchiveNotice(
+        dispatchError?.message || "Gagal mengirim laporan sesi ke backend.",
+      );
+    }
   };
 
-  const handleSaveReport = (updatedReport) => {
+  const handleSaveReport = async (updatedReport) => {
     const normalizedReport = normalizeRecruitmentReport(updatedReport);
 
-    setReports((currentReports) =>
-      currentReports.map((report) =>
-        report.id === normalizedReport.id ? normalizedReport : report,
-      ),
-    );
-    setEditorReport(null);
-    setArchiveNotice(
-      `Laporan ${normalizedReport.name} diperbarui pada ${formatArchiveTimestamp(
-        new Date(normalizedReport.updatedAt),
-      )}.`,
-    );
+    try {
+      await saveRecruitmentReport(normalizedReport);
+      setEditorReport(null);
+      setArchiveNotice(
+        `Laporan ${normalizedReport.name} diperbarui pada ${formatArchiveTimestamp(
+          new Date(normalizedReport.updatedAt),
+        )}.`,
+      );
+    } catch (saveError) {
+      setArchiveNotice(
+        saveError?.message || "Gagal memperbarui laporan perekrutan.",
+      );
+    }
   };
 
-  const handleSaveSupplement = (reportId, supplement) => {
+  const handleSaveSupplement = async (reportId, supplement) => {
     const normalizedSupplement = normalizeArchiveSupplement(supplement);
     const isEditMode = supplementEditorState?.mode === "edit";
-    let targetName = "kandidat";
+    const targetReport = sessionReports.find((report) => report.id === reportId);
 
-    setReports((currentReports) =>
-      currentReports.map((report) => {
-        if (report.id !== reportId) {
-          return report;
-        }
+    if (!targetReport) {
+      return;
+    }
 
-        targetName = report.name;
+    const nextReport = normalizeRecruitmentReport({
+      ...targetReport,
+      additionalReports: isEditMode
+        ? targetReport.additionalReports.map((entry) =>
+            entry.id === normalizedSupplement.id ? normalizedSupplement : entry,
+          )
+        : [normalizedSupplement, ...targetReport.additionalReports],
+      updatedAt: normalizedSupplement.updatedAt,
+    });
 
-        return normalizeRecruitmentReport({
-          ...report,
-          additionalReports: isEditMode
-            ? report.additionalReports.map((entry) =>
-                entry.id === normalizedSupplement.id ? normalizedSupplement : entry,
-              )
-            : [normalizedSupplement, ...report.additionalReports],
-          updatedAt: normalizedSupplement.updatedAt,
-        });
-      }),
-    );
-
-    setSupplementEditorState(null);
-    setArchiveNotice(
-      `Laporan tambahan untuk ${targetName} ${isEditMode ? "diperbarui" : "ditambahkan"} pada ${formatArchiveTimestamp(
-        new Date(normalizedSupplement.updatedAt),
-      )}.`,
-    );
+    try {
+      await saveRecruitmentReport(nextReport);
+      setSupplementEditorState(null);
+      setArchiveNotice(
+        `Laporan tambahan untuk ${targetReport.name} ${isEditMode ? "diperbarui" : "ditambahkan"} pada ${formatArchiveTimestamp(
+          new Date(normalizedSupplement.updatedAt),
+        )}.`,
+      );
+    } catch (saveError) {
+      setArchiveNotice(
+        saveError?.message || "Gagal menyimpan laporan tambahan.",
+      );
+    }
   };
 
-  const handleDeleteSupplement = (reportId, supplementId) => {
+  const handleDeleteSupplement = async (reportId, supplementId) => {
     const targetReport = sessionReports.find((report) => report.id === reportId);
     const targetSupplement = targetReport?.additionalReports.find(
       (entry) => entry.id === supplementId,
@@ -216,32 +183,30 @@ export default function RecruitmentReportPage() {
     }
 
     const deletedAt = new Date().toISOString();
+    const nextReport = normalizeRecruitmentReport({
+      ...targetReport,
+      additionalReports: targetReport.additionalReports.filter(
+        (entry) => entry.id !== supplementId,
+      ),
+      updatedAt: deletedAt,
+    });
 
-    setReports((currentReports) =>
-      currentReports.map((report) => {
-        if (report.id !== reportId) {
-          return report;
-        }
-
-        return normalizeRecruitmentReport({
-          ...report,
-          additionalReports: report.additionalReports.filter(
-            (entry) => entry.id !== supplementId,
-          ),
-          updatedAt: deletedAt,
-        });
-      }),
-    );
-
-    setSupplementEditorState(null);
-    setArchiveNotice(
-      `Laporan tambahan ${targetReport.name} dihapus pada ${formatArchiveTimestamp(
-        new Date(deletedAt),
-      )}.`,
-    );
+    try {
+      await saveRecruitmentReport(nextReport);
+      setSupplementEditorState(null);
+      setArchiveNotice(
+        `Laporan tambahan ${targetReport.name} dihapus pada ${formatArchiveTimestamp(
+          new Date(deletedAt),
+        )}.`,
+      );
+    } catch (deleteError) {
+      setArchiveNotice(
+        deleteError?.message || "Gagal menghapus laporan tambahan.",
+      );
+    }
   };
 
-  const handleEliminateCandidate = (reportId) => {
+  const handleEliminateCandidate = async (reportId) => {
     const targetReport = sessionReports.find((report) => report.id === reportId);
 
     if (!targetReport) {
@@ -259,37 +224,22 @@ export default function RecruitmentReportPage() {
       return;
     }
 
-    setReports((currentReports) =>
-      currentReports.filter((report) => report.id !== reportId),
-    );
-    setTrainingSessions((currentSessions) =>
-      currentSessions.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              candidates: session.candidates.filter(
-                (candidate) =>
-                  candidate.identity !== targetReport.candidateIdentity,
-              ),
-              updatedAt: new Date().toISOString(),
-            }
-          : session,
-      ),
-    );
-    setCandidates((currentCandidates) =>
-      currentCandidates.filter(
-        (candidate) => candidate.identity !== targetReport.candidateIdentity,
-      ),
-    );
-    setEditorReport((currentReport) =>
-      currentReport?.id === reportId ? null : currentReport,
-    );
-    setSupplementEditorState((currentState) =>
-      currentState?.report.id === reportId ? null : currentState,
-    );
-    setArchiveNotice(
-      `Kandidat ${targetReport.name} dieliminasi dan seluruh arsipnya dihapus.`,
-    );
+    try {
+      await eliminateCandidate(targetReport);
+      setEditorReport((currentReport) =>
+        currentReport?.id === reportId ? null : currentReport,
+      );
+      setSupplementEditorState((currentState) =>
+        currentState?.report.id === reportId ? null : currentState,
+      );
+      setArchiveNotice(
+        `Kandidat ${targetReport.name} dieliminasi dan seluruh arsipnya dihapus.`,
+      );
+    } catch (eliminateError) {
+      setArchiveNotice(
+        eliminateError?.message || "Gagal mengeliminasi kandidat.",
+      );
+    }
   };
 
   if (!trainingSession) {

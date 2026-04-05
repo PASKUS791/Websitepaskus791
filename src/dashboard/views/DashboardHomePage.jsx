@@ -15,19 +15,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import TrainingLaunchModal from "../components/TrainingLaunchModal";
 import {
-  buildTrainingSession,
   createCandidateIdentity,
-  createReportsForTrainingSession,
   formatOperationalDateLabel,
   formatCandidateCategory,
   isCandidateAssignedToTraining,
   isTrainingSessionDispatched,
-  loadDashboardCandidates,
-  loadRecruitmentReports,
-  loadTrainingSessions,
 } from "../data/recruitmentData";
-import { useAuth } from "../../lib/auth";
-import { RESOURCE_KEYS, saveResource, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const DASHBOARD_CANDIDATE_PAGE_SIZE = 10;
 
@@ -201,32 +195,15 @@ function ActiveTrainingSessionCard({ session }) {
 // Section: main page.
 export default function DashboardHomePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const {
-    data: candidates,
-    loading: candidatesLoading,
-    error: candidatesError,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardCandidates, {
-    defaultValue: [],
-    saveDelay: 500,
-    normalize: loadDashboardCandidates,
-  });
-  const {
-    data: reports,
-    setData: setReports,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadRecruitmentReports,
-  });
-  const {
-    data: trainingSessions,
-    setData: setTrainingSessions,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardTrainingSessions, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadTrainingSessions,
-  });
+    candidates,
+    reports,
+    trainingSessions,
+    operators,
+    loading: portalLoading,
+    error: portalError,
+    createTrainingSession,
+  } = useStaffPortalData();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIdentities, setSelectedIdentities] = useState([]);
@@ -327,26 +304,22 @@ export default function DashboardHomePage() {
     );
   }, [candidatePageCount]);
 
-  const handleOpenTraining = async ({ operators, golongan }) => {
-    const nextSession = buildTrainingSession({
-      selectedCandidates,
-      selectedOperators: operators,
-      golongan,
-      createdBy: user?.label || "Paskus Admin",
-    });
-    const createdReports = createReportsForTrainingSession(nextSession);
-    const nextTrainingSessions = [nextSession, ...trainingSessions];
-    const nextReports = [...createdReports, ...reports];
-
+  const handleOpenTraining = async ({ operators: selectedOperators, golongan }) => {
     try {
       setLaunching(true);
       setLaunchError("");
-      setTrainingSessions(nextTrainingSessions);
-      setReports(nextReports);
-      await Promise.all([
-        saveResource(RESOURCE_KEYS.dashboardTrainingSessions, nextTrainingSessions),
-        saveResource(RESOURCE_KEYS.dashboardReports, nextReports),
-      ]);
+      const result = await createTrainingSession({
+        selectedCandidates,
+        selectedOperators,
+        golongan,
+      });
+      const nextSession = result?.session;
+      const createdReports = Array.isArray(result?.reports) ? result.reports : [];
+
+      if (!nextSession) {
+        throw new Error("Sesi pelatihan belum berhasil dibuat di backend.");
+      }
+
       setSelectedIdentities([]);
       setIsLaunchModalOpen(false);
       navigate(`/dashboard/pelatihan/${nextSession.id}`, {
@@ -441,15 +414,15 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          {candidatesLoading ? (
+          {portalLoading ? (
             <div className="mt-4 rounded-sm border border-dashed border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-400">
               Memuat data kandidat dari database...
             </div>
           ) : null}
 
-          {candidatesError ? (
+          {portalError ? (
             <div className="mt-4 rounded-sm border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {candidatesError}
+              {portalError}
             </div>
           ) : null}
 
@@ -561,6 +534,9 @@ export default function DashboardHomePage() {
           <TrainingLaunchModal
             selectedCount={selectedCandidates.length}
             selectedCandidates={selectedCandidates}
+            operators={operators}
+            loadingOperators={portalLoading}
+            operatorError={portalError}
             submitting={launching}
             onClose={() => setIsLaunchModalOpen(false)}
             onSubmit={handleOpenTraining}

@@ -12,10 +12,14 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../lib/api";
 import { RESOURCE_KEYS, useSyncedResource } from "../lib/resources";
 import DeleteBurstOverlay from "./DeleteBurstOverlay";
 import HcoDeleteUserModal from "./HcoDeleteUserModal";
+import {
+  createHcoPlannerUser,
+  fetchHcoPlannerUsers,
+  removeHcoPlannerUser,
+} from "./data/hcoPortalBackend";
 import {
   isPrimaryHcoAdminUser,
   normalizeHcoAccessEntries,
@@ -133,13 +137,13 @@ export default function HcoMapPlannerUsersPage() {
 
     async function loadUsers() {
       try {
-        const payload = await apiFetch("/api/hco/users");
+        const nextUsers = await fetchHcoPlannerUsers();
 
         if (!active) {
           return;
         }
 
-        setUsers(Array.isArray(payload?.users) ? payload.users : []);
+        setUsers(nextUsers);
         setError("");
       } catch (loadError) {
         if (!active) {
@@ -192,13 +196,10 @@ export default function HcoMapPlannerUsersPage() {
 
     try {
       setSubmitting(true);
-      const payload = await apiFetch("/api/hco/users", {
-        method: "POST",
-        body: formState,
-      });
-      const refreshed = await apiFetch("/api/hco/users");
+      const payload = await createHcoPlannerUser(formState);
+      const refreshed = await fetchHcoPlannerUsers();
 
-      setUsers(Array.isArray(refreshed?.users) ? refreshed.users : []);
+      setUsers(refreshed);
       setFormState(INITIAL_FORM_STATE);
       setNotice(payload?.message || "User map planner berhasil ditambahkan.");
       setError("");
@@ -247,12 +248,7 @@ export default function HcoMapPlannerUsersPage() {
 
     try {
       setDeletingUsername(deleteTarget.username);
-      const payload = await apiFetch(
-        `/api/hco/users/${encodeURIComponent(deleteTarget.username)}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const payload = await removeHcoPlannerUser(deleteTarget.username);
 
       setUsers((currentUsers) =>
         currentUsers.filter((entry) => entry.username !== deleteTarget.username),

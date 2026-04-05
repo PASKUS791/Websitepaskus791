@@ -19,12 +19,10 @@ import {
   formatOperationalDateLabel,
   isRecruitmentReportComplete,
   isTrainingSessionDispatched,
-  loadRecruitmentReports,
-  loadTrainingSessions,
   normalizeRecruitmentReport,
   normalizeTrainingSession,
 } from "../data/recruitmentData";
-import { RESOURCE_KEYS, saveResource, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 function SessionMetricCard({ label, value, detail, accent = "stone" }) {
   const accentClassMap = {
@@ -165,21 +163,12 @@ export default function PelatihanPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const {
-    data: trainingSessions,
-    setData: setTrainingSessions,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardTrainingSessions, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadTrainingSessions,
-  });
-  const {
-    data: reports,
-    setData: setReports,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadRecruitmentReports,
-  });
+    trainingSessions,
+    reports,
+    saveRecruitmentReport,
+    dispatchTrainingSession,
+    cancelTrainingSession,
+  } = useStaffPortalData();
 
   const [activeReportId, setActiveReportId] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -272,33 +261,7 @@ export default function PelatihanPage() {
     (trainingSession?.candidates.length || 0) - completedCount,
   );
 
-  const applyDispatchState = (dispatchTimestamp, message) => {
-    setReports((currentReports) =>
-      currentReports.map((report) =>
-        report.sessionId === sessionId
-          ? normalizeRecruitmentReport({
-              ...report,
-              sentAt: dispatchTimestamp,
-            })
-          : report,
-      ),
-    );
-    setTrainingSessions((currentSessions) =>
-      currentSessions.map((session) =>
-        session.id === sessionId
-          ? normalizeTrainingSession({
-              ...session,
-              status: "TERKIRIM",
-              dispatchedAt: dispatchTimestamp,
-              updatedAt: dispatchTimestamp,
-            })
-          : session,
-      ),
-    );
-    setSessionNotice(message);
-  };
-
-  const handleSaveReport = (updatedReport, { dispatchRequested = false } = {}) => {
+  const handleSaveReport = async (updatedReport, { dispatchRequested = false } = {}) => {
     if (!trainingSession) {
       return;
     }
@@ -322,61 +285,40 @@ export default function PelatihanPage() {
     const shouldDispatch =
       dispatchRequested || (!dispatched && allReportsReady);
 
-    setReports((currentReports) => {
-      const nextReports = currentReports.some((report) => report.id === normalizedReport.id)
-        ? currentReports.map((report) =>
-            report.id === normalizedReport.id ? normalizedReport : report,
-          )
-        : [normalizedReport, ...currentReports];
+    try {
+      await saveRecruitmentReport(normalizedReport);
 
-      if (!shouldDispatch) {
-        return nextReports;
+      if (shouldDispatch) {
+        const nextDispatchReports = nextSessionReports.map((report) =>
+          report.id === normalizedReport.id ? normalizedReport : report,
+        );
+        await dispatchTrainingSession(sessionId, nextDispatchReports);
+        setSessionNotice(
+          dispatchRequested
+            ? `Laporan kandidat ${normalizedReport.name} tersimpan dan sesi dikirim ke Hasil Laporan pada ${formatArchiveTimestamp(
+                dispatchTimestamp,
+              )}.`
+            : `Semua kandidat sudah selesai dilaporkan. Sesi otomatis masuk ke Hasil Laporan pada ${formatArchiveTimestamp(
+                dispatchTimestamp,
+              )}.`,
+        );
+      } else {
+        setSessionNotice(
+          `Laporan ${normalizedReport.name} disimpan pada ${formatArchiveTimestamp(
+            normalizedReport.updatedAt,
+          )}.`,
+        );
       }
 
-      return nextReports.map((report) =>
-        report.sessionId === sessionId
-          ? normalizeRecruitmentReport({
-              ...report,
-              sentAt: dispatchTimestamp,
-            })
-          : report,
-      );
-    });
-
-    if (shouldDispatch) {
-      setTrainingSessions((currentSessions) =>
-        currentSessions.map((session) =>
-          session.id === sessionId
-            ? normalizeTrainingSession({
-                ...session,
-                status: "TERKIRIM",
-                dispatchedAt: dispatchTimestamp,
-                updatedAt: dispatchTimestamp,
-              })
-            : session,
-        ),
-      );
+      setActiveReportId(null);
+    } catch (saveError) {
       setSessionNotice(
-        dispatchRequested
-          ? `Laporan kandidat ${normalizedReport.name} tersimpan dan sesi dikirim ke Hasil Laporan pada ${formatArchiveTimestamp(
-              dispatchTimestamp,
-            )}.`
-          : `Semua kandidat sudah selesai dilaporkan. Sesi otomatis masuk ke Hasil Laporan pada ${formatArchiveTimestamp(
-              dispatchTimestamp,
-            )}.`,
-      );
-    } else {
-      setSessionNotice(
-        `Laporan ${normalizedReport.name} disimpan pada ${formatArchiveTimestamp(
-          normalizedReport.updatedAt,
-        )}.`,
+        saveError?.message || "Gagal menyimpan laporan pelatihan ke backend.",
       );
     }
-
-    setActiveReportId(null);
   };
 
-  const handleDispatchSession = () => {
+  const handleDispatchSession = async () => {
     if (!trainingSession) {
       return;
     }
@@ -387,12 +329,19 @@ export default function PelatihanPage() {
     }
 
     const dispatchTimestamp = new Date().toISOString();
-    applyDispatchState(
-      dispatchTimestamp,
-      `Sesi ${trainingSession.title} dikirim ke Hasil Laporan pada ${formatArchiveTimestamp(
-        dispatchTimestamp,
-      )}.`,
-    );
+
+    try {
+      await dispatchTrainingSession(sessionId, sessionReports);
+      setSessionNotice(
+        `Sesi ${trainingSession.title} dikirim ke Hasil Laporan pada ${formatArchiveTimestamp(
+          dispatchTimestamp,
+        )}.`,
+      );
+    } catch (dispatchError) {
+      setSessionNotice(
+        dispatchError?.message || "Gagal mengirim sesi ke hasil laporan.",
+      );
+    }
   };
 
   const handleCancelSession = async () => {
@@ -411,19 +360,9 @@ export default function PelatihanPage() {
       return;
     }
 
-    const nextTrainingSessions = trainingSessions.filter(
-      (session) => session.id !== sessionId,
-    );
-    const nextReports = reports.filter((report) => report.sessionId !== sessionId);
-
     try {
       setCancelling(true);
-      setTrainingSessions(nextTrainingSessions);
-      setReports(nextReports);
-      await Promise.all([
-        saveResource(RESOURCE_KEYS.dashboardTrainingSessions, nextTrainingSessions),
-        saveResource(RESOURCE_KEYS.dashboardReports, nextReports),
-      ]);
+      await cancelTrainingSession(sessionId);
       navigate("/dashboard", { replace: true });
     } catch (cancelError) {
       setSessionNotice(

@@ -7,45 +7,28 @@
  * Internal proprietary source notice.
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+import { createJsonHttpClient, normalizeHttpError } from "./httpClient";
 
-function buildUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const appHttpClient = createJsonHttpClient({
+  baseURL: API_BASE_URL,
+});
 
 export async function apiFetch(path, options = {}) {
-  const response = await fetch(buildUrl(path), {
-    credentials: "include",
-    headers: {
-      ...(options.body && !(options.body instanceof FormData)
-        ? { "Content-Type": "application/json" }
-        : {}),
-      ...(options.headers || {}),
-    },
-    ...options,
-    body:
-      options.body && !(options.body instanceof FormData)
-        ? JSON.stringify(options.body)
-        : options.body,
-  });
+  try {
+    const response = await appHttpClient.request({
+      url: path,
+      method: options.method || "GET",
+      data: options.body,
+      headers: options.headers,
+    });
 
-  if (response.status === 204) {
-    return null;
+    return response?.data ?? null;
+  } catch (error) {
+    throw normalizeHttpError(error, "API request failed.");
   }
-
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    const error = new Error(payload?.error || "API request failed.");
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
-  }
-
-  return payload;
 }
 
 export function createApiEventSource(path = "/api/events") {
-  return new EventSource(buildUrl(path), { withCredentials: true });
+  return new EventSource(`${API_BASE_URL}${path}`, { withCredentials: true });
 }

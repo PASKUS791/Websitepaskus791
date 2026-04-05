@@ -16,7 +16,21 @@ import {
   useMemo,
   useState,
 } from "react";
-import { apiFetch } from "./api";
+import {
+  clearStoredStaffSession,
+  loginStaff,
+  logoutStaff,
+  normalizeStaffUser,
+  readStoredStaffSession,
+  refreshStaffSession,
+} from "./staffApi";
+import {
+  clearStoredHcoSession,
+  loginHco,
+  logoutHco,
+  readStoredHcoSession,
+  refreshHcoSession,
+} from "./hcoApi";
 
 const AuthContext = createContext(null);
 
@@ -27,12 +41,37 @@ function AuthProviderInner({ children }) {
 
   const refreshSession = useCallback(async () => {
     try {
-      const payload = await apiFetch("/api/auth/session");
-      setUser(payload?.authenticated ? payload.user : null);
+      const storedHcoSession = readStoredHcoSession();
+      const hcoSession = await refreshHcoSession();
+
+      if (hcoSession?.user?.scope === "hco") {
+        setUser(hcoSession.user);
+        setError("");
+        setLoading(false);
+        return;
+      }
+
+      if (storedHcoSession?.user?.scope === "hco") {
+        setUser(null);
+        setError("");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Lanjut cek sesi staff jika sesi HCO tidak tersedia.
+    }
+
+    try {
+      const session = await refreshStaffSession();
+      const nextUser =
+        session?.user ||
+        normalizeStaffUser(readStoredStaffSession()?.user);
+      setUser(nextUser);
       setError("");
-    } catch (sessionError) {
+    } catch {
       setUser(null);
-      setError(sessionError.message || "Gagal memeriksa sesi.");
+      clearStoredStaffSession();
+      setError("");
     } finally {
       setLoading(false);
     }
@@ -42,26 +81,39 @@ function AuthProviderInner({ children }) {
     refreshSession();
   }, [refreshSession]);
 
-  const login = async (scope, username, password) => {
-    const payload = await apiFetch("/api/auth/login", {
-      method: "POST",
-      body: { scope, username, password },
-    });
+  const login = useCallback(
+    async (scope, username, password) => {
+      if (scope === "hco") {
+        const session = await loginHco(username, password);
+        const nextUser = session?.user || null;
+        setUser(nextUser);
+        setError("");
+        return nextUser;
+      }
 
-    setUser(payload?.user ?? null);
-    setError("");
-    return payload?.user ?? null;
-  };
+      const session = await loginStaff(username, password);
+      const nextUser = session?.user ?? null;
+      clearStoredHcoSession();
+      setUser(nextUser);
+      setError("");
+      return nextUser;
+    },
+    [setError, setUser],
+  );
 
-  const logout = async () => {
-    try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Ignore logout transport errors and clear local auth state anyway.
+  const logout = useCallback(async () => {
+    if (user?.scope === "pelatih") {
+      try {
+        await logoutStaff();
+      } catch {
+        clearStoredStaffSession();
+      }
+    } else if (user?.scope === "hco") {
+      await logoutHco();
     }
 
     setUser(null);
-  };
+  }, [user]);
 
   const value = useMemo(
     () => ({
@@ -73,7 +125,7 @@ function AuthProviderInner({ children }) {
       refreshSession,
       isScopeAuthenticated: (scope) => user?.scope === scope,
     }),
-    [error, loading, refreshSession, user],
+    [error, loading, login, logout, refreshSession, user],
   );
 
   return createElement(AuthContext.Provider, { value }, children);

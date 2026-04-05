@@ -10,9 +10,9 @@
  * Purpose: Manajemen petugas pelatihan yang tersimpan di database.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../../lib/api";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../lib/auth";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const INITIAL_FORM_STATE = {
   username: "",
@@ -49,45 +49,16 @@ function OperatorCard({ operator, isCurrentUser = false }) {
 
 export default function TambahPetugasPage() {
   const { user } = useAuth();
-  const [operators, setOperators] = useState([]);
   const [formState, setFormState] = useState(INITIAL_FORM_STATE);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadOperators() {
-      try {
-        const payload = await apiFetch("/api/pelatih/operators");
-
-        if (!active) {
-          return;
-        }
-
-        setOperators(Array.isArray(payload?.operators) ? payload.operators : []);
-        setError("");
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(loadError.message || "Gagal memuat data petugas.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadOperators();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const {
+    operators,
+    loading,
+    error: portalError,
+    registerOperator,
+  } = useStaffPortalData();
 
   const operatorCountLabel = useMemo(() => `${operators.length} petugas aktif`, [operators]);
 
@@ -103,14 +74,9 @@ export default function TambahPetugasPage() {
 
     try {
       setSubmitting(true);
-      const payload = await apiFetch("/api/pelatih/operators", {
-        method: "POST",
-        body: formState,
-      });
-
-      setOperators(Array.isArray(payload?.operators) ? payload.operators : []);
+      await registerOperator(formState);
       setFormState(INITIAL_FORM_STATE);
-      setNotice(payload?.message || "Petugas berhasil ditambahkan.");
+      setNotice("Petugas berhasil ditambahkan.");
       setError("");
     } catch (submitError) {
       setError(submitError.message || "Gagal menambahkan petugas.");
@@ -261,7 +227,7 @@ export default function TambahPetugasPage() {
               ))
             ) : (
               <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
-                Belum ada petugas yang tersimpan.
+                {portalError || "Belum ada petugas yang tersimpan."}
               </div>
             )}
           </div>

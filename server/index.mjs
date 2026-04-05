@@ -8,9 +8,10 @@
  */
 
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createStorage } from "./storage.mjs";
 
@@ -148,6 +149,9 @@ const config = {
   ),
   discordWebhookUrl: process.env.DISCORD_STRATEGIC_WEBHOOK_URL || "",
   publicAppUrl: process.env.PUBLIC_APP_URL || "",
+  staffBackendBaseUrl: String(
+    process.env.STAFF_BACKEND_BASE_URL || "https://api.paskus791.cloud",
+  ).trim().replace(/\/$/, ""),
   passwordHashN: normalizeScryptCost(process.env.APP_HASH_SCRYPT_N, 16384),
   passwordHashR: parsePositiveInt(process.env.APP_HASH_SCRYPT_R, 8),
   passwordHashP: parsePositiveInt(process.env.APP_HASH_SCRYPT_P, 1),
@@ -230,6 +234,8 @@ const requestRateBuckets = new Map();
 const loginAttemptBuckets = new Map();
 const sseClients = new Set();
 const strategicLogoBuffer = readFileSync(resolve(projectRoot, "src/assets/paskus.webp"));
+const distRoot = resolve(projectRoot, "dist");
+const hasBuiltFrontend = existsSync(resolve(distRoot, "index.html"));
 const storage = await createStorage({
   resourceScopes: RESOURCE_SCOPES,
   resourceDefaults: RESOURCE_DEFAULTS,
@@ -486,6 +492,25 @@ async function parseJsonBody(request, maxBytes = 10 * 1024 * 1024) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+async function parseRawBody(request, maxBytes = 25 * 1024 * 1024) {
+  let totalBytes = 0;
+  const chunks = [];
+
+  for await (const chunk of request) {
+    totalBytes += chunk.length;
+
+    if (totalBytes > maxBytes) {
+      const error = new Error("Payload too large");
+      error.statusCode = 413;
+      throw error;
+    }
+
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return chunks.length > 0 ? Buffer.concat(chunks) : undefined;
 }
 
 function hasJsonContentType(request) {
@@ -1163,6 +1188,159 @@ function notAuthorized(response) {
   sendError(response, 401, "Unauthorized");
 }
 
+function getMimeType(filePath) {
+  if (filePath.endsWith(".html")) {
+    return "text/html; charset=utf-8";
+  }
+  if (filePath.endsWith(".js")) {
+    return "application/javascript; charset=utf-8";
+  }
+  if (filePath.endsWith(".css")) {
+    return "text/css; charset=utf-8";
+  }
+  if (filePath.endsWith(".json")) {
+    return "application/json; charset=utf-8";
+  }
+  if (filePath.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
+  if (filePath.endsWith(".png")) {
+    return "image/png";
+  }
+  if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+  if (filePath.endsWith(".webp")) {
+    return "image/webp";
+  }
+  if (filePath.endsWith(".gif")) {
+    return "image/gif";
+  }
+  if (filePath.endsWith(".ico")) {
+    return "image/x-icon";
+  }
+  if (filePath.endsWith(".woff2")) {
+    return "font/woff2";
+  }
+  if (filePath.endsWith(".woff")) {
+    return "font/woff";
+  }
+  if (filePath.endsWith(".ttf")) {
+    return "font/ttf";
+  }
+
+  return "application/octet-stream";
+}
+
+function rewriteProxySetCookie(cookieValue) {
+  return String(cookieValue || "").replace(/;\s*Domain=[^;]+/gi, "");
+}
+
+async function proxyStaffBackendRequest(request, response, requestUrl) {
+  const upstreamUrl = `${config.staffBackendBaseUrl}${requestUrl.pathname.replace(/^\/staff-api/, "")}${requestUrl.search}`;
+  const headers = new Headers();
+
+  for (const [headerName, headerValue] of Object.entries(request.headers)) {
+    if (!headerValue) {
+      continue;
+    }
+
+    const lowerName = headerName.toLowerCase();
+
+    if (["host", "content-length", "connection"].includes(lowerName)) {
+      continue;
+    }
+
+    if (Array.isArray(headerValue)) {
+      headerValue.forEach((value) => headers.append(headerName, value));
+      continue;
+    }
+
+    headers.set(headerName, headerValue);
+  }
+
+  headers.set("origin", config.staffBackendBaseUrl);
+  headers.set("referer", `${config.staffBackendBaseUrl}/`);
+
+  const hasBody = !["GET", "HEAD"].includes(request.method);
+  const body = hasBody ? await parseRawBody(request) : undefined;
+  const upstreamResponse = await fetch(upstreamUrl, {
+    method: request.method,
+    headers,
+    body,
+    redirect: "manual",
+  });
+  const responseBuffer = Buffer.from(await upstreamResponse.arrayBuffer());
+
+  appendSecurityHeaders(response);
+  response.statusCode = upstreamResponse.status;
+
+  upstreamResponse.headers.forEach((headerValue, headerName) => {
+    const lowerName = headerName.toLowerCase();
+
+    if (["content-length", "transfer-encoding", "connection", "set-cookie"].includes(lowerName)) {
+      return;
+    }
+
+    response.setHeader(headerName, headerValue);
+  });
+
+  const setCookies =
+    typeof upstreamResponse.headers.getSetCookie === "function"
+      ? upstreamResponse.headers.getSetCookie()
+      : [];
+
+  if (setCookies.length > 0) {
+    response.setHeader("Set-Cookie", setCookies.map(rewriteProxySetCookie));
+  }
+
+  response.end(responseBuffer);
+}
+
+async function serveFrontend(request, response, requestUrl) {
+  if (!hasBuiltFrontend) {
+    sendError(response, 404, "Frontend build belum tersedia di server.");
+    return;
+  }
+
+  const normalizedPath =
+    requestUrl.pathname === "/" ? "/index.html" : decodeURIComponent(requestUrl.pathname);
+  const requestedFile = resolve(distRoot, `.${normalizedPath}`);
+  const safeDistPrefix = `${distRoot}/`;
+  const isSafeFile = requestedFile === distRoot || requestedFile.startsWith(safeDistPrefix);
+
+  if (!isSafeFile) {
+    sendError(response, 403, "Akses file tidak diizinkan.");
+    return;
+  }
+
+  const shouldServeAsset =
+    normalizedPath.startsWith("/assets/") ||
+    /\.(html|js|css|json|svg|png|jpe?g|webp|gif|ico|woff2?|ttf)$/i.test(normalizedPath);
+
+  const fallbackFile = resolve(distRoot, "index.html");
+
+  if (shouldServeAsset && !existsSync(requestedFile)) {
+    sendError(response, 404, "Asset frontend tidak ditemukan.");
+    return;
+  }
+
+  const targetFile = shouldServeAsset ? requestedFile : fallbackFile;
+
+  try {
+    const fileBuffer = await readFile(targetFile);
+    appendSecurityHeaders(response);
+    response.writeHead(200, {
+      "Content-Type": getMimeType(targetFile),
+      "Cache-Control":
+        targetFile === fallbackFile ? "no-store" : "public, max-age=31536000, immutable",
+    });
+    response.end(fileBuffer);
+  } catch {
+    sendError(response, 404, "Frontend file tidak ditemukan.");
+  }
+}
+
 function dataUrlToBlob(dataUrl) {
   const match = /^data:(.+?);base64,(.+)$/.exec(String(dataUrl || ""));
 
@@ -1800,6 +1978,25 @@ async function handleRequest(request, response) {
       );
       return;
     }
+  }
+
+  if (path.startsWith("/staff-api/")) {
+    try {
+      await proxyStaffBackendRequest(request, response, requestUrl);
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        502,
+        error.message || "Gagal meneruskan request ke backend staff.",
+      );
+      return;
+    }
+  }
+
+  if (!path.startsWith("/api/")) {
+    await serveFrontend(request, response, requestUrl);
+    return;
   }
 
   sendError(response, 404, "Route tidak ditemukan.");

@@ -9,6 +9,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, createApiEventSource } from "./api";
+import {
+  fetchHcoResource,
+  isHcoResourceKey,
+  saveHcoResource,
+  subscribeHcoResource,
+} from "./hcoApi";
 
 export const RESOURCE_KEYS = {
   dashboardCandidates: "dashboard.candidates",
@@ -30,11 +36,19 @@ function cloneDefaultValue(defaultValue) {
 }
 
 export async function fetchResource(resourceKey) {
+  if (isHcoResourceKey(resourceKey)) {
+    return fetchHcoResource(resourceKey);
+  }
+
   const payload = await apiFetch(`/api/resources/${encodeURIComponent(resourceKey)}`);
   return payload?.value;
 }
 
 export async function saveResource(resourceKey, value) {
+  if (isHcoResourceKey(resourceKey)) {
+    return saveHcoResource(resourceKey, value);
+  }
+
   const payload = await apiFetch(`/api/resources/${encodeURIComponent(resourceKey)}`, {
     method: "PUT",
     body: { value },
@@ -115,6 +129,10 @@ export function useSyncedResource(
   useEffect(() => {
     if (!enabled) {
       return undefined;
+    }
+
+    if (isHcoResourceKey(resourceKey)) {
+      return subscribeHcoResource(resourceKey, reload);
     }
 
     const eventSource = createApiEventSource();

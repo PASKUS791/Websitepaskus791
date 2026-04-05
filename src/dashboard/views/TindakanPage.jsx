@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { RESOURCE_KEYS, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const TINDAKAN_PRIORITY_ORDER = {
   critical: 0,
@@ -23,23 +23,6 @@ const TINDAKAN_PRIORITY_ORDER = {
 function createLocalDate(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);
   return new Date(year, month - 1, day, 12);
-}
-
-function formatDateKey(date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getTimeSortValue(timeLabel) {
-  const match = timeLabel.match(/^(\d{2}):(\d{2})/);
-
-  if (!match) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return Number(match[1]) * 60 + Number(match[2]);
 }
 
 function parseScheduleTimeRange(timeLabel) {
@@ -104,81 +87,6 @@ function formatScheduleDistance(distanceMs) {
   const remainingHours = totalHours % 24;
 
   return remainingHours > 0 ? `${totalDays}d ${remainingHours}h` : `${totalDays}d`;
-}
-
-function normalizeScheduleEvent(event, index = 0) {
-  const toneValues = new Set(["olive", "amber", "danger"]);
-
-  return {
-    id: event.id ?? `sch-default-${index}`,
-    date: typeof event.date === "string" ? event.date : formatDateKey(new Date()),
-    title: event.title?.trim() || "UNNAMED SLOT",
-    subtitle: event.subtitle?.trim() || "GOLONGAN 1",
-    time: event.time?.trim() || "19:00 - 20:00",
-    location: event.location?.trim() || "Tactical Chamber",
-    coordinator: event.coordinator?.trim() || "Commander Vane",
-    capacity: Math.max(1, Number(event.capacity) || 24),
-    objective:
-      event.objective?.trim() ||
-      "Pantau screening, briefing SOP, dan evaluasi kandidat.",
-    tone: toneValues.has(event.tone) ? event.tone : "olive",
-    createdAt: event.createdAt || new Date().toISOString(),
-    updatedAt: event.updatedAt || event.createdAt || new Date().toISOString(),
-  };
-}
-
-function sortScheduleEvents(events) {
-  return [...events].sort((firstEvent, secondEvent) => {
-    if (firstEvent.date !== secondEvent.date) {
-      return createLocalDate(firstEvent.date) - createLocalDate(secondEvent.date);
-    }
-
-    return getTimeSortValue(firstEvent.time) - getTimeSortValue(secondEvent.time);
-  });
-}
-
-function loadStoredScheduleEvents(value) {
-  return Array.isArray(value)
-    ? sortScheduleEvents(value.map((event, index) => normalizeScheduleEvent(event, index)))
-    : [];
-}
-
-function normalizeArchiveSupplement(entry, index = 0) {
-  return {
-    id: entry.id ?? `supplement-${index}`,
-    question: entry.question?.trim() || "Tambahan catatan taktis",
-    note: entry.note?.trim() || "Belum ada catatan tambahan.",
-    createdAt: entry.createdAt || new Date().toISOString(),
-    updatedAt: entry.updatedAt || entry.createdAt || new Date().toISOString(),
-  };
-}
-
-function normalizeArchiveReport(report, index = 0) {
-  return {
-    id: report.id ?? `archive-${index}`,
-    name: report.name?.trim() || "Unnamed Candidate",
-    discord: report.discord?.trim() || "unknown#0000",
-    age: Number(report.age) || 0,
-    gender: report.gender?.trim() || "Tidak Diketahui",
-    group: report.group?.trim() || "Golongan 1",
-    status: report.status?.trim() || "Review",
-    question: report.question?.trim() || "Belum ada pertanyaan strategis",
-    note: report.note?.trim() || "Belum ada catatan analis.",
-    sentAt: report.sentAt || null,
-    createdAt: report.createdAt || new Date().toISOString(),
-    updatedAt: report.updatedAt || report.createdAt || new Date().toISOString(),
-    supplements: Array.isArray(report.supplements)
-      ? report.supplements.map((entry, entryIndex) =>
-          normalizeArchiveSupplement(entry, entryIndex),
-        )
-      : [],
-  };
-}
-
-function loadStoredArchiveReports(value) {
-  return Array.isArray(value)
-    ? value.map((report, index) => normalizeArchiveReport(report, index))
-    : [];
 }
 
 function normalizeReminderIdentity(value) {
@@ -352,24 +260,8 @@ function TindakanEmptyState({ message }) {
 
 export default function TindakanPage() {
   const [systemTime, setSystemTime] = useState(new Date());
-  const { data: reports } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadStoredArchiveReports,
-  });
-  const { data: scheduleEvents } = useSyncedResource(
-    RESOURCE_KEYS.dashboardSchedules,
-    {
-      defaultValue: [],
-      saveDelay: 450,
-      normalize: loadStoredScheduleEvents,
-    },
-  );
-  const { data: candidates } = useSyncedResource(RESOURCE_KEYS.dashboardCandidates, {
-    defaultValue: [],
-    saveDelay: 500,
-    normalize: (value) => (Array.isArray(value) ? value : []),
-  });
+  const { reports, candidates } = useStaffPortalData();
+  const scheduleEvents = useMemo(() => [], []);
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
@@ -396,18 +288,12 @@ export default function TindakanPage() {
       })
       .map((player) => {
         const severity =
-          player.status === "Approved"
-            ? "critical"
-            : player.status === "Review"
-              ? "high"
-              : "medium";
+          player.category === "pmc" ? "high" : "medium";
 
         const description =
-          player.status === "Approved"
-            ? "Kandidat sudah lolos screening, tetapi arsip laporan resmi belum dibuat."
-            : player.status === "Review"
-              ? "Kandidat masih menunggu laporan analis untuk keputusan akhir recruiter."
-              : "Status kandidat sudah ditutup, namun dokumentasi laporannya belum masuk arsip.";
+          player.category === "pmc"
+            ? "Kandidat PMC belum memiliki arsip laporan resmi di backend perekrutan."
+            : "Kandidat sipil belum memiliki arsip laporan resmi di backend perekrutan.";
 
         return {
           ...player,

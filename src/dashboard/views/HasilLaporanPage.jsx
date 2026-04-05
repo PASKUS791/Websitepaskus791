@@ -18,10 +18,8 @@ import {
   createLocalDate,
   formatOperationalDateLabel,
   isTrainingSessionDispatched,
-  loadRecruitmentReports,
-  loadTrainingSessions,
 } from "../data/recruitmentData";
-import { RESOURCE_KEYS, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 // Section: calendar helpers.
 const DAY_LABELS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
@@ -351,18 +349,10 @@ export default function HasilLaporanPage() {
   const [systemTime, setSystemTime] = useState(new Date());
   const [activeSummary, setActiveSummary] = useState(null);
   const {
-    data: trainingSessions,
+    trainingSessions,
+    reports,
     loading: trainingSessionsLoading,
-  } = useSyncedResource(RESOURCE_KEYS.dashboardTrainingSessions, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadTrainingSessions,
-  });
-  const { data: reports } = useSyncedResource(RESOURCE_KEYS.dashboardReports, {
-    defaultValue: [],
-    saveDelay: 450,
-    normalize: loadRecruitmentReports,
-  });
+  } = useStaffPortalData();
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);

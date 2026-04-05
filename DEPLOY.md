@@ -1,25 +1,36 @@
-# Panduan Deploy Hostinger + MongoDB
+# Panduan Deploy `staff.paskus791.cloud` + MongoDB
 
-Sir sir sekalian, file ini saya tulis biar pas deploy nanti tim tidak perlu nebak-nebak lagi. Kita pakai jalur yang paling aman dan paling gampang dipahami:
+Sir sir sekalian, file ini saya tulis biar pas deploy nanti tim tidak perlu nebak-nebak lagi. Buat setup sekarang, saya saranin kita pakai jalur yang paling enak:
 
-- frontend `React + Vite`
+- frontend build `React + Vite`
 - backend `Node.js`
 - database `MongoDB`
+- domain utama aplikasi: `https://staff.paskus791.cloud`
+- backend staff tim lain tetap ada di `https://api.paskus791.cloud`
 
-Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite.
+Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Dan supaya calling API lebih efisien, frontend nanti cukup ngobrol ke satu domain saja, yaitu:
+
+- `https://staff.paskus791.cloud`
+
+Lalu server project ini akan:
+
+- melayani frontend hasil build
+- melayani endpoint internal `/api` untuk auth HCO, resources, saves, users
+- meneruskan request staff ke backend tim lain lewat `/staff-api`
 
 ## Gambaran Besar
 
-Sir sir sekalian, untuk deploy ada 3 bagian:
+Sir sir sekalian, untuk deploy ada 4 bagian:
 
 1. build frontend
 2. jalankan backend Node
 3. sambungkan backend ke MongoDB
+4. arahkan domain `staff.paskus791.cloud` ke server ini
 
 Kalau mau hasil yang enak dan stabil, saya saranin begini:
 
-- frontend taruh di hosting web Hostinger
-- backend taruh di Hostinger VPS atau Node hosting yang memang support process Node
+- frontend dan backend taruh di server Node yang sama
+- domain `staff.paskus791.cloud` diarahkan ke server Node ini
 - database pakai `MongoDB Atlas`
 
 Catatan penting dari sisi Hostinger:
@@ -44,10 +55,10 @@ Sir sir sekalian, pastikan ini dulu:
 - sudah punya `MongoDB Atlas URI`
 - domain frontend dan domain backend sudah jelas
 
-Contoh:
+Contoh setup sekarang:
 
-- frontend: `https://panel.paskus791.com`
-- backend: `https://api.paskus791.com`
+- app utama: `https://staff.paskus791.cloud`
+- backend staff eksternal: `https://api.paskus791.cloud`
 
 ## Environment Variable Yang Wajib
 
@@ -60,6 +71,7 @@ APP_ALLOWED_ORIGINS=https://domain-kamu.com
 APP_SESSION_SECRET=isi-dengan-secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=isi-dengan-pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
+STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
 PELATIH_ADMIN_USERNAME=PaskusAdmin
@@ -80,6 +92,7 @@ Catatan santai tapi penting:
 - `APP_PASSWORD_PEPPER` jangan disamain dengan session secret
 - `MONGODB_URI` jangan pernah ditaruh di frontend
 - `.env` jangan ikut di-push ke GitHub
+- `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
 
 ## Langkah 1 - Build Frontend
 
@@ -96,7 +109,7 @@ Hasilnya akan masuk ke folder:
 dist/
 ```
 
-Isi folder `dist/` inilah yang nanti di-upload ke hosting web frontend.
+Nah sir sir sekalian, walau folder `dist/` tetap ada, untuk setup domain ini frontend tidak perlu dipisah ke hosting static lain. Server Node project ini sudah saya siapkan supaya bisa langsung melayani isi `dist/`.
 
 ## Langkah 2 - Siapkan MongoDB Atlas
 
@@ -121,7 +134,7 @@ Script ini akan:
 - isi `10` akun pelatih
 - simpan semuanya langsung ke MongoDB
 
-## Langkah 3 - Deploy Backend di Hostinger
+## Langkah 3 - Deploy Backend di Hostinger / VPS
 
 Sir sir sekalian, bagian ini paling cocok kalau backend jalan di:
 
@@ -142,12 +155,14 @@ Kalau server sudah siap:
 3. buat file `.env`
 4. isi semua env yang tadi
 5. install dependency
-6. jalankan backend
+6. build frontend
+7. jalankan backend
 
 Command dasar:
 
 ```bash
 npm install
+npm run build
 npm start
 ```
 
@@ -162,14 +177,14 @@ pm2 save
 pm2 startup
 ```
 
-## Langkah 4 - Upload Frontend ke Hostinger
+## Langkah 4 - Arahkan Domain `staff.paskus791.cloud`
 
-Sir sir sekalian, kalau frontend mau ditaruh di hosting biasa Hostinger:
+Sir sir sekalian, karena server ini sekarang bisa melayani frontend langsung, yang perlu dilakukan:
 
-1. build dulu dengan `npm run build`
-2. upload isi folder `dist/`
-3. letakkan semua isi `dist/` ke folder web aktif
-4. pastikan file rewrite tetap ada kalau dipakai
+1. arahkan DNS `staff.paskus791.cloud` ke VPS / server Node ini
+2. pasang reverse proxy `Nginx` ke port Node, misalnya `8787`
+3. aktifkan HTTPS
+4. biarkan request frontend, `/api`, dan `/staff-api` semua lewat domain itu
 
 Karena project ini pakai `React Router`, route seperti:
 
@@ -177,28 +192,56 @@ Karena project ini pakai `React Router`, route seperti:
 - `/hco`
 - `/hco/dashboard`
 
-harus tetap diarahkan ke `index.html`
+akan otomatis ditangani server Node ini ke `index.html`, jadi tidak perlu rewrite manual terpisah lagi.
 
-Kalau tidak, nanti pas refresh halaman akan 404.
+Contoh config `Nginx` singkat:
 
-## Langkah 5 - Sambungkan Frontend ke Backend
+```nginx
+server {
+    listen 80;
+    server_name staff.paskus791.cloud;
+
+    location / {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+Kalau pakai `certbot`, habis itu tinggal aktifkan HTTPS.
+
+## Langkah 5 - Jalur API Yang Dipakai
+
+Sir sir sekalian, jalur aplikasinya nanti begini:
+
+- `https://staff.paskus791.cloud/` -> frontend
+- `https://staff.paskus791.cloud/api/...` -> backend internal project ini
+- `https://staff.paskus791.cloud/staff-api/...` -> diproxy server ini ke `https://api.paskus791.cloud`
+
+Jadi browser user tidak perlu langsung ngobrol lintas domain ke backend staff luar. Ini lebih enak buat cookie, CORS, dan maintenance.
+
+## Langkah 6 - Sambungkan Frontend ke Backend
 
 Sir sir sekalian, bagian ini wajib cocok:
 
-- domain frontend harus masuk ke `APP_ALLOWED_ORIGINS`
-- backend harus bisa diakses frontend
-- kalau backend pakai subdomain sendiri, pastikan HTTPS aktif
+- `APP_ALLOWED_ORIGINS` isi dengan domain app utama
+- `PUBLIC_APP_URL` isi dengan domain app utama
+- `STAFF_BACKEND_BASE_URL` isi domain backend staff tim kamu
 
 Contoh aman:
 
 ```env
-APP_ALLOWED_ORIGINS=https://panel.paskus791.com
-PUBLIC_APP_URL=https://panel.paskus791.com
+APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
+PUBLIC_APP_URL=https://staff.paskus791.cloud
+STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 ```
 
-Kalau frontend dan backend beda domain, pastikan origin frontend yang asli masuk ke env backend.
-
-## Langkah 6 - Cek Health Backend
+## Langkah 7 - Cek Health Backend
 
 Sir sir sekalian, habis backend nyala cek ini:
 
@@ -214,7 +257,7 @@ Kalau normal, hasilnya kira-kira begini:
 
 Kalau health sudah bagus, baru lanjut test login.
 
-## Langkah 7 - Test Login
+## Langkah 8 - Test Login
 
 Sir sir sekalian, test minimal ini:
 
@@ -234,26 +277,16 @@ node scripts/reset-seed-dashboard.mjs
 
 Sir sir sekalian, kalau saya yang set, saya akan pakai model ini:
 
-- frontend di Hostinger web hosting
-- backend di Hostinger VPS
+- frontend build dan backend di VPS yang sama
 - database di MongoDB Atlas
 - backend dijaga pakai `pm2`
-- domain frontend dan backend dua subdomain berbeda
+- domain utama aplikasi satu pintu di `staff.paskus791.cloud`
+- backend staff luar tetap di `api.paskus791.cloud`
 
 Contoh:
 
-- `https://panel.domainkamu.com` untuk frontend
-- `https://api.domainkamu.com` untuk backend
-
-## Kalau Mau Semua di Hostinger
-
-Sir sir sekalian, ini catatan penting:
-
-- kalau kamu cuma punya hosting web biasa, itu enak untuk frontend
-- tapi backend Node + MongoDB lebih aman kalau pakai VPS
-- kalau mau MongoDB jalan di lingkungan yang kamu kontrol penuh, VPS adalah jalur yang lebih masuk akal
-
-Kalau tidak mau ribet urus database di server sendiri, pakai saja `MongoDB Atlas`.
+- `https://staff.paskus791.cloud` untuk aplikasi utama
+- `https://api.paskus791.cloud` untuk backend staff tim lain
 
 ## Checklist Sebelum Go Live
 

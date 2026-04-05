@@ -17,6 +17,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:8787",
+      "/staff-api": {
+        target: "https://api.paskus791.cloud",
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 });
