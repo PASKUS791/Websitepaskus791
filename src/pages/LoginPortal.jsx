@@ -26,6 +26,7 @@ import RotatingPaskusLogo from "../components/RotatingPaskusLogo";
 import SecurityAttackOverlay from "../components/SecurityAttackOverlay";
 import paskusLogo from "../assets/paskus.webp";
 import { useAuth } from "../lib/auth";
+import { redirectToSite } from "../lib/siteUrls";
 import { useAnimatedFavicon } from "../lib/useAnimatedFavicon";
 
 const PHOTOS = [foto1, foto2, foto3, foto4, foto5];
@@ -246,10 +247,6 @@ export default function LoginPortal() {
 
   if (user?.scope === "pelatih") {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  if (user?.scope === "hco") {
-    return <Navigate to="/hco/dashboard" replace />;
   }
 
   return (
@@ -504,12 +501,14 @@ export default function LoginPortal() {
                   <div className="flex w-full max-w-[620px] flex-col items-center">
                     <div className="mb-6 flex flex-col items-center text-center">
                       <div className="mb-6">
-                        <PortalModeSwitch
-                          activeMode="staff"
-                          onSelect={(mode) =>
-                            navigate(mode === "hco" ? "/hco" : "/", { replace: true })
-                          }
-                        />
+                    <PortalModeSwitch
+                      activeMode="staff"
+                      onSelect={(mode) => {
+                        if (mode === "hco") {
+                          redirectToSite("hco");
+                        }
+                      }}
+                    />
                       </div>
 
                       <img

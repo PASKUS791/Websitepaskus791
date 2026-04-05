@@ -18,14 +18,7 @@ import {
   SopPage,
   TindakanPage,
 } from "./dashboard/pages";
-import HcoLayout from "./hco/HcoLayout";
-import HcoCustomMapPlannerPage from "./hco/HcoCustomMapPlannerPage";
-import HcoCustomMapsPage from "./hco/HcoCustomMapsPage";
-import HcoDashboardPage from "./hco/HcoDashboardPage";
-import HcoMapPlannerUsersPage from "./hco/HcoMapPlannerUsersPage";
-import HcoStrategicSavesPage from "./hco/HcoStrategicSavesPage";
 import { useAuth } from "./lib/auth";
-import HcoLoginPortal from "./pages/HcoLoginPortal";
 import LoginPortal from "./pages/LoginPortal";
 
 function AuthLoadingScreen() {
@@ -66,10 +59,6 @@ function RootRedirect() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (user?.scope === "hco") {
-    return <Navigate to="/hco/dashboard" replace />;
-  }
-
   return <Navigate to="/" replace />;
 }
 
@@ -77,7 +66,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPortal />} />
-      <Route path="/hco" element={<HcoLoginPortal />} />
 
       <Route
         element={<ProtectedRoute requiredScope="pelatih" redirectTo="/" />}
@@ -94,18 +82,6 @@ export default function App() {
           <Route path="petugas" element={<TambahPetugasPage />} />
           <Route path="tindakan" element={<TindakanPage />} />
           <Route path="sop" element={<SopPage />} />
-        </Route>
-      </Route>
-
-      <Route
-        element={<ProtectedRoute requiredScope="hco" redirectTo="/hco" />}
-      >
-        <Route path="/hco/dashboard" element={<HcoLayout />}>
-          <Route index element={<HcoDashboardPage />} />
-          <Route path="custom-maps" element={<HcoCustomMapsPage />} />
-          <Route path="custom-maps/:mapId" element={<HcoCustomMapPlannerPage />} />
-          <Route path="saves" element={<HcoStrategicSavesPage />} />
-          <Route path="users" element={<HcoMapPlannerUsersPage />} />
         </Route>
       </Route>
 

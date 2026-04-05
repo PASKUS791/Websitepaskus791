@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-staff
+dist-hco
 dist-ssr
 PelatihDash-hostinger-deploy
 PelatihDash-hostinger-deploy.zip

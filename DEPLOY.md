@@ -1,22 +1,15 @@
-# Panduan Deploy `staff.paskus791.cloud` + MongoDB
+# Panduan Deploy Frontend Staff + MongoDB
 
 Sir sir sekalian, file ini saya tulis biar pas deploy nanti tim tidak perlu nebak-nebak lagi. Buat setup sekarang, saya saranin kita pakai jalur yang paling enak:
 
 - frontend build `React + Vite`
 - backend `Node.js`
 - database `MongoDB`
-- domain utama aplikasi: `https://staff.paskus791.cloud`
-- backend staff tim lain tetap ada di `https://api.paskus791.cloud`
+- website staff: `https://staff.paskus791.cloud`
+- backend utama ada di `https://api.paskus791.cloud`
+- website HCO dipisah ke repo / frontend terpisah
 
-Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Dan supaya calling API lebih efisien, frontend nanti cukup ngobrol ke satu domain saja, yaitu:
-
-- `https://staff.paskus791.cloud`
-
-Lalu server project ini akan:
-
-- melayani frontend hasil build
-- melayani endpoint internal `/api` untuk auth HCO, resources, saves, users
-- meneruskan request staff ke backend tim lain lewat `/staff-api`
+Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Repo ini khusus frontend staff/pelatih, dan tetap memakai backend yang sama di `https://api.paskus791.cloud`.
 
 ## Gambaran Besar
 
@@ -25,12 +18,12 @@ Sir sir sekalian, untuk deploy ada 4 bagian:
 1. build frontend
 2. jalankan backend Node
 3. sambungkan backend ke MongoDB
-4. arahkan domain `staff.paskus791.cloud` ke server ini
+4. arahkan domain `staff.paskus791.cloud`
 
 Kalau mau hasil yang enak dan stabil, saya saranin begini:
 
-- frontend dan backend taruh di server Node yang sama
-- domain `staff.paskus791.cloud` diarahkan ke server Node ini
+- backend Node + MongoDB jalan di `api.paskus791.cloud`
+- frontend staff dideploy terpisah
 - database pakai `MongoDB Atlas`
 
 Catatan penting dari sisi Hostinger:
@@ -57,8 +50,8 @@ Sir sir sekalian, pastikan ini dulu:
 
 Contoh setup sekarang:
 
-- app utama: `https://staff.paskus791.cloud`
-- backend staff eksternal: `https://api.paskus791.cloud`
+- staff frontend: `https://staff.paskus791.cloud`
+- backend API: `https://api.paskus791.cloud`
 
 ## Environment Variable Yang Wajib
 
@@ -67,10 +60,13 @@ Sir sir sekalian, backend tidak akan jalan benar kalau env ini belum diisi:
 ```env
 NODE_ENV=production
 API_PORT=8787
-APP_ALLOWED_ORIGINS=https://domain-kamu.com
+APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
 APP_SESSION_SECRET=isi-dengan-secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=isi-dengan-pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
+VITE_STAFF_SITE_URL=https://staff.paskus791.cloud
+VITE_HCO_SITE_URL=https://hco.paskus791.cloud
+VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
@@ -83,7 +79,7 @@ HCO_ADMIN_PASSWORD=ganti-password-production
 HCO_ADMIN_LABEL=Strategic Admin
 HCO_ADMIN_UNIT=HCO Strategic Command
 DISCORD_STRATEGIC_WEBHOOK_URL=
-PUBLIC_APP_URL=https://domain-kamu.com
+PUBLIC_APP_URL=https://api.paskus791.cloud
 ```
 
 Catatan santai tapi penting:
@@ -92,6 +88,10 @@ Catatan santai tapi penting:
 - `APP_PASSWORD_PEPPER` jangan disamain dengan session secret
 - `MONGODB_URI` jangan pernah ditaruh di frontend
 - `.env` jangan ikut di-push ke GitHub
+- `APP_ALLOWED_ORIGINS` isi domain staff
+- `VITE_STAFF_SITE_URL` isi domain staff
+- `VITE_HCO_SITE_URL` isi domain HCO untuk tombol pindah mode
+- `VITE_STAFF_API_BASE_URL` isi `https://api.paskus791.cloud`
 - `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
 
 ## Langkah 1 - Build Frontend
@@ -106,10 +106,8 @@ npm run build
 Hasilnya akan masuk ke folder:
 
 ```text
-dist/
+dist-staff/
 ```
-
-Nah sir sir sekalian, walau folder `dist/` tetap ada, untuk setup domain ini frontend tidak perlu dipisah ke hosting static lain. Server Node project ini sudah saya siapkan supaya bisa langsung melayani isi `dist/`.
 
 ## Langkah 2 - Siapkan MongoDB Atlas
 

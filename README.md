@@ -9,9 +9,9 @@ Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backe
 
 Setup deploy yang direkomendasikan sekarang:
 
-- domain utama app: `https://staff.paskus791.cloud`
-- backend internal project ini: `/api`
-- proxy backend staff tim lain: `/staff-api` -> `https://api.paskus791.cloud`
+- website staff: `https://staff.paskus791.cloud`
+- backend staff: `https://api.paskus791.cloud`
+- website HCO sekarang dipisah ke repo / frontend terpisah
 
 ## Stack
 
@@ -63,6 +63,8 @@ public/
 
 ## Routing
 
+Staff website:
+
 - `/` : Login Staff / Pelatih
 - `/dashboard` : Dashboard utama staff
 - `/dashboard/jadwal` : Redirect ke `Hasil Laporan`
@@ -72,12 +74,6 @@ public/
 - `/dashboard/petugas` : Tambah petugas
 - `/dashboard/tindakan` : Reminder perlu tindakan
 - `/dashboard/sop` : SOP
-- `/hco` : Login HCO
-- `/hco/dashboard` : HCO Map Planner
-- `/hco/dashboard/custom-maps` : Gallery Map Custom
-- `/hco/dashboard/custom-maps/:mapId` : Planner Map Custom
-- `/hco/dashboard/users` : Manajemen user Map Planner HCO
-- `/hco/dashboard/saves` : Strategic Saves
 
 ## Menjalankan Project Lokal
 
@@ -106,6 +102,9 @@ API_PORT=8787
 APP_ALLOWED_ORIGINS=http://localhost:5173
 APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-berbeda
+VITE_STAFF_SITE_URL=http://localhost:5173
+VITE_HCO_SITE_URL=https://hco.paskus791.cloud
+VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
@@ -115,7 +114,7 @@ HCO_ADMIN_PASSWORD=Paskus123
 HCO_ADMIN_LABEL=Strategic Admin
 HCO_ADMIN_UNIT=HCO Strategic Command
 DISCORD_STRATEGIC_WEBHOOK_URL=
-PUBLIC_APP_URL=http://localhost:5173
+PUBLIC_APP_URL=http://localhost:8787
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
 ```
@@ -132,27 +131,26 @@ Catatan:
 npm run api
 ```
 
-### 4. Jalankan frontend
+### 4. Jalankan frontend staff
 
 Terminal baru:
 
 ```bash
-npm run dev
+npm run dev:staff
 ```
 
 ### 5. Buka aplikasi
 
 ```text
-Frontend: http://localhost:5173
-API:      http://localhost:8787
+Staff: http://localhost:5173
+API:   http://localhost:8787
 ```
-
-Jika `5173` sedang dipakai, Vite bisa pindah ke port lain seperti `5174`.
 
 Catatan:
 
-- frontend lokal memakai proxy Vite untuk `/staff-api`
-- saat production, default `staffApi` sekarang juga bisa memakai `/staff-api` dari domain yang sama
+- frontend staff lokal memakai proxy Vite untuk `/staff-api`
+- saat production, staff memakai `https://api.paskus791.cloud`
+- tombol pindah mode ke HCO diarahkan ke website HCO terpisah
 
 ## Reset dan Isi Data Test
 
@@ -192,11 +190,13 @@ Contoh akun:
 ## Script
 
 ```bash
-npm run dev       # Jalankan Vite client
+npm run dev       # Alias ke frontend staff
+npm run dev:staff # Jalankan Vite website staff
 npm run api       # Jalankan backend Node server
 npm start         # Jalankan backend untuk mode deploy / hosting Node
-npm run build     # Build production frontend
-npm run preview   # Preview build Vite
+npm run build     # Build production website staff
+npm run build:staff
+npm run preview   # Preview build staff
 npm run lint      # Lint project
 node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 ```
@@ -216,6 +216,9 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_API_RATE_LIMIT_PER_MINUTE` | Rate limit umum API |
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
+| `VITE_STAFF_SITE_URL` | URL website staff |
+| `VITE_HCO_SITE_URL` | URL website HCO |
+| `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild |
 | `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |

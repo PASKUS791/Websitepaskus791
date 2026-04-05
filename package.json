@@ -17,13 +17,16 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run dev:staff",
+    "dev:staff": "vite --config vite.staff.config.js",
     "api": "node server/index.mjs",
     "start": "node server/index.mjs",
-    "dev:client": "vite",
-    "build": "vite build",
+    "dev:client": "npm run dev:staff",
+    "build": "npm run build:staff",
+    "build:staff": "vite build --config vite.staff.config.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run preview:staff",
+    "preview:staff": "vite preview --config vite.staff.config.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",

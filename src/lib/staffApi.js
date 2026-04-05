@@ -14,7 +14,7 @@ import { createJsonHttpClient, normalizeHttpError } from "./httpClient";
 
 const RAW_STAFF_API_BASE_URL = import.meta.env.DEV
   ? "/staff-api"
-  : import.meta.env.VITE_STAFF_API_BASE_URL || "/staff-api";
+  : import.meta.env.VITE_STAFF_API_BASE_URL || "https://api.paskus791.cloud";
 
 export const STAFF_SESSION_STORAGE_KEY = "pelatihdash.staff.session.v1";
 export const STAFF_DEFAULT_UNIT = "Recruitment Division";

@@ -234,7 +234,10 @@ const requestRateBuckets = new Map();
 const loginAttemptBuckets = new Map();
 const sseClients = new Set();
 const strategicLogoBuffer = readFileSync(resolve(projectRoot, "src/assets/paskus.webp"));
-const distRoot = resolve(projectRoot, "dist");
+const distRoot = resolve(
+  projectRoot,
+  String(process.env.APP_FRONTEND_DIST_DIR || "dist-staff").trim(),
+);
 const hasBuiltFrontend = existsSync(resolve(distRoot, "index.html"));
 const storage = await createStorage({
   resourceScopes: RESOURCE_SCOPES,
