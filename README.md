@@ -89,7 +89,15 @@ npm install
 
 ### 2. Buat file `.env`
 
-Karena file `.env.example` sengaja tidak disimpan ke repo, buat file `.env` manual di root project.
+Kalau mau paling cepat, copy file siap pakai ini:
+
+```bash
+cp deploy/staff.paskus791.cloud.env .env
+```
+
+Lalu sesuaikan `MONGODB_URI` dan password admin kalau diperlukan.
+
+Kalau mau buat manual, pakai contoh minimal ini:
 
 Contoh minimal:
 
@@ -116,6 +124,7 @@ Catatan:
 
 - backend sekarang wajib memakai `MongoDB`
 - gunakan database terpisah untuk lokal, beta, dan production
+- file `deploy/staff.paskus791.cloud.env` sudah disiapkan untuk deploy domain utama
 
 ### 3. Jalankan backend
 

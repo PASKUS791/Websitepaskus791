@@ -152,11 +152,23 @@ Kalau server sudah siap:
 
 1. clone repo ke server
 2. masuk ke folder project
-3. buat file `.env`
+3. copy file env siap pakai
 4. isi semua env yang tadi
 5. install dependency
 6. build frontend
 7. jalankan backend
+
+Command paling cepat:
+
+```bash
+cp deploy/staff.paskus791.cloud.env .env
+```
+
+Lalu edit paling tidak bagian:
+
+- `MONGODB_URI`
+- `PELATIH_ADMIN_PASSWORD`
+- `HCO_ADMIN_PASSWORD`
 
 Command dasar:
 
