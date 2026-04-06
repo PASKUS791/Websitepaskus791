@@ -32,13 +32,32 @@ function getSafeWindowStorage() {
   return window.localStorage;
 }
 
+function getStoredStaffAccessToken() {
+  return readStoredStaffSession()?.accessToken || "";
+}
+
+function mergeRequestHeaders(headers = {}, accessToken = "") {
+  const mergedHeaders = { ...(headers || {}) };
+
+  if (
+    accessToken &&
+    !("Authorization" in mergedHeaders) &&
+    !("authorization" in mergedHeaders)
+  ) {
+    mergedHeaders.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return mergedHeaders;
+}
+
 export async function staffApiFetch(path, options = {}) {
   try {
+    const accessToken = getStoredStaffAccessToken();
     const response = await staffHttpClient.request({
       url: path,
       method: options.method || "GET",
       data: options.body,
-      headers: options.headers,
+      headers: mergeRequestHeaders(options.headers, accessToken),
     });
 
     return response?.data ?? null;

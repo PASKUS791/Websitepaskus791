@@ -7,7 +7,7 @@ Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backe
 Setup deploy yang direkomendasikan sekarang:
 
 - website staff: `https://staff.paskus791.cloud`
-- backend staff: `https://api.paskus791.cloud`
+- backend staff legacy: `https://api.paskus791.cloud`
 
 ## Stack
 
@@ -97,7 +97,7 @@ APP_ALLOWED_ORIGINS=http://localhost:5173
 APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-berbeda
 VITE_STAFF_SITE_URL=http://localhost:5173
-VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
+VITE_STAFF_API_BASE_URL=/staff-api
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
@@ -137,7 +137,7 @@ API:   http://localhost:8787
 Catatan:
 
 - frontend staff lokal memakai proxy Vite untuk `/staff-api`
-- saat production, staff memakai `https://api.paskus791.cloud`
+- saat production, staff sebaiknya tetap memakai `/staff-api` agar cookie dan auth lewat backend internal domain staff
 
 ## Reset dan Isi Data Test
 
@@ -204,7 +204,7 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
 | `VITE_STAFF_SITE_URL` | URL website staff |
-| `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild |
+| `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild. Untuk deploy terpadu gunakan `/staff-api` |
 | `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |
@@ -252,6 +252,7 @@ APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
 APP_SESSION_SECRET=secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
+VITE_STAFF_API_BASE_URL=/staff-api
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash

@@ -6,9 +6,9 @@ Sir sir sekalian, file ini saya tulis biar pas deploy nanti tim tidak perlu neba
 - backend `Node.js`
 - database `MongoDB`
 - website staff: `https://staff.paskus791.cloud`
-- backend utama ada di `https://api.paskus791.cloud`
+- backend staff legacy ada di `https://api.paskus791.cloud`
 
-Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Repo ini khusus frontend staff/pelatih, dan tetap memakai backend yang sama di `https://api.paskus791.cloud`.
+Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Repo ini khusus frontend staff/pelatih, dan untuk data recruiter bisa memproxy backend legacy di `https://api.paskus791.cloud`.
 
 ## Gambaran Besar
 
@@ -64,7 +64,7 @@ APP_SESSION_SECRET=isi-dengan-secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=isi-dengan-pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
 VITE_STAFF_SITE_URL=https://staff.paskus791.cloud
-VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
+VITE_STAFF_API_BASE_URL=/staff-api
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
@@ -83,7 +83,7 @@ Catatan santai tapi penting:
 - `.env` jangan ikut di-push ke GitHub
 - `APP_ALLOWED_ORIGINS` isi domain staff
 - `VITE_STAFF_SITE_URL` isi domain staff
-- `VITE_STAFF_API_BASE_URL` isi `https://api.paskus791.cloud`
+- `VITE_STAFF_API_BASE_URL` isi `/staff-api` agar browser tetap lewat domain staff
 - `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
 - `DISCORD_RECRUITMENT_WEBHOOK_URL` isi webhook recruiter untuk dispatch lampiran + PDF
 
