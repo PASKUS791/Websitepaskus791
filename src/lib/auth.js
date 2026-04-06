@@ -7,7 +7,7 @@
  * Internal proprietary source notice.
  *
  * Module: Staff Auth Provider
- * Purpose: Provider auth khusus website staff supaya bundle tidak ikut membawa logic HCO.
+ * Purpose: Provider auth khusus website staff agar alur login tetap fokus ke portal pelatih.
  */
 
 import {

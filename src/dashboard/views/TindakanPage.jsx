@@ -94,7 +94,12 @@ function normalizeReminderIdentity(value) {
 }
 
 function getLatestArchiveActivityTimestamp(report) {
-  const supplementTimestamps = report.supplements.map((entry) =>
+  const supplementEntries = Array.isArray(report?.additionalReports)
+    ? report.additionalReports
+    : Array.isArray(report?.supplements)
+      ? report.supplements
+      : [];
+  const supplementTimestamps = supplementEntries.map((entry) =>
     new Date(entry.updatedAt || entry.createdAt).getTime(),
   );
   return Math.max(new Date(report.updatedAt || report.createdAt).getTime(), ...supplementTimestamps);

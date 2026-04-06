@@ -21,6 +21,7 @@ export async function apiFetch(path, options = {}) {
       method: options.method || "GET",
       data: options.body,
       headers: options.headers,
+      timeout: options.timeout,
     });
 
     return response?.data ?? null;

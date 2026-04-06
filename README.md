@@ -1,9 +1,6 @@
 # PelatihWebPaskus
 
-Dashboard operasional internal `PASKUS 791` dengan dua portal utama:
-
-- `Staff / Pelatih` untuk seleksi kandidat, pembukaan sesi pelatihan, pelaporan hasil, tindakan lanjutan, manajemen petugas, dan SOP operasional.
-- `HCO Center` untuk `Ronograd Map Planner`, intel layer, annotation board, strategic saves, dan workflow tactical planning.
+Dashboard operasional internal `PASKUS 791` yang sekarang difokuskan penuh ke portal `Staff / Pelatih` untuk seleksi kandidat, pembukaan sesi pelatihan, pelaporan hasil, tindakan lanjutan, manajemen petugas, dan SOP operasional.
 
 Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time. Backend sekarang memakai `MongoDB` sebagai storage utama untuk lokal maupun deploy.
 
@@ -11,7 +8,6 @@ Setup deploy yang direkomendasikan sekarang:
 
 - website staff: `https://staff.paskus791.cloud`
 - backend staff: `https://api.paskus791.cloud`
-- website HCO sekarang dipisah ke repo / frontend terpisah
 
 ## Stack
 
@@ -25,7 +21,7 @@ Setup deploy yang direkomendasikan sekarang:
 
 ## Fitur Saat Ini
 
-- Login server-side untuk portal `Pelatih` dan `HCO`
+- Login server-side untuk portal `Pelatih`
 - Password di-hash dengan `scrypt`
 - Session cookie `HttpOnly`
 - Rate limiting, lockout brute force, validasi origin/referer, dan hardening header keamanan
@@ -37,7 +33,6 @@ Setup deploy yang direkomendasikan sekarang:
 - Halaman `Tambah Petugas`
 - Halaman `Butuh Tindakan`
 - Library SOP operasional BRM5, roleplay, dan penggunaan web perekrutan
-- `HCO Map Planner` dengan marker intel, draw/text tool, fullscreen, strategic saves, dan dispatch Discord dari backend
 
 ## Struktur Project
 
@@ -50,8 +45,7 @@ scripts/
 
 src/
   dashboard/                Halaman portal staff
-  hco/                      HCO Center, map planner, strategic saves
-  pages/                    Login portal staff dan HCO
+  pages/                    Login portal staff
   lib/                      Auth client, API client, synced resources
   components/               Shared UI components
 
@@ -103,20 +97,14 @@ APP_ALLOWED_ORIGINS=http://localhost:5173
 APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-berbeda
 VITE_STAFF_SITE_URL=http://localhost:5173
-VITE_HCO_SITE_URL=https://hco.paskus791.cloud
 VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
 PELATIH_ADMIN_UNIT=PASKUS 791
-HCO_ADMIN_USERNAME=CosmoHCO
-HCO_ADMIN_PASSWORD=Paskus123
-HCO_ADMIN_LABEL=Strategic Admin
-HCO_ADMIN_UNIT=HCO Strategic Command
-DISCORD_STRATEGIC_WEBHOOK_URL=
-PUBLIC_APP_URL=http://localhost:8787
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
+DISCORD_RECRUITMENT_WEBHOOK_URL=
 ```
 
 Catatan:
@@ -150,7 +138,6 @@ Catatan:
 
 - frontend staff lokal memakai proxy Vite untuk `/staff-api`
 - saat production, staff memakai `https://api.paskus791.cloud`
-- tombol pindah mode ke HCO diarahkan ke website HCO terpisah
 
 ## Reset dan Isi Data Test
 
@@ -217,15 +204,12 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
 | `VITE_STAFF_SITE_URL` | URL website staff |
-| `VITE_HCO_SITE_URL` | URL website HCO |
 | `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild |
 | `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |
-| `DISCORD_STRATEGIC_WEBHOOK_URL` | Webhook dispatch strategic save |
-| `PUBLIC_APP_URL` | URL aplikasi publik |
+| `DISCORD_RECRUITMENT_WEBHOOK_URL` | Webhook Discord untuk kirim lampiran recruiter + PDF |
 | `PELATIH_ADMIN_*` | Bootstrap akun admin pelatih |
-| `HCO_ADMIN_*` | Bootstrap akun admin HCO |
 
 ## Arsitektur Data
 
@@ -241,8 +225,6 @@ Resource yang aktif sekarang:
 - `dashboard.schedules`
 - `dashboard.trainingSessions`
 - `dashboard.reports`
-- `hco.plannerState`
-- `hco.strategicSaves`
 
 Frontend memakai `useSyncedResource()` untuk load, save, dan update real-time lewat SSE.
 
@@ -275,9 +257,7 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retr
 MONGODB_DB_NAME=pelatihdash
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=ganti-password-production
-HCO_ADMIN_USERNAME=CosmoHCO
-HCO_ADMIN_PASSWORD=ganti-password-production
-PUBLIC_APP_URL=https://staff.paskus791.cloud
+DISCORD_RECRUITMENT_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 ```
 
 Health check backend:
@@ -299,21 +279,20 @@ Area yang paling siap untuk dilanjutkan:
 1. Tambahkan test integrasi untuk mode `MongoDB`.
 2. Pisahkan HTTP server sederhana ini ke framework backend pilihan tim jika perlu.
 3. Tambahkan manajemen akun admin selain bootstrap dari env.
-4. Tambahkan audit log login, perubahan data, dan dispatch Discord.
+4. Tambahkan audit log login dan perubahan data.
 5. Tambahkan reset password, role management, dan 2FA jika project lanjut ke production penuh.
 6. Pisahkan resource API menjadi endpoint domain-specific agar lebih mudah dipelihara.
-7. Tambahkan migrasi resource jika nanti struktur data planner berubah.
+7. Tambahkan migrasi resource jika struktur data dashboard berubah.
+8. Tambahkan retry queue untuk recruiter dispatch jika webhook Discord sedang gagal.
 
 ## Catatan Untuk Tim Frontend
 
-- Fokus UI utama ada di `src/dashboard` dan `src/hco`
+- Fokus UI utama ada di `src/dashboard`
 - Shell staff ada di `src/dashboard/DashboardNavbar.jsx`
 - View staff utama sudah dipisah ke `src/dashboard/views`
 - Komponen modal dan laporan ada di `src/dashboard/components`
 - Helper data dashboard ada di `src/dashboard/data/recruitmentData.js`
-- `HCO Map Planner` memakai data map dan marker dari `src/hco/ronogradMapData.js`
-- Strategic snapshot dan planner state ada di `src/hco/strategicSaves.js`
-- Portal login ada di `src/pages/LoginPortal.jsx` dan `src/pages/HcoLoginPortal.jsx`
+- Portal login ada di `src/pages/LoginPortal.jsx`
 
 ## Alur Staff Saat Ini
 
@@ -338,7 +317,7 @@ Bisa dibuild dengan:
 npm run build
 ```
 
-Lalu upload isi `dist/` ke hosting static.
+Lalu upload isi `dist-staff/` ke hosting static.
 
 ### Full stack
 
@@ -371,9 +350,9 @@ Lihat juga:
 2. Jalankan `npm run lint`.
 3. Jalankan `npm run build`.
 4. Jika perlu data test baru, jalankan `node scripts/reset-seed-dashboard.mjs`.
-5. Uji login staff dan HCO.
+5. Uji login staff.
 6. Uji route penting di desktop dan mobile.
-7. Pastikan webhook production dan `APP_SESSION_SECRET` sudah diisi.
+7. Pastikan `APP_SESSION_SECRET` sudah diisi.
 
 ## Status
 

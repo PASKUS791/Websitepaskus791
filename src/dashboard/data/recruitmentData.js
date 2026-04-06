@@ -175,7 +175,19 @@ export function loadDashboardCandidates(value = EMPTY_DASHBOARD_DATA) {
 }
 
 // Section: operator normalization.
+export function normalizeDiscordUserId(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
 export function normalizeOperatorEntry(operator, index = 0) {
+  const discordUserId = normalizeDiscordUserId(
+    operator.discordUserId ??
+      operator.discord_user_id ??
+      operator.discordId ??
+      operator.discord_id ??
+      operator.discordMentionId,
+  );
+
   return {
     id: String(operator.id ?? `operator-${index}`),
     username: String(operator.username || "").trim().toLowerCase(),
@@ -185,6 +197,7 @@ export function normalizeOperatorEntry(operator, index = 0) {
     unit: String(operator.unit || "PASKUS 791")
       .trim()
       .replace(/\s+/g, " "),
+    discordUserId,
   };
 }
 

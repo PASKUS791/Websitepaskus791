@@ -13,6 +13,7 @@ import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { createRecruitmentDispatchService } from "./recruitmentDispatch.mjs";
 import { createStorage } from "./storage.mjs";
 
 process.loadEnvFile?.();
@@ -147,8 +148,9 @@ const config = {
     process.env.APP_ALLOWED_ORIGINS || "http://localhost:5173",
     process.env.NODE_ENV === "production",
   ),
-  discordWebhookUrl: process.env.DISCORD_STRATEGIC_WEBHOOK_URL || "",
-  publicAppUrl: process.env.PUBLIC_APP_URL || "",
+  recruitmentWebhookUrl: String(
+    process.env.DISCORD_RECRUITMENT_WEBHOOK_URL || "",
+  ).trim(),
   staffBackendBaseUrl: String(
     process.env.STAFF_BACKEND_BASE_URL || "https://api.paskus791.cloud",
   ).trim().replace(/\/$/, ""),
@@ -164,9 +166,6 @@ const config = {
     12,
   ),
   production: process.env.NODE_ENV === "production",
-  primaryHcoAdminUsername: normalizeUsername(
-    process.env.HCO_ADMIN_USERNAME || "CosmoHCO",
-  ),
   mongodbUri: String(process.env.MONGODB_URI || process.env.APP_MONGODB_URI || "").trim(),
   mongodbDbName: String(
     process.env.MONGODB_DB_NAME || process.env.APP_MONGODB_DB_NAME || "pelatihdash",
@@ -189,30 +188,11 @@ if (config.production && !config.passwordPepper) {
   throw new Error("APP_PASSWORD_PEPPER wajib diisi di production.");
 }
 
-const DEFAULT_HCO_CATEGORY_IDS = ["2", "3", "4", "5", "6", "7", "8", "enemy-intel"];
-const LEGACY_HCO_ENEMY_CATEGORY_IDS = new Set([
-  "enemy-rocketeer",
-  "enemy-sniper",
-  "enemy-unit",
-  "enemy-vip-target",
-  "enemy-camp-ambush",
-  "enemy-mortar",
-  "enemy-anti-air-launcher",
-  "enemy-explosive-target",
-  "enemy-heli-landing",
-  "enemy-minefield",
-  "enemy-machine-gunner",
-]);
-
 const RESOURCE_SCOPES = {
   "dashboard.candidates": "pelatih",
   "dashboard.schedules": "pelatih",
   "dashboard.reports": "pelatih",
   "dashboard.trainingSessions": "pelatih",
-  "hco.plannerState": "hco",
-  "hco.strategicSaves": "hco",
-  "hco.customMaps": "hco",
-  "hco.mapPlannerUsers": "hco",
 };
 
 const RESOURCE_DEFAULTS = {
@@ -220,20 +200,11 @@ const RESOURCE_DEFAULTS = {
   "dashboard.schedules": [],
   "dashboard.reports": [],
   "dashboard.trainingSessions": [],
-  "hco.plannerState": {
-    actions: [],
-    enabledCategoryIds: DEFAULT_HCO_CATEGORY_IDS,
-    viewport: null,
-  },
-  "hco.strategicSaves": [],
-  "hco.customMaps": [],
-  "hco.mapPlannerUsers": [],
 };
 
 const requestRateBuckets = new Map();
 const loginAttemptBuckets = new Map();
 const sseClients = new Set();
-const strategicLogoBuffer = readFileSync(resolve(projectRoot, "src/assets/paskus.webp"));
 const distRoot = resolve(
   projectRoot,
   String(process.env.APP_FRONTEND_DIST_DIR || "dist-staff").trim(),
@@ -244,6 +215,10 @@ const storage = await createStorage({
   resourceDefaults: RESOURCE_DEFAULTS,
   mongodbUri: config.mongodbUri,
   mongodbDbName: config.mongodbDbName,
+});
+const recruitmentDispatchService = createRecruitmentDispatchService({
+  projectRoot,
+  webhookUrl: config.recruitmentWebhookUrl,
 });
 
 function nowIso() {
@@ -375,7 +350,6 @@ async function ensureResourceDefaults() {
 }
 
 await seedAdminUser("pelatih", "PELATIH_ADMIN", "Paskus Admin");
-await seedAdminUser("hco", "HCO_ADMIN", "Strategic Admin", "HCO Strategic Command");
 await ensureResourceDefaults();
 
 function getClientIp(request) {
@@ -820,7 +794,7 @@ function ensureTrustedOrigin(request, response) {
 }
 
 function validateLoginPayload(body) {
-  const scope = body?.scope === "hco" ? "hco" : body?.scope === "pelatih" ? "pelatih" : null;
+  const scope = body?.scope === "pelatih" ? "pelatih" : null;
   const username = normalizeUsername(body?.username);
   const password = String(body?.password || "");
 
@@ -883,70 +857,6 @@ function validateOperatorPayload(body) {
   };
 }
 
-function validateHcoUserPayload(body) {
-  const username = normalizeUsername(body?.username);
-  const label = String(body?.label || "")
-    .trim()
-    .replace(/\s+/g, " ");
-  const unit = String(body?.unit || "HCO Strategic Command")
-    .trim()
-    .replace(/\s+/g, " ");
-  const password = String(body?.password || "");
-
-  if (
-    !username ||
-    username.length < 3 ||
-    username.length > 64 ||
-    !/^[a-z0-9._@-]+$/i.test(username)
-  ) {
-    throw createHttpError(400, "Username user map planner tidak valid.");
-  }
-
-  if (!label || label.length < 3 || label.length > 80) {
-    throw createHttpError(400, "Nama user map planner wajib diisi dengan benar.");
-  }
-
-  if (!unit || unit.length < 3 || unit.length > 80) {
-    throw createHttpError(400, "Unit user map planner wajib diisi.");
-  }
-
-  if (password.length < 8 || password.length > 256) {
-    throw createHttpError(400, "Password user map planner minimal 8 karakter.");
-  }
-
-  return {
-    username,
-    label,
-    unit,
-    password,
-  };
-}
-
-function normalizeHcoAccessRecord(entry) {
-  if (!entry || typeof entry !== "object") {
-    return null;
-  }
-
-  const username = normalizeUsername(entry.username);
-
-  if (!username) {
-    return null;
-  }
-
-  return {
-    username,
-    access: {
-      mainPlanner: entry.access?.mainPlanner !== false,
-      customMaps: entry.access?.customMaps !== false,
-      saves: entry.access?.saves !== false,
-    },
-    updatedAt:
-      typeof entry.updatedAt === "string" && entry.updatedAt
-        ? entry.updatedAt
-        : nowIso(),
-  };
-}
-
 function detectThreatSignature(values) {
   const combined = values
     .map((value) => String(value || ""))
@@ -995,46 +905,6 @@ function detectThreatSignature(values) {
 function sanitizeResourceValue(resourceName, value) {
   if (!(resourceName in RESOURCE_DEFAULTS)) {
     return null;
-  }
-
-  if (resourceName === "hco.plannerState") {
-    const source = value && typeof value === "object" ? value : {};
-    const enabledCategoryIds = Array.isArray(source.enabledCategoryIds)
-      ? [...new Set(source.enabledCategoryIds)]
-          .map((id) =>
-            LEGACY_HCO_ENEMY_CATEGORY_IDS.has(id) ? "enemy-intel" : id,
-          )
-          .filter((id) =>
-            RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds.includes(id),
-          )
-      : RESOURCE_DEFAULTS["hco.plannerState"].enabledCategoryIds;
-
-    const viewport =
-      source.viewport &&
-      typeof source.viewport === "object" &&
-      Number.isFinite(source.viewport.scale) &&
-      Number.isFinite(source.viewport.offsetX) &&
-      Number.isFinite(source.viewport.offsetY)
-        ? {
-            scale: Number(source.viewport.scale),
-            offsetX: Number(source.viewport.offsetX),
-            offsetY: Number(source.viewport.offsetY),
-          }
-        : null;
-
-    return {
-      actions: Array.isArray(source.actions) ? source.actions : [],
-      enabledCategoryIds,
-      viewport,
-    };
-  }
-
-  if (resourceName === "hco.mapPlannerUsers") {
-    return Array.isArray(value)
-      ? value
-          .map((entry) => normalizeHcoAccessRecord(entry))
-          .filter(Boolean)
-      : [];
   }
 
   return Array.isArray(value) ? value : RESOURCE_DEFAULTS[resourceName];
@@ -1107,84 +977,9 @@ function broadcastResourceChange(resourceName) {
   }
 }
 
-function isPrimaryHcoAdmin(session) {
-  return (
-    session?.user?.scope === "hco" &&
-    normalizeUsername(session?.user?.username) === config.primaryHcoAdminUsername
-  );
-}
-
-async function getHcoAccessStateForUser(username) {
-  const normalizedUsername = normalizeUsername(username);
-
-  if (!normalizedUsername) {
-    return {
-      mainPlanner: false,
-      customMaps: false,
-      saves: false,
-    };
-  }
-
-  if (normalizedUsername === config.primaryHcoAdminUsername) {
-    return {
-      mainPlanner: true,
-      customMaps: true,
-      saves: true,
-    };
-  }
-
-  const resource = await readResource("hco.mapPlannerUsers");
-  const accessEntry = resource.value.find(
-    (entry) => normalizeUsername(entry.username) === normalizedUsername,
-  );
-
-  if (!accessEntry) {
-    return {
-      mainPlanner: true,
-      customMaps: true,
-      saves: true,
-    };
-  }
-
-  return {
-    mainPlanner: accessEntry.access?.mainPlanner !== false,
-    customMaps: accessEntry.access?.customMaps !== false,
-    saves: accessEntry.access?.saves !== false,
-  };
-}
-
 async function isAuthorizedForResource(session, resourceName, method = "GET") {
-  if (session?.user?.scope !== RESOURCE_SCOPES[resourceName]) {
-    return false;
-  }
-
-  if (resourceName === "hco.mapPlannerUsers") {
-    return method === "GET" ? session?.user?.scope === "hco" : isPrimaryHcoAdmin(session);
-  }
-
-  if (session.user.scope !== "hco") {
-    return true;
-  }
-
-  const accessState = await getHcoAccessStateForUser(session.user.username);
-
-  if (resourceName === "hco.plannerState") {
-    return accessState.mainPlanner;
-  }
-
-  if (resourceName === "hco.customMaps") {
-    if (method !== "GET" && !accessState.customMaps) {
-      return false;
-    }
-
-    return accessState.customMaps;
-  }
-
-  if (resourceName === "hco.strategicSaves") {
-    return accessState.saves;
-  }
-
-  return true;
+  void method;
+  return session?.user?.scope === RESOURCE_SCOPES[resourceName];
 }
 
 function notAuthorized(response) {
@@ -1342,108 +1137,6 @@ async function serveFrontend(request, response, requestUrl) {
   } catch {
     sendError(response, 404, "Frontend file tidak ditemukan.");
   }
-}
-
-function dataUrlToBlob(dataUrl) {
-  const match = /^data:(.+?);base64,(.+)$/.exec(String(dataUrl || ""));
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    mimeType: match[1],
-    blob: new Blob([Buffer.from(match[2], "base64")], { type: match[1] }),
-  };
-}
-
-async function dispatchStrategicSaveToDiscord(save) {
-  if (!config.discordWebhookUrl) {
-    throw new Error("Discord webhook belum dikonfigurasi di server.");
-  }
-
-  const waitUrl = config.discordWebhookUrl.includes("?")
-    ? `${config.discordWebhookUrl}&wait=true`
-    : `${config.discordWebhookUrl}?wait=true`;
-  const thumbnailPayload = dataUrlToBlob(save.thumbnailDataUrl);
-  const snapshotFileName =
-    `${String(save.title || "strategic-save").toLowerCase().replace(/[^a-z0-9]+/g, "-") || "strategic-save"}.png`;
-  const formData = new FormData();
-  const embed = {
-    title: save.title || "Strategic Save",
-    description: save.note || "Snapshot strategi dikirim dari HCO Center.",
-    color: 12646984,
-    author: {
-      name: "Strategic Admin",
-      icon_url: "attachment://strategic-admin.webp",
-    },
-    footer: {
-      text: "Strategic Channel • Ronograd Planning Dispatch",
-    },
-    timestamp: save.updatedAt || save.createdAt || nowIso(),
-    fields: [
-      {
-        name: "Actions",
-        value: String(save.actionCount || 0),
-        inline: true,
-      },
-      {
-        name: "Categories",
-        value: String(save.categoryCount || 0),
-        inline: true,
-      },
-      {
-        name: "Zoom",
-        value: `${Math.round((save.snapshot?.viewport?.scale || 0) * 100)}%`,
-        inline: true,
-      },
-    ],
-    thumbnail: {
-      url: "attachment://strategic-admin.webp",
-    },
-  };
-
-  if (thumbnailPayload) {
-    embed.image = {
-      url: `attachment://${snapshotFileName}`,
-    };
-  }
-
-  formData.append(
-    "payload_json",
-    JSON.stringify({
-      username: "Strategic Admin",
-      embeds: [embed],
-      content: `Strategic dispatch untuk ${save.title || "snapshot taktis"}.`,
-      allowed_mentions: { parse: [] },
-    }),
-  );
-
-  if (thumbnailPayload) {
-    formData.append("files[0]", thumbnailPayload.blob, snapshotFileName);
-    formData.append(
-      "files[1]",
-      new Blob([strategicLogoBuffer], { type: "image/webp" }),
-      "strategic-admin.webp",
-    );
-  } else {
-    formData.append(
-      "files[0]",
-      new Blob([strategicLogoBuffer], { type: "image/webp" }),
-      "strategic-admin.webp",
-    );
-  }
-
-  const response = await fetch(waitUrl, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Discord webhook rejected request (${response.status})`);
-  }
-
-  return response.json().catch(() => null);
 }
 
 async function handleRequest(request, response) {
@@ -1667,183 +1360,6 @@ async function handleRequest(request, response) {
     }
   }
 
-  if (path === "/api/hco/users" && request.method === "GET") {
-    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
-      notAuthorized(response);
-      return;
-    }
-
-    const accessEntries = (await readResource("hco.mapPlannerUsers")).value;
-    const accessByUsername = new Map(
-      accessEntries.map((entry) => [normalizeUsername(entry.username), entry]),
-    );
-    const users = (await storage.listUsersByScope("hco")).map((user) => {
-      const accessEntry = accessByUsername.get(normalizeUsername(user.username));
-
-      return {
-        id: user.id,
-        username: user.username,
-        label: user.label,
-        unit: user.unit,
-        access: accessEntry?.access ?? {
-          mainPlanner: true,
-          customMaps: true,
-          saves: true,
-        },
-        isPrimaryAdmin:
-          normalizeUsername(user.username) === config.primaryHcoAdminUsername,
-      };
-    });
-
-    sendJson(response, 200, {
-      ok: true,
-      users,
-    });
-    return;
-  }
-
-  if (path === "/api/hco/users" && request.method === "POST") {
-    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
-      notAuthorized(response);
-      return;
-    }
-
-    try {
-      ensureJsonRequest(request);
-      const body = await parseJsonBody(request);
-      const detectedThreat = detectThreatSignature([
-        body?.username,
-        body?.label,
-        body?.unit,
-        body?.password,
-      ]);
-
-      if (detectedThreat) {
-        sendSecurityBlock(
-          response,
-          403,
-          "Payload user map planner diblokir oleh sistem keamanan.",
-          detectedThreat,
-        );
-        return;
-      }
-
-      const nextUser = validateHcoUserPayload(body);
-      const existingUser = await storage.getUserByScopeAndUsername(
-        "hco",
-        nextUser.username,
-      );
-
-      if (existingUser) {
-        sendError(response, 409, "Username HCO sudah digunakan.");
-        return;
-      }
-
-      const timestamp = nowIso();
-      await storage.createUser({
-        scope: "hco",
-        username: nextUser.username,
-        label: nextUser.label,
-        unit: nextUser.unit,
-        passwordHash: hashPassword(nextUser.password),
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      });
-
-      const currentAccessEntries = (await readResource("hco.mapPlannerUsers")).value;
-      const nextAccessEntries = [
-        ...currentAccessEntries.filter(
-          (entry) => normalizeUsername(entry.username) !== nextUser.username,
-        ),
-        {
-          username: nextUser.username,
-          access: {
-            mainPlanner: true,
-            customMaps: true,
-            saves: true,
-          },
-          updatedAt: timestamp,
-        },
-      ].sort((firstEntry, secondEntry) =>
-        String(firstEntry.username).localeCompare(String(secondEntry.username)),
-      );
-      await writeResource("hco.mapPlannerUsers", nextAccessEntries);
-
-      sendJson(response, 201, {
-        ok: true,
-        message: "User map planner baru berhasil ditambahkan.",
-      });
-      return;
-    } catch (error) {
-      sendError(
-        response,
-        error.statusCode || 500,
-        error.message || "Gagal menambahkan user map planner.",
-      );
-      return;
-    }
-  }
-
-  if (path.startsWith("/api/hco/users/") && request.method === "DELETE") {
-    if (!session || session.user.scope !== "hco" || !isPrimaryHcoAdmin(session)) {
-      notAuthorized(response);
-      return;
-    }
-
-    try {
-      const username = normalizeUsername(
-        decodeURIComponent(path.replace("/api/hco/users/", "")),
-      );
-
-      if (!username) {
-        sendError(response, 400, "Username user map planner tidak valid.");
-        return;
-      }
-
-      if (username === config.primaryHcoAdminUsername) {
-        sendError(response, 400, "Akun HCO utama tidak bisa dihapus.");
-        return;
-      }
-
-      const existingUser = await storage.getUserByScopeAndUsername("hco", username);
-
-      if (!existingUser) {
-        sendError(response, 404, "Anggota HCO tidak ditemukan.");
-        return;
-      }
-
-      await storage.deleteSessionsByUser(existingUser.id);
-      await storage.deleteUserByScopeAndUsername("hco", username);
-
-      const currentAccessEntries = (await readResource("hco.mapPlannerUsers")).value;
-      const nextAccessEntries = currentAccessEntries.filter(
-        (entry) => normalizeUsername(entry.username) !== username,
-      );
-      await writeResource("hco.mapPlannerUsers", nextAccessEntries);
-
-      const currentStrategicSaves = (await readResource("hco.strategicSaves")).value;
-      const nextStrategicSaves = currentStrategicSaves.filter(
-        (save) =>
-          String(save.ownerId || "") !== String(existingUser.id) &&
-          normalizeUsername(save.ownerUsername) !== username,
-      );
-      await writeResource("hco.strategicSaves", nextStrategicSaves);
-
-      sendJson(response, 200, {
-        ok: true,
-        message: `Anggota ${existingUser.label} berhasil dihapus.`,
-      });
-      return;
-    } catch (error) {
-      sendError(
-        response,
-        error.statusCode || 500,
-        error.message || "Gagal menghapus anggota HCO.",
-      );
-      return;
-    }
-  }
-
   if (path === "/api/events" && request.method === "GET") {
     if (!session) {
       notAuthorized(response);
@@ -1939,45 +1455,25 @@ async function handleRequest(request, response) {
     }
   }
 
-  if (
-    path.startsWith("/api/hco/strategic-saves/") &&
-    path.endsWith("/dispatch") &&
-    request.method === "POST"
-  ) {
-    if (!session || session.user.scope !== "hco") {
-      notAuthorized(response);
-      return;
-    }
-
-    const saveId = decodeURIComponent(
-      path.replace("/api/hco/strategic-saves/", "").replace("/dispatch", ""),
-    );
-    const strategicSavesResource = await readResource("hco.strategicSaves");
-    const strategicSave = strategicSavesResource.value.find(
-      (save) =>
-        save.id === saveId &&
-        (String(save.ownerId || "") === String(session.user.id) ||
-          normalizeUsername(save.ownerUsername) ===
-            normalizeUsername(session.user.username)),
-    );
-
-    if (!strategicSave) {
-      sendError(response, 404, "Strategic save tidak ditemukan.");
-      return;
-    }
-
+  if (path === "/api/recruitment/dispatch" && request.method === "POST") {
     try {
-      await dispatchStrategicSaveToDiscord(strategicSave);
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request, 16 * 1024 * 1024);
+      const dispatchResult = await recruitmentDispatchService.dispatch(body);
+
       sendJson(response, 200, {
         ok: true,
-        message: "Strategi berhasil dikirim ke Strategic Channel.",
+        message: "Laporan recruiter berhasil dikirim ke Discord.",
+        pdfFileName: dispatchResult.pdfFileName,
+        mentionedOperatorCount: dispatchResult.mentionedOperatorCount,
+        messageId: dispatchResult.messageId,
       });
       return;
     } catch (error) {
       sendError(
         response,
-        502,
-        error.message || "Gagal mengirim strategi ke Discord.",
+        error.statusCode || 500,
+        error.message || "Gagal mengirim recruiter dispatch.",
       );
       return;
     }

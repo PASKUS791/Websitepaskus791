@@ -18,6 +18,7 @@ import {
   ArchiveReportEditorModal,
   ArchiveReportSupplementModal,
 } from "../components/RecruitmentReportComponents";
+import ArchiveReportDispatchModal from "../components/RecruitmentDispatchModal";
 import {
   formatArchiveTimestamp,
   formatOperationalDateLabel,
@@ -27,9 +28,12 @@ import {
   normalizeRecruitmentReport,
 } from "../data/recruitmentData";
 import { useStaffPortalData } from "../hooks/useStaffPortalData";
+import { useAuth } from "../../lib/auth";
+import { dispatchRecruitmentSessionReport } from "../../lib/recruitmentDispatchApi";
 
 export default function RecruitmentReportPage() {
   const { sessionId = "" } = useParams();
+  const { user } = useAuth();
   const {
     reports,
     trainingSessions,
@@ -43,6 +47,8 @@ export default function RecruitmentReportPage() {
   const [systemTime, setSystemTime] = useState(new Date());
   const [editorReport, setEditorReport] = useState(null);
   const [supplementEditorState, setSupplementEditorState] = useState(null);
+  const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [dispatchSubmitting, setDispatchSubmitting] = useState(false);
   const [archiveNotice, setArchiveNotice] = useState(
     "Channel siap untuk sinkronisasi laporan ke database.",
   );
@@ -88,24 +94,39 @@ export default function RecruitmentReportPage() {
     : reportsError || archiveNotice;
 
   const handleDispatchReports = async () => {
-    const dispatchTimestamp = new Date().toISOString();
-
-    if (pendingDispatchCount === 0) {
-      setArchiveNotice("Semua laporan sesi ini sudah terkirim ke resimen.");
+    if (sessionReports.length === 0) {
+      setArchiveNotice("Belum ada laporan sesi yang bisa dikirim ke resimen.");
       return;
     }
 
+    setDispatchModalOpen(true);
+  };
+
+  const handleSubmitDispatch = async ({ description, attachment }) => {
+    const dispatchTimestamp = new Date().toISOString();
+
     try {
+      setDispatchSubmitting(true);
+      await dispatchRecruitmentSessionReport({
+        session: trainingSession,
+        reports: sessionReports,
+        description,
+        attachment,
+        requestedBy: user,
+      });
       await dispatchTrainingSession(sessionId, sessionReports);
+      setDispatchModalOpen(false);
       setArchiveNotice(
-        `${pendingDispatchCount} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
+        `${sessionReports.length} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
           new Date(dispatchTimestamp),
         )}.`,
       );
     } catch (dispatchError) {
       setArchiveNotice(
-        dispatchError?.message || "Gagal mengirim laporan sesi ke backend.",
+        dispatchError?.message || "Gagal mengirim laporan sesi ke resimen.",
       );
+    } finally {
+      setDispatchSubmitting(false);
     }
   };
 
@@ -394,6 +415,19 @@ export default function RecruitmentReportPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {dispatchModalOpen && trainingSession ? (
+          <ArchiveReportDispatchModal
+            trainingSession={trainingSession}
+            reports={sessionReports}
+            pendingDispatchCount={pendingDispatchCount}
+            submitting={dispatchSubmitting}
+            onClose={() => (dispatchSubmitting ? undefined : setDispatchModalOpen(false))}
+            onSubmit={handleSubmitDispatch}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {editorReport ? (

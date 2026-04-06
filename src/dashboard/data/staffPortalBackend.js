@@ -80,6 +80,7 @@ function normalizeOperatorFromUser(user) {
     username: user.username,
     label: user.label || user.nama || user.username,
     unit: user.unit || "PASKUS 791",
+    discordUserId: user.discordUserId || user.discord_user_id || user.discordId || "",
   });
 }
 
@@ -96,7 +97,16 @@ function loadOperatorDirectory(currentUser = null) {
   );
 
   if (currentOperator) {
-    directoryMap.set(currentOperator.username, currentOperator);
+    const currentPersistedEntry = directoryMap.get(currentOperator.username);
+    directoryMap.set(
+      currentOperator.username,
+      normalizeOperatorEntry({
+        ...currentPersistedEntry,
+        ...currentOperator,
+        discordUserId:
+          currentOperator.discordUserId || currentPersistedEntry?.discordUserId || "",
+      }),
+    );
   }
 
   const directory = [...directoryMap.values()].sort((left, right) =>
@@ -204,6 +214,11 @@ function buildSessionDetailPayload(
             username: username || matchedOperator?.username || `operator-${index}`,
             label: operator?.nama || matchedOperator?.label || username || "Petugas",
             unit: matchedOperator?.unit || "PASKUS 791",
+            discordUserId:
+              matchedOperator?.discordUserId ||
+              operator?.discordUserId ||
+              operator?.discord_user_id ||
+              "",
           },
           index,
         );
@@ -508,6 +523,7 @@ export async function registerStaffOperator(formState, currentUser = null) {
     username: formState.username,
     label: formState.label,
     unit: formState.unit || "PASKUS 791",
+    discordUserId: formState.discordUserId || "",
   });
   const directoryMap = new Map(
     operatorDirectory.map((entry) => [entry.username, entry]),
@@ -523,6 +539,45 @@ export async function registerStaffOperator(formState, currentUser = null) {
     operator: normalizedOperator,
     operators: nextDirectory,
     message: "Petugas berhasil ditambahkan.",
+  };
+}
+
+export async function updateStaffOperatorMetadata(
+  { username, discordUserId },
+  currentUser = null,
+) {
+  const operatorDirectory = loadOperatorDirectory(currentUser);
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+
+  if (!normalizedUsername) {
+    throw new Error("Username petugas tidak valid.");
+  }
+
+  const targetOperator = operatorDirectory.find(
+    (entry) => entry.username === normalizedUsername,
+  );
+
+  if (!targetOperator) {
+    throw new Error("Petugas tidak ditemukan.");
+  }
+
+  const nextDirectory = operatorDirectory
+    .map((entry) =>
+      entry.username === normalizedUsername
+        ? normalizeOperatorEntry({
+            ...entry,
+            discordUserId,
+          })
+        : entry,
+    )
+    .sort((left, right) => left.label.localeCompare(right.label, "id-ID"));
+
+  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, nextDirectory);
+
+  return {
+    operator: nextDirectory.find((entry) => entry.username === normalizedUsername) || null,
+    operators: nextDirectory,
+    message: "Discord User ID petugas berhasil diperbarui.",
   };
 }
 

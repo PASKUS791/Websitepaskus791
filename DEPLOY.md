@@ -7,7 +7,6 @@ Sir sir sekalian, file ini saya tulis biar pas deploy nanti tim tidak perlu neba
 - database `MongoDB`
 - website staff: `https://staff.paskus791.cloud`
 - backend utama ada di `https://api.paskus791.cloud`
-- website HCO dipisah ke repo / frontend terpisah
 
 Backend project ini sekarang sudah fokus ke `MongoDB`, jadi tidak ada lagi mode SQLite. Repo ini khusus frontend staff/pelatih, dan tetap memakai backend yang sama di `https://api.paskus791.cloud`.
 
@@ -65,21 +64,15 @@ APP_SESSION_SECRET=isi-dengan-secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=isi-dengan-pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
 VITE_STAFF_SITE_URL=https://staff.paskus791.cloud
-VITE_HCO_SITE_URL=https://hco.paskus791.cloud
 VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
+DISCORD_RECRUITMENT_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=ganti-password-production
 PELATIH_ADMIN_LABEL=Paskus Admin
 PELATIH_ADMIN_UNIT=PASKUS 791
-HCO_ADMIN_USERNAME=CosmoHCO
-HCO_ADMIN_PASSWORD=ganti-password-production
-HCO_ADMIN_LABEL=Strategic Admin
-HCO_ADMIN_UNIT=HCO Strategic Command
-DISCORD_STRATEGIC_WEBHOOK_URL=
-PUBLIC_APP_URL=https://api.paskus791.cloud
 ```
 
 Catatan santai tapi penting:
@@ -90,9 +83,9 @@ Catatan santai tapi penting:
 - `.env` jangan ikut di-push ke GitHub
 - `APP_ALLOWED_ORIGINS` isi domain staff
 - `VITE_STAFF_SITE_URL` isi domain staff
-- `VITE_HCO_SITE_URL` isi domain HCO untuk tombol pindah mode
 - `VITE_STAFF_API_BASE_URL` isi `https://api.paskus791.cloud`
 - `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
+- `DISCORD_RECRUITMENT_WEBHOOK_URL` isi webhook recruiter untuk dispatch lampiran + PDF
 
 ## Langkah 1 - Build Frontend
 
@@ -166,7 +159,6 @@ Lalu edit paling tidak bagian:
 
 - `MONGODB_URI`
 - `PELATIH_ADMIN_PASSWORD`
-- `HCO_ADMIN_PASSWORD`
 
 Command dasar:
 
@@ -199,8 +191,6 @@ Sir sir sekalian, karena server ini sekarang bisa melayani frontend langsung, ya
 Karena project ini pakai `React Router`, route seperti:
 
 - `/dashboard`
-- `/hco`
-- `/hco/dashboard`
 
 akan otomatis ditangani server Node ini ke `index.html`, jadi tidak perlu rewrite manual terpisah lagi.
 
@@ -240,14 +230,12 @@ Jadi browser user tidak perlu langsung ngobrol lintas domain ke backend staff lu
 Sir sir sekalian, bagian ini wajib cocok:
 
 - `APP_ALLOWED_ORIGINS` isi dengan domain app utama
-- `PUBLIC_APP_URL` isi dengan domain app utama
 - `STAFF_BACKEND_BASE_URL` isi domain backend staff tim kamu
 
 Contoh aman:
 
 ```env
 APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
-PUBLIC_APP_URL=https://staff.paskus791.cloud
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 ```
 
@@ -272,10 +260,8 @@ Kalau health sudah bagus, baru lanjut test login.
 Sir sir sekalian, test minimal ini:
 
 1. login Staff
-2. login HCO
-3. buka dashboard pelatih
-4. buka HCO Map Planner
-5. cek save dan load data
+2. buka dashboard pelatih
+3. cek kandidat, pelatihan, hasil laporan, dan tambah petugas
 
 Kalau ada data dashboard yang masih kosong dan kamu butuh data dummy untuk ngetes:
 
@@ -310,8 +296,6 @@ Sir sir sekalian, sebelum bilang deploy selesai, cek ini:
 6. `npm start` sukses
 7. `/api/health` normal
 8. login Staff normal
-9. login HCO normal
-10. save planner dan save custom map normal
 
 ## Penutup
 

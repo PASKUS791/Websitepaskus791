@@ -21,12 +21,10 @@ import foto2 from "../assets/5.webp";
 import foto3 from "../assets/GATAM_2.webp";
 import foto4 from "../assets/GATAM_3.webp";
 import foto5 from "../assets/GATAM_4.webp";
-import PortalModeSwitch from "../components/PortalModeSwitch";
 import RotatingPaskusLogo from "../components/RotatingPaskusLogo";
 import SecurityAttackOverlay from "../components/SecurityAttackOverlay";
 import paskusLogo from "../assets/paskus.webp";
 import { useAuth } from "../lib/auth";
-import { redirectToSite } from "../lib/siteUrls";
 import { useAnimatedFavicon } from "../lib/useAnimatedFavicon";
 
 const PHOTOS = [foto1, foto2, foto3, foto4, foto5];
@@ -431,12 +429,12 @@ export default function LoginPortal() {
                     transition={{ delay: 0.5 }}
                   >
                     <span className="mb-4 inline-block bg-emerald-500/10 px-4 py-1 text-xs font-bold tracking-[0.6em] text-emerald-400">
-                      ARCHIVE_FILE_0{currentIndex + 1}
+                      RECRUITMENT_FILE_0{currentIndex + 1}
                     </span>
                     <h2 className="mb-8 text-5xl leading-none font-black italic uppercase tracking-tighter md:text-8xl">
-                      Strategic <br />
+                      Recruitment <br />
                       <span className="bg-linear-to-r from-emerald-400 to-white bg-clip-text text-transparent">
-                        Intelligence
+                        Command
                       </span>
                     </h2>
 
@@ -500,16 +498,9 @@ export default function LoginPortal() {
                 <div className="flex justify-center">
                   <div className="flex w-full max-w-[620px] flex-col items-center">
                     <div className="mb-6 flex flex-col items-center text-center">
-                      <div className="mb-6">
-                    <PortalModeSwitch
-                      activeMode="staff"
-                      onSelect={(mode) => {
-                        if (mode === "hco") {
-                          redirectToSite("hco");
-                        }
-                      }}
-                    />
-                      </div>
+                      <p className="mb-6 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 font-public text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-300">
+                        Staff Recruiter Portal
+                      </p>
 
                       <img
                         src={paskusLogo}

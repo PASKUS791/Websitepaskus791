@@ -21,6 +21,7 @@ import {
   fetchStaffPortalSnapshot,
   registerStaffOperator,
   saveStaffRecruitmentReport,
+  updateStaffOperatorMetadata,
 } from "../data/staffPortalBackend";
 
 export function useStaffPortalData({ enabled = true } = {}) {
@@ -105,6 +106,10 @@ export function useStaffPortalData({ enabled = true } = {}) {
       runMutation(() => eliminateStaffCandidate(report, user)),
     registerOperator: async (formState) => {
       await registerStaffOperator(formState, user);
+      return reload();
+    },
+    updateOperatorMetadata: async (payload) => {
+      await updateStaffOperatorMetadata(payload, user);
       return reload();
     },
   };

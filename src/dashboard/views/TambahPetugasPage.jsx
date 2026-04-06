@@ -18,10 +18,34 @@ const INITIAL_FORM_STATE = {
   username: "",
   label: "",
   unit: "PASKUS 791",
+  discordUserId: "",
   password: "",
 };
 
-function OperatorCard({ operator, isCurrentUser = false }) {
+function OperatorCard({
+  operator,
+  isCurrentUser = false,
+  onSaveDiscordUserId,
+}) {
+  const [discordUserId, setDiscordUserId] = useState(operator.discordUserId || "");
+  const [savingDiscordId, setSavingDiscordId] = useState(false);
+  const [discordNotice, setDiscordNotice] = useState("");
+  const [discordError, setDiscordError] = useState("");
+
+  const handleSaveDiscordUserId = async () => {
+    try {
+      setSavingDiscordId(true);
+      await onSaveDiscordUserId(operator.username, discordUserId);
+      setDiscordNotice("Discord ID tersimpan.");
+      setDiscordError("");
+    } catch (saveError) {
+      setDiscordError(saveError.message || "Gagal menyimpan Discord ID.");
+      setDiscordNotice("");
+    } finally {
+      setSavingDiscordId(false);
+    }
+  };
+
   return (
     <article className="rounded-2xl border border-white/8 bg-[#171717] p-4">
       <div className="flex items-start justify-between gap-4">
@@ -43,6 +67,36 @@ function OperatorCard({ operator, isCurrentUser = false }) {
         </p>
         <p className="mt-1 text-sm text-stone-300">{operator.unit}</p>
       </div>
+
+      <div className="mt-4 grid gap-2">
+        <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-500">
+          Discord User ID
+        </span>
+        <input
+          value={discordUserId}
+          onChange={(event) => setDiscordUserId(event.target.value.replace(/\D/g, ""))}
+          placeholder="contoh: 123456789012345678"
+          className="rounded-xl border border-white/8 bg-black/20 px-3 py-2.5 text-sm text-stone-100 outline-none transition focus:border-amber-300"
+        />
+        <button
+          type="button"
+          onClick={handleSaveDiscordUserId}
+          disabled={savingDiscordId}
+          className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-amber-200 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {savingDiscordId ? "Menyimpan..." : "Simpan Discord ID"}
+        </button>
+        {discordError ? (
+          <p className="font-public text-[9px] uppercase tracking-[0.14em] text-rose-300">
+            {discordError}
+          </p>
+        ) : null}
+        {discordNotice ? (
+          <p className="font-public text-[9px] uppercase tracking-[0.14em] text-emerald-300">
+            {discordNotice}
+          </p>
+        ) : null}
+      </div>
     </article>
   );
 }
@@ -58,6 +112,7 @@ export default function TambahPetugasPage() {
     loading,
     error: portalError,
     registerOperator,
+    updateOperatorMetadata,
   } = useStaffPortalData();
 
   const operatorCountLabel = useMemo(() => `${operators.length} petugas aktif`, [operators]);
@@ -164,6 +219,18 @@ export default function TambahPetugasPage() {
 
             <label className="grid gap-2">
               <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Discord User ID
+              </span>
+              <input
+                value={formState.discordUserId}
+                onChange={handleChange("discordUserId")}
+                placeholder="contoh: 123456789012345678"
+                className="rounded-xl border border-white/8 bg-black/20 px-3 py-3 text-sm text-stone-100 outline-none transition focus:border-amber-300"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
                 Password
               </span>
               <input
@@ -223,6 +290,9 @@ export default function TambahPetugasPage() {
                   key={`${operator.id}-${operator.username}`}
                   operator={operator}
                   isCurrentUser={operator.username === user?.username}
+                  onSaveDiscordUserId={(username, discordUserId) =>
+                    updateOperatorMetadata({ username, discordUserId })
+                  }
                 />
               ))
             ) : (
