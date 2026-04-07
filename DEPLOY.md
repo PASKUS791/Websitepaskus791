@@ -87,6 +87,14 @@ Catatan santai tapi penting:
 - `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
 - `DISCORD_RECRUITMENT_WEBHOOK_URL` isi webhook recruiter untuk dispatch lampiran + PDF
 
+Kalau tim backend mau ganti isi embed Discord, warna, timeout, nama webhook, atau asset logo/banner recruiter:
+
+- cek [`server/recruitmentDispatch/config.mjs`](/Users/jerikho/Documents/New%20project/PelatihDash/server/recruitmentDispatch/config.mjs)
+
+Kalau mau ubah format PDF atau payload Discord:
+
+- cek folder [`server/recruitmentDispatch/`](/Users/jerikho/Documents/New%20project/PelatihDash/server/recruitmentDispatch)
+
 ## Langkah 1 - Build Frontend
 
 Sir sir sekalian, dari root project jalankan:
