@@ -11,9 +11,11 @@
  */
 
 import { AnimatePresence } from "framer-motion";
+import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import TrainingSessionReportModal from "../components/TrainingSessionReportModal";
+import { readStoredStaffSession } from "../../lib/staffApi";
 import {
   formatArchiveTimestamp,
   formatOperationalDateLabel,
@@ -603,6 +605,20 @@ export default function PelatihanPage() {
       setSessionNotice(
         `Menutup sesi ${trainingSession.title} dan memindahkan seluruh laporan ke Review Laporan...`,
       );
+
+      const staffAccessToken = readStoredStaffSession()?.accessToken || "";
+      await axios.post(
+        `https://api.paskus791.cloud/perekrutan/${trainingSession.id}/finish`,
+        undefined,
+        staffAccessToken
+          ? {
+              headers: {
+                Authorization: `Bearer ${staffAccessToken}`,
+              },
+            }
+          : undefined,
+      );
+
       await dispatchTrainingSession(sessionId, sessionReports);
       navigate(`/dashboard/laporan-perekrutan/${trainingSession.id}`, {
         replace: true,
