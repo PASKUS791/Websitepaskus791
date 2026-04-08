@@ -7,13 +7,12 @@
  * Internal proprietary source notice.
  *
  * Module: Server / Recruitment Dispatch Service
- * Purpose: Menyatukan alur normalisasi payload, generate PDF, dan kirim webhook Discord untuk recruiter dispatch.
+ * Purpose: Menyatukan alur normalisasi payload dan kirim webhook Discord recruiter dalam satu embed chat.
  */
 
 import { RECRUITMENT_DISPATCH_CONFIG, loadRecruitmentDispatchAssets } from "./config.mjs";
 import { normalizeDispatchPayload } from "./payload.mjs";
-import { buildRecruitmentDispatchPdf } from "./pdf.mjs";
-import { createDispatchError, sanitizeFileName } from "./shared.mjs";
+import { createDispatchError } from "./shared.mjs";
 import { sendRecruitmentDispatch } from "./webhook.mjs";
 
 export function createRecruitmentDispatchService({
@@ -35,18 +34,11 @@ export function createRecruitmentDispatchService({
 
       const generatedAt = new Date().toISOString();
       const normalizedPayload = normalizeDispatchPayload(payload);
-      const pdfFileName = sanitizeFileName(
-        `laporan-${normalizedPayload.session.title}-${normalizedPayload.session.id}.pdf`,
-        "laporan-recruiter.pdf",
-      );
-      const pdfBuffer = buildRecruitmentDispatchPdf(normalizedPayload, generatedAt);
 
       return sendRecruitmentDispatch({
         webhookUrl: resolvedWebhookUrl,
         normalizedPayload,
         generatedAt,
-        pdfBuffer,
-        pdfFileName,
         assets,
       });
     },

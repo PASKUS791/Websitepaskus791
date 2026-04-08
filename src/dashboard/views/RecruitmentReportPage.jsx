@@ -12,7 +12,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ArchiveReportCard,
   ArchiveReportEditorModal,
@@ -31,8 +31,73 @@ import { useStaffPortalData } from "../hooks/useStaffPortalData";
 import { useAuth } from "../../lib/auth";
 import { dispatchRecruitmentSessionReport } from "../../lib/recruitmentDispatchApi";
 
+function PageStatePanel({
+  eyebrow = "Recruitment Archive",
+  title,
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-[#151515] p-6 text-center">
+      <p className="font-public text-[10px] uppercase tracking-[0.3em] text-amber-300">
+        {eyebrow}
+      </p>
+      <h1 className="mt-4 font-sans text-[2rem] font-bold text-stone-100">
+        {title}
+      </h1>
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-stone-400">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function createSupplementSignature(entry) {
+  return `${String(entry?.question || "").trim()}::${String(entry?.notes || "").trim()}`;
+}
+
+function isReportVisualizationSynced(sourceReport, overrideReport) {
+  if (!sourceReport || !overrideReport) {
+    return false;
+  }
+
+  const sourceSupplements = Array.isArray(sourceReport.additionalReports)
+    ? sourceReport.additionalReports
+    : [];
+  const overrideSupplements = Array.isArray(overrideReport.additionalReports)
+    ? overrideReport.additionalReports
+    : [];
+
+  if (
+    sourceReport.status !== overrideReport.status ||
+    sourceReport.question !== overrideReport.question ||
+    sourceReport.notes !== overrideReport.notes ||
+    sourceSupplements.length !== overrideSupplements.length
+  ) {
+    return false;
+  }
+
+  const sourceSignatureCounts = sourceSupplements.reduce((counts, entry) => {
+    const signature = createSupplementSignature(entry);
+    counts.set(signature, (counts.get(signature) || 0) + 1);
+    return counts;
+  }, new Map());
+
+  return overrideSupplements.every((entry) => {
+    const signature = createSupplementSignature(entry);
+    const currentCount = sourceSignatureCounts.get(signature) || 0;
+
+    if (currentCount <= 0) {
+      return false;
+    }
+
+    sourceSignatureCounts.set(signature, currentCount - 1);
+    return true;
+  });
+}
+
 export default function RecruitmentReportPage() {
   const { sessionId = "" } = useParams();
+  const location = useLocation();
   const { user } = useAuth();
   const {
     reports,
@@ -49,8 +114,12 @@ export default function RecruitmentReportPage() {
   const [supplementEditorState, setSupplementEditorState] = useState(null);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [dispatchSubmitting, setDispatchSubmitting] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState("");
+  const [reportSubmittingId, setReportSubmittingId] = useState("");
+  const [reportVisualOverrides, setReportVisualOverrides] = useState({});
   const [archiveNotice, setArchiveNotice] = useState(
-    "Channel siap untuk sinkronisasi laporan ke database.",
+    location.state?.archiveNotice ||
+      "Channel siap untuk sinkronisasi laporan ke database.",
   );
 
   useEffect(() => {
@@ -62,10 +131,99 @@ export default function RecruitmentReportPage() {
     () => trainingSessions.find((session) => session.id === sessionId) ?? null,
     [sessionId, trainingSessions],
   );
-  const sessionReports = useMemo(
+  const persistedSessionReports = useMemo(
     () => reports.filter((report) => report.sessionId === sessionId),
     [reports, sessionId],
   );
+  const sessionReports = useMemo(
+    () =>
+      persistedSessionReports
+        .map((report) =>
+          normalizeRecruitmentReport(reportVisualOverrides[report.id] ?? report),
+        )
+        .sort(
+          (left, right) =>
+            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+        ),
+    [persistedSessionReports, reportVisualOverrides],
+  );
+
+  useEffect(() => {
+    setReportVisualOverrides((currentOverrides) => {
+      let hasChanges = false;
+      const nextOverrides = { ...currentOverrides };
+      const persistedIds = new Set(persistedSessionReports.map((report) => report.id));
+
+      Object.keys(nextOverrides).forEach((reportId) => {
+        if (!persistedIds.has(reportId)) {
+          delete nextOverrides[reportId];
+          hasChanges = true;
+        }
+      });
+
+      persistedSessionReports.forEach((report) => {
+        const normalizedReport = normalizeRecruitmentReport(report);
+        const override = nextOverrides[normalizedReport.id];
+
+        if (override && isReportVisualizationSynced(normalizedReport, override)) {
+          delete nextOverrides[normalizedReport.id];
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? nextOverrides : currentOverrides;
+    });
+  }, [persistedSessionReports]);
+
+  const setOptimisticReport = (report) => {
+    setReportVisualOverrides((currentOverrides) => ({
+      ...currentOverrides,
+      [report.id]: report,
+    }));
+  };
+
+  const restoreReportVisualization = (report) => {
+    if (!report) {
+      return;
+    }
+
+    setReportVisualOverrides((currentOverrides) => ({
+      ...currentOverrides,
+      [report.id]: report,
+    }));
+  };
+
+  const reconcileSavedReport = (savedReport, snapshot) => {
+    const syncedReport = Array.isArray(snapshot?.reports)
+      ? snapshot.reports.find((entry) => entry.id === savedReport.id)
+      : null;
+
+    setReportVisualOverrides((currentOverrides) => {
+      if (!syncedReport) {
+        return {
+          ...currentOverrides,
+          [savedReport.id]: savedReport,
+        };
+      }
+
+      const normalizedSyncedReport = normalizeRecruitmentReport(syncedReport);
+
+      if (!isReportVisualizationSynced(normalizedSyncedReport, savedReport)) {
+        return {
+          ...currentOverrides,
+          [savedReport.id]: savedReport,
+        };
+      }
+
+      if (!(savedReport.id in currentOverrides)) {
+        return currentOverrides;
+      }
+
+      const nextOverrides = { ...currentOverrides };
+      delete nextOverrides[savedReport.id];
+      return nextOverrides;
+    });
+  };
 
   const latestUpdatedAt = useMemo(() => {
     return sessionReports.reduce((latestTimestamp, report) => {
@@ -89,11 +247,19 @@ export default function RecruitmentReportPage() {
   const lastReportLabel = sessionReports.length
     ? formatRelativeMinutes(latestUpdatedDate, systemTime)
     : "Belum Ada";
-  const resolvedArchiveNotice = reportsLoading
-    ? "Memuat arsip laporan dari database..."
-    : reportsError || archiveNotice;
+  const resolvedArchiveNotice = reportSubmitting
+    ? reportSubmitting
+    : dispatchSubmitting
+      ? "Mengirim laporan sesi ke resimen..."
+      : reportsLoading
+        ? "Memuat arsip laporan dari database..."
+        : reportsError || archiveNotice;
 
   const handleDispatchReports = async () => {
+    if (dispatchSubmitting || reportSubmitting) {
+      return;
+    }
+
     if (sessionReports.length === 0) {
       setArchiveNotice("Belum ada laporan sesi yang bisa dikirim ke resimen.");
       return;
@@ -132,9 +298,17 @@ export default function RecruitmentReportPage() {
 
   const handleSaveReport = async (updatedReport) => {
     const normalizedReport = normalizeRecruitmentReport(updatedReport);
+    const previousReport =
+      sessionReports.find((report) => report.id === normalizedReport.id) ?? null;
 
     try {
-      await saveRecruitmentReport(normalizedReport);
+      setReportSubmittingId(normalizedReport.id);
+      setReportSubmitting(`Memperbarui laporan ${normalizedReport.name}...`);
+      setOptimisticReport(normalizedReport);
+      const nextSnapshot = await saveRecruitmentReport(normalizedReport, {
+        mode: "update",
+      });
+      reconcileSavedReport(normalizedReport, nextSnapshot);
       setEditorReport(null);
       setArchiveNotice(
         `Laporan ${normalizedReport.name} diperbarui pada ${formatArchiveTimestamp(
@@ -142,9 +316,13 @@ export default function RecruitmentReportPage() {
         )}.`,
       );
     } catch (saveError) {
+      restoreReportVisualization(previousReport);
       setArchiveNotice(
         saveError?.message || "Gagal memperbarui laporan perekrutan.",
       );
+    } finally {
+      setReportSubmitting("");
+      setReportSubmittingId("");
     }
   };
 
@@ -168,7 +346,17 @@ export default function RecruitmentReportPage() {
     });
 
     try {
-      await saveRecruitmentReport(nextReport);
+      setReportSubmittingId(targetReport.id);
+      setReportSubmitting(
+        isEditMode
+          ? `Memperbarui laporan tambahan ${targetReport.name}...`
+          : `Menambahkan laporan tambahan ${targetReport.name}...`,
+      );
+      setOptimisticReport(nextReport);
+      const nextSnapshot = await saveRecruitmentReport(nextReport, {
+        mode: "update",
+      });
+      reconcileSavedReport(nextReport, nextSnapshot);
       setSupplementEditorState(null);
       setArchiveNotice(
         `Laporan tambahan untuk ${targetReport.name} ${isEditMode ? "diperbarui" : "ditambahkan"} pada ${formatArchiveTimestamp(
@@ -176,9 +364,13 @@ export default function RecruitmentReportPage() {
         )}.`,
       );
     } catch (saveError) {
+      restoreReportVisualization(targetReport);
       setArchiveNotice(
         saveError?.message || "Gagal menyimpan laporan tambahan.",
       );
+    } finally {
+      setReportSubmitting("");
+      setReportSubmittingId("");
     }
   };
 
@@ -213,7 +405,13 @@ export default function RecruitmentReportPage() {
     });
 
     try {
-      await saveRecruitmentReport(nextReport);
+      setReportSubmittingId(targetReport.id);
+      setReportSubmitting(`Menghapus laporan tambahan ${targetReport.name}...`);
+      setOptimisticReport(nextReport);
+      const nextSnapshot = await saveRecruitmentReport(nextReport, {
+        mode: "update",
+      });
+      reconcileSavedReport(nextReport, nextSnapshot);
       setSupplementEditorState(null);
       setArchiveNotice(
         `Laporan tambahan ${targetReport.name} dihapus pada ${formatArchiveTimestamp(
@@ -221,9 +419,13 @@ export default function RecruitmentReportPage() {
         )}.`,
       );
     } catch (deleteError) {
+      restoreReportVisualization(targetReport);
       setArchiveNotice(
         deleteError?.message || "Gagal menghapus laporan tambahan.",
       );
+    } finally {
+      setReportSubmitting("");
+      setReportSubmittingId("");
     }
   };
 
@@ -246,7 +448,18 @@ export default function RecruitmentReportPage() {
     }
 
     try {
+      setReportSubmittingId(targetReport.id);
+      setReportSubmitting(`Mengeliminasi kandidat ${targetReport.name}...`);
       await eliminateCandidate(targetReport);
+      setReportVisualOverrides((currentOverrides) => {
+        if (!(reportId in currentOverrides)) {
+          return currentOverrides;
+        }
+
+        const nextOverrides = { ...currentOverrides };
+        delete nextOverrides[reportId];
+        return nextOverrides;
+      });
       setEditorReport((currentReport) =>
         currentReport?.id === reportId ? null : currentReport,
       );
@@ -260,27 +473,36 @@ export default function RecruitmentReportPage() {
       setArchiveNotice(
         eliminateError?.message || "Gagal mengeliminasi kandidat.",
       );
+    } finally {
+      setReportSubmitting("");
+      setReportSubmittingId("");
     }
   };
 
+  if (reportsLoading && !trainingSession) {
+    return (
+      <PageStatePanel
+        title="Memuat Arsip Laporan"
+        description="Data sesi, laporan, dan histori evaluasi sedang disinkronkan dari backend recruiter."
+      />
+    );
+  }
+
   if (!trainingSession) {
     return (
-      <div className="rounded-2xl border border-white/8 bg-[#151515] p-6 text-center">
-        <p className="font-public text-[10px] uppercase tracking-[0.3em] text-amber-300">
-          Laporan Perekrutan
-        </p>
-        <h1 className="mt-4 font-sans text-[2rem] font-bold text-stone-100">
-          Sesi Tidak Ditemukan
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-stone-400">
-          Detail laporan ini hanya tersedia jika dibuka dari halaman Hasil Laporan.
-        </p>
-        <Link
-          to="/dashboard/laporan"
-          className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-200 transition hover:bg-white/10"
-        >
-          Kembali ke Hasil Laporan
-        </Link>
+      <div className="space-y-4">
+        <PageStatePanel
+          title="Sesi Tidak Ditemukan"
+          description="Detail laporan ini hanya tersedia jika dibuka dari halaman Hasil Laporan."
+        />
+        <div className="text-center">
+          <Link
+            to="/dashboard/laporan"
+            className="inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-200 transition hover:bg-white/10"
+          >
+            Kembali ke Hasil Laporan
+          </Link>
+        </div>
       </div>
     );
   }
@@ -321,12 +543,13 @@ export default function RecruitmentReportPage() {
               <button
                 type="button"
                 onClick={handleDispatchReports}
-                className="inline-flex items-center gap-3 bg-stone-900 px-4 py-2 font-public text-[9px] uppercase tracking-[0.12em] text-stone-200 transition hover:bg-stone-800"
+                disabled={dispatchSubmitting || Boolean(reportSubmitting)}
+                className="inline-flex items-center gap-3 bg-stone-900 px-4 py-2 font-public text-[9px] uppercase tracking-[0.12em] text-stone-200 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current">
                   <path d="M14.5 1L1 7l4.8 1.9L7.7 14 14.5 1zm-8 6.2l5.2-3-3.7 4.6-.7-1.6-.8 0z" />
                 </svg>
-                kirim laporan ke resimen
+                {dispatchSubmitting ? "mengirim..." : "kirim laporan ke resimen"}
               </button>
 
               <Link
@@ -346,11 +569,17 @@ export default function RecruitmentReportPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          {sessionReports.length > 0 ? (
+          {reportsLoading && sessionReports.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/8 bg-[#151515] px-5 py-8 text-center text-sm text-stone-400 xl:col-span-2">
+              Arsip laporan sedang dimuat dari backend...
+            </div>
+          ) : sessionReports.length > 0 ? (
             sessionReports.map((report) => (
               <ArchiveReportCard
                 key={report.id}
                 report={report}
+                busy={Boolean(reportSubmitting) && reportSubmittingId === report.id}
+                highlighted={Boolean(reportVisualOverrides[report.id])}
                 onAddSupplement={() =>
                   setSupplementEditorState({
                     mode: "create",
@@ -437,6 +666,7 @@ export default function RecruitmentReportPage() {
             onClose={() => setEditorReport(null)}
             onSave={handleSaveReport}
             onEliminate={() => handleEliminateCandidate(editorReport.id)}
+            submitting={Boolean(reportSubmitting)}
           />
         ) : null}
       </AnimatePresence>
@@ -451,6 +681,7 @@ export default function RecruitmentReportPage() {
             onClose={() => setSupplementEditorState(null)}
             onSave={handleSaveSupplement}
             onDelete={handleDeleteSupplement}
+            submitting={Boolean(reportSubmitting)}
           />
         ) : null}
       </AnimatePresence>

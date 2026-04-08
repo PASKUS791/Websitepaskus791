@@ -7,7 +7,7 @@
  * Internal proprietary source notice.
  *
  * Module: Server / Recruitment Dispatch Payload
- * Purpose: Merapikan dan memvalidasi payload dispatch recruiter sebelum diubah jadi PDF dan embed Discord.
+ * Purpose: Merapikan dan memvalidasi payload dispatch recruiter sebelum diubah jadi embed Discord.
  */
 
 import {

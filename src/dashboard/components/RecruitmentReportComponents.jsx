@@ -60,6 +60,7 @@ export function ArchiveReportEditorModal({
   onClose,
   onSave,
   onEliminate,
+  submitting = false,
 }) {
   const [formState, setFormState] = useState(() => ({
     name: report.name,
@@ -73,6 +74,18 @@ export function ArchiveReportEditorModal({
   }));
 
   useEffect(() => withModalEscape(onClose), [onClose]);
+  useEffect(() => {
+    setFormState({
+      name: report.name,
+      discord: report.discord,
+      group: report.group,
+      status: report.status,
+      age: report.age,
+      gender: report.gender,
+      question: report.question,
+      notes: report.notes,
+    });
+  }, [report]);
 
   const handleChange = (field) => (event) => {
     setFormState((currentState) => ({
@@ -96,7 +109,6 @@ export function ArchiveReportEditorModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[210] flex items-center justify-center bg-black/70 p-3 md:p-5 backdrop-blur-[4px]"
-      onClick={onClose}
     >
       <motion.form
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -234,24 +246,27 @@ export function ArchiveReportEditorModal({
           <button
             type="button"
             onClick={onEliminate}
+            disabled={submitting}
             className="border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-rose-200 transition hover:bg-rose-500/15"
           >
-            Eliminasi Kandidat
+            {submitting ? "Memproses..." : "Eliminasi Kandidat"}
           </button>
 
           <div className="flex flex-col gap-3 md:flex-row">
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="border border-white/8 bg-black/20 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105"
+              disabled={submitting}
+              className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Simpan Laporan
+              {submitting ? "Menyimpan..." : "Simpan Laporan"}
             </button>
           </div>
         </div>
@@ -268,6 +283,7 @@ export function ArchiveReportSupplementModal({
   onClose,
   onSave,
   onDelete,
+  submitting = false,
 }) {
   const [question, setQuestion] = useState(
     supplement?.question ?? `Update lanjutan untuk kandidat ${report.name}?`,
@@ -276,6 +292,12 @@ export function ArchiveReportSupplementModal({
   const isEditMode = mode === "edit";
 
   useEffect(() => withModalEscape(onClose), [onClose]);
+  useEffect(() => {
+    setQuestion(
+      supplement?.question ?? `Update lanjutan untuk kandidat ${report.name}?`,
+    );
+    setNotes(supplement?.notes ?? "");
+  }, [report, supplement]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -293,7 +315,6 @@ export function ArchiveReportSupplementModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-3 md:p-5 backdrop-blur-[4px]"
-      onClick={onClose}
     >
       <motion.form
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -359,9 +380,10 @@ export function ArchiveReportSupplementModal({
               <button
                 type="button"
                 onClick={() => onDelete(report.id, supplement.id)}
+                disabled={submitting}
                 className="border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-rose-200 transition hover:bg-rose-500/15"
               >
-                Hapus Laporan
+                {submitting ? "Memproses..." : "Hapus Laporan"}
               </button>
             ) : null}
           </div>
@@ -370,15 +392,21 @@ export function ArchiveReportSupplementModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="border border-white/8 bg-black/20 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105"
+              disabled={submitting}
+              className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isEditMode ? "Simpan Perubahan" : "Simpan Tambahan"}
+              {submitting
+                ? "Menyimpan..."
+                : isEditMode
+                  ? "Simpan Perubahan"
+                  : "Simpan Tambahan"}
             </button>
           </div>
         </div>
@@ -390,6 +418,8 @@ export function ArchiveReportSupplementModal({
 // Section: report archive card.
 export function ArchiveReportCard({
   report,
+  busy = false,
+  highlighted = false,
   onEdit,
   onAddSupplement,
   onEditSupplement,
@@ -399,7 +429,12 @@ export function ArchiveReportCard({
   const statusClasses = getArchiveStatusClasses(report.status);
 
   return (
-    <article className="relative flex h-full flex-col justify-between overflow-hidden bg-[#272727] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
+    <article
+      className={[
+        "relative flex h-full flex-col justify-between overflow-hidden bg-[#272727] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.22)]",
+        highlighted ? "ring-1 ring-amber-300/25" : "",
+      ].join(" ")}
+    >
       <div>
         <div className="flex items-start justify-between gap-4 pb-6">
           <div>
@@ -467,19 +502,37 @@ export function ArchiveReportCard({
         </div>
 
         <div className="mt-4 border border-white/5 bg-[#1a1a1a] p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-public text-[8px] uppercase tracking-[0.3em] text-amber-300">
               Laporan Tambahan
             </p>
-            <span className="font-public text-[9px] font-bold uppercase tracking-[0.12em] text-stone-500">
-              {report.additionalReports.length} Entry
-            </span>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {busy ? (
+                <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2.5 py-1 font-public text-[9px] font-bold uppercase tracking-[0.12em] text-amber-200">
+                  Menyimpan...
+                </span>
+              ) : null}
+              {highlighted && !busy ? (
+                <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-public text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-200">
+                  Visual Update
+                </span>
+              ) : null}
+              <span className="rounded-full border border-white/8 bg-black/20 px-2.5 py-1 font-public text-[9px] font-bold uppercase tracking-[0.12em] text-stone-400">
+                {report.additionalReports.length} Entry
+              </span>
+            </div>
           </div>
 
           <div className="mt-3 space-y-3">
             {report.additionalReports.length > 0 ? (
               report.additionalReports.map((entry, index) => (
-                <div key={entry.id} className="border border-white/5 bg-stone-950 p-4">
+                <div
+                  key={entry.id}
+                  className={[
+                    "border bg-stone-950 p-4",
+                    index === 0 ? "border-amber-300/20" : "border-white/5",
+                  ].join(" ")}
+                >
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <p className="font-public text-[8px] uppercase tracking-[0.3em] text-amber-300">
@@ -522,7 +575,7 @@ export function ArchiveReportCard({
             ) : (
               <div className="border border-dashed border-white/6 bg-black/20 px-3 py-5 text-center">
                 <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
-                  Belum ada laporan tambahan untuk kandidat ini.
+                  Belum ada laporan tambahan yang tersimpan untuk kandidat ini.
                 </p>
               </div>
             )}

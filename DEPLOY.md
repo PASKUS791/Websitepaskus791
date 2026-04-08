@@ -65,6 +65,7 @@ APP_PASSWORD_PEPPER=isi-dengan-pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
 VITE_STAFF_SITE_URL=https://staff.paskus791.cloud
 VITE_STAFF_API_BASE_URL=/staff-api
+VITE_RECRUITMENT_DISPATCH_PATH=/sipil/kirim
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
@@ -84,14 +85,15 @@ Catatan santai tapi penting:
 - `APP_ALLOWED_ORIGINS` isi domain staff
 - `VITE_STAFF_SITE_URL` isi domain staff
 - `VITE_STAFF_API_BASE_URL` isi `/staff-api` agar browser tetap lewat domain staff
+- `VITE_RECRUITMENT_DISPATCH_PATH` biarkan `/sipil/kirim` supaya frontend nembak endpoint dispatch yang ada di backend teman kamu
 - `STAFF_BACKEND_BASE_URL` biarkan ke `https://api.paskus791.cloud` kalau backend tim lain tetap di sana
-- `DISCORD_RECRUITMENT_WEBHOOK_URL` isi webhook recruiter untuk dispatch lampiran + PDF
+- `DISCORD_RECRUITMENT_WEBHOOK_URL` isi webhook recruiter untuk dispatch embed + lampiran
 
-Kalau tim backend mau ganti isi embed Discord, warna, timeout, nama webhook, atau asset logo/banner recruiter:
+Kalau tim backend mau ganti isi embed Discord, warna, timeout, nama webhook, atau asset logo recruiter:
 
 - cek [`server/recruitmentDispatch/config.mjs`](/Users/jerikho/Documents/New%20project/PelatihDash/server/recruitmentDispatch/config.mjs)
 
-Kalau mau ubah format PDF atau payload Discord:
+Kalau mau ubah payload Discord atau format lampiran dispatch:
 
 - cek folder [`server/recruitmentDispatch/`](/Users/jerikho/Documents/New%20project/PelatihDash/server/recruitmentDispatch)
 

@@ -98,6 +98,7 @@ APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-berbeda
 VITE_STAFF_SITE_URL=http://localhost:5173
 VITE_STAFF_API_BASE_URL=/staff-api
+VITE_RECRUITMENT_DISPATCH_PATH=/sipil/kirim
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
@@ -205,10 +206,11 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
 | `VITE_STAFF_SITE_URL` | URL website staff |
 | `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild. Untuk deploy terpadu gunakan `/staff-api` |
+| `VITE_RECRUITMENT_DISPATCH_PATH` | Path endpoint dispatch recruiter di backend staff, default `/sipil/kirim` |
 | `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |
-| `DISCORD_RECRUITMENT_WEBHOOK_URL` | Webhook Discord untuk kirim lampiran recruiter + PDF |
+| `DISCORD_RECRUITMENT_WEBHOOK_URL` | Webhook Discord untuk kirim embed recruiter + lampiran |
 | `PELATIH_ADMIN_*` | Bootstrap akun admin pelatih |
 
 ## Arsitektur Data

@@ -21,6 +21,7 @@ import {
 } from "./recruitmentData";
 import {
   createStaffRecruitmentSession,
+  deleteStaffOperatorAccount,
   fetchStaffCandidates,
   fetchStaffRecruitmentDetail,
   fetchStaffRecruitmentSummaries,
@@ -178,6 +179,67 @@ function buildReportMetaKey(sessionId, candidateIdentity) {
   return `${sessionId}::${candidateIdentity}`;
 }
 
+function createReportDraftShadow(report) {
+  const normalizedReport = normalizeRecruitmentReport(report);
+
+  return {
+    status: normalizedReport.status,
+    sentAt: normalizedReport.sentAt || null,
+    updatedAt: normalizedReport.updatedAt,
+    age: normalizedReport.age,
+    gender: normalizedReport.gender,
+    question: normalizedReport.question,
+    notes: normalizedReport.notes,
+    additionalReports: normalizedReport.additionalReports.map((entry, index) =>
+      normalizeArchiveSupplement(entry, index),
+    ),
+  };
+}
+
+function mergeReportWithShadow(baseReport, reportMeta = {}) {
+  const shadowAdditionalReports = Array.isArray(reportMeta.additionalReports)
+    ? reportMeta.additionalReports.map((entry, index) =>
+        normalizeArchiveSupplement(entry, index),
+      )
+    : null;
+
+  return normalizeRecruitmentReport({
+    ...baseReport,
+    status: reportMeta.status || baseReport.status,
+    sentAt: reportMeta.sentAt || baseReport.sentAt || null,
+    updatedAt: reportMeta.updatedAt || baseReport.updatedAt,
+    age: reportMeta.age || baseReport.age,
+    gender: reportMeta.gender || baseReport.gender,
+    question: reportMeta.question || baseReport.question,
+    notes: reportMeta.notes || baseReport.notes,
+    additionalReports: shadowAdditionalReports ?? baseReport.additionalReports,
+  });
+}
+
+function extractMongoObjectIds(value) {
+  const normalized = String(value || "").trim();
+
+  if (!normalized) {
+    return [];
+  }
+
+  const matches = normalized.match(/[a-f0-9]{24}/gi);
+
+  if (!Array.isArray(matches)) {
+    return [];
+  }
+
+  return [...new Set(matches.map((entry) => entry.toLowerCase()))];
+}
+
+function buildRecruitmentSessionIds(entries = [], selectors = []) {
+  return [...new Set(
+    entries.flatMap((entry) =>
+      selectors.flatMap((selector) => extractMongoObjectIds(selector(entry))),
+    ),
+  )];
+}
+
 function buildSessionDetailPayload(
   rawSession,
   candidateMap,
@@ -284,7 +346,7 @@ function buildReportsFromSession(session, reportMetaMap) {
       session.createdAt ||
       new Date().toISOString();
 
-    return normalizeRecruitmentReport({
+    return mergeReportWithShadow({
       id: `${session.id}::${candidate.identity}`,
       sessionId: session.id,
       sessionDate: session.scheduledDate,
@@ -310,7 +372,7 @@ function buildReportsFromSession(session, reportMetaMap) {
       sentAt: reportMeta.sentAt || session.dispatchedAt || null,
       createdAt: session.createdAt,
       updatedAt,
-    });
+    }, reportMeta);
   });
 }
 
@@ -372,10 +434,27 @@ export async function createStaffTrainingSession({
   golongan,
   currentUser,
 }) {
+  const pelatih = buildRecruitmentSessionIds(selectedOperators, [
+    (operator) => operator?.id,
+    (operator) => operator?._id,
+  ]);
+  const peserta = buildRecruitmentSessionIds(selectedCandidates, [
+    (candidate) => candidate?.identity,
+    (candidate) => candidate?.id,
+  ]);
+
+  if (pelatih.length === 0) {
+    throw new Error("ID pelatih tidak valid. Muat ulang halaman lalu pilih petugas lagi.");
+  }
+
+  if (peserta.length === 0) {
+    throw new Error("ID kandidat tidak valid. Muat ulang halaman lalu pilih kandidat lagi.");
+  }
+
   const payload = await createStaffRecruitmentSession({
-    golongan,
-    pelatih: selectedOperators.map((operator) => operator.id),
-    peserta: selectedCandidates.map((candidate) => candidate.identity),
+    golongan: String(golongan || "").trim() || "Golongan 1",
+    pelatih,
+    peserta,
   });
   const sessionId = String(payload?._id || "");
   const sessionMetaMap = loadSessionMetaMap();
@@ -403,7 +482,11 @@ export async function createStaffTrainingSession({
   };
 }
 
-export async function saveStaffRecruitmentReport(report, currentUser = null) {
+export async function saveStaffRecruitmentReport(
+  report,
+  currentUser = null,
+  { mode = "update" } = {},
+) {
   const evaluations = [
     {
       pertanyaan: report.question,
@@ -415,18 +498,26 @@ export async function saveStaffRecruitmentReport(report, currentUser = null) {
     })),
   ];
 
-  await upsertStaffEvaluation(report.sessionId, report.candidateIdentity, evaluations);
+  await upsertStaffEvaluation(
+    report.sessionId,
+    report.candidateIdentity,
+    evaluations,
+    { mode },
+  );
 
   const reportMetaMap = loadReportMetaMap();
   const metaKey = buildReportMetaKey(report.sessionId, report.candidateIdentity);
   const currentMeta = reportMetaMap[metaKey] || {};
   const nextUpdatedAt = report.updatedAt || new Date().toISOString();
+  const reportDraftShadow = createReportDraftShadow({
+    ...report,
+    updatedAt: nextUpdatedAt,
+  });
 
   reportMetaMap[metaKey] = {
     ...currentMeta,
-    status: report.status,
-    sentAt: currentMeta.sentAt || null,
-    updatedAt: nextUpdatedAt,
+    ...reportDraftShadow,
+    sentAt: currentMeta.sentAt || reportDraftShadow.sentAt || null,
   };
   writeReportMetaMap(reportMetaMap);
 
@@ -578,6 +669,53 @@ export async function updateStaffOperatorMetadata(
     operator: nextDirectory.find((entry) => entry.username === normalizedUsername) || null,
     operators: nextDirectory,
     message: "Discord User ID petugas berhasil diperbarui.",
+  };
+}
+
+export async function deleteStaffOperator(
+  { username },
+  currentUser = null,
+) {
+  const operatorDirectory = loadOperatorDirectory(currentUser);
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+  const currentUsername = String(currentUser?.username || "")
+    .trim()
+    .toLowerCase();
+
+  if (!normalizedUsername) {
+    throw new Error("Username petugas tidak valid.");
+  }
+
+  if (normalizedUsername === currentUsername) {
+    throw new Error("Akun yang sedang aktif tidak bisa dihapus.");
+  }
+
+  const targetOperator = operatorDirectory.find(
+    (entry) => entry.username === normalizedUsername,
+  );
+
+  if (!targetOperator) {
+    throw new Error("Petugas tidak ditemukan.");
+  }
+
+  try {
+    await deleteStaffOperatorAccount(normalizedUsername);
+  } catch (error) {
+    if (error?.status !== 404) {
+      throw error;
+    }
+  }
+
+  const nextDirectory = operatorDirectory
+    .filter((entry) => entry.username !== normalizedUsername)
+    .sort((left, right) => left.label.localeCompare(right.label, "id-ID"));
+
+  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, nextDirectory);
+
+  return {
+    operator: targetOperator,
+    operators: nextDirectory,
+    message: "Petugas berhasil dihapus.",
   };
 }
 

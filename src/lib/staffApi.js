@@ -12,9 +12,8 @@
 
 import { createJsonHttpClient, normalizeHttpError } from "./httpClient";
 
-const RAW_STAFF_API_BASE_URL = import.meta.env.DEV
-  ? "/staff-api"
-  : import.meta.env.VITE_STAFF_API_BASE_URL || "https://api.paskus791.cloud";
+const RAW_STAFF_API_BASE_URL =
+  import.meta.env.VITE_STAFF_API_BASE_URL || "https://api.paskus791.cloud";
 
 export const STAFF_SESSION_STORAGE_KEY = "pelatihdash.staff.session.v1";
 export const STAFF_DEFAULT_UNIT = "Recruitment Division";
@@ -58,6 +57,7 @@ export async function staffApiFetch(path, options = {}) {
       method: options.method || "GET",
       data: options.body,
       headers: mergeRequestHeaders(options.headers, accessToken),
+      timeout: options.timeout,
     });
 
     return response?.data ?? null;
@@ -220,37 +220,84 @@ export async function fetchStaffRecruitmentDetail(sessionId) {
   return payload?.data ?? null;
 }
 
-export async function upsertStaffEvaluation(sessionId, identitasSipil, evaluasi) {
-  try {
-    const payload = await staffApiFetch(
-      `/perekrutan/${encodeURIComponent(sessionId)}/evaluasi`,
-      {
-        method: "PUT",
-        body: {
-          identitas_sipil: identitasSipil,
-          evaluasi_update: evaluasi,
-        },
-      },
-    );
+function normalizeSipilIdentity(value) {
+  const normalized = String(value || "").trim();
 
-    return payload?.data ?? null;
+  if (!normalized) {
+    return normalized;
+  }
+
+  if (normalized.includes("::")) {
+    const segments = normalized
+      .split("::")
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    const lastSegment = segments.at(-1) || "";
+
+    if (segments.length > 1 && /^[a-f0-9]{24}$/i.test(lastSegment)) {
+      return lastSegment;
+    }
+  }
+
+  return normalized;
+}
+
+async function createStaffEvaluation(sessionId, identitasSipil, evaluasi) {
+  const normalizedIdentitasSipil = normalizeSipilIdentity(identitasSipil);
+
+  const payload = await staffApiFetch(
+    `/perekrutan/${encodeURIComponent(sessionId)}/evaluasi`,
+    {
+      method: "POST",
+      body: {
+        identitas_sipil: normalizedIdentitasSipil,
+        evaluasi_baru: evaluasi,
+      },
+    },
+  );
+
+  return payload?.data ?? null;
+}
+
+async function updateStaffEvaluation(sessionId, identitasSipil, evaluasi) {
+  const normalizedIdentitasSipil = normalizeSipilIdentity(identitasSipil);
+
+  const payload = await staffApiFetch(
+    `/perekrutan/${encodeURIComponent(sessionId)}/evaluasi`,
+    {
+      method: "PUT",
+      body: {
+        identitas_sipil: normalizedIdentitasSipil,
+        evaluasi_update: evaluasi,
+      },
+    },
+  );
+
+  return payload?.data ?? null;
+}
+
+export async function upsertStaffEvaluation(
+  sessionId,
+  identitasSipil,
+  evaluasi,
+  { mode = "update" } = {},
+) {
+  if (mode === "create") {
+    return createStaffEvaluation(sessionId, identitasSipil, evaluasi);
+  }
+
+  if (mode === "update") {
+    return updateStaffEvaluation(sessionId, identitasSipil, evaluasi);
+  }
+
+  try {
+    return await updateStaffEvaluation(sessionId, identitasSipil, evaluasi);
   } catch (error) {
     if (![400, 404].includes(error.status)) {
       throw error;
     }
 
-    const payload = await staffApiFetch(
-      `/perekrutan/${encodeURIComponent(sessionId)}/evaluasi`,
-      {
-        method: "POST",
-        body: {
-          identitas_sipil: identitasSipil,
-          evaluasi_baru: evaluasi,
-        },
-      },
-    );
-
-    return payload?.data ?? null;
+    return createStaffEvaluation(sessionId, identitasSipil, evaluasi);
   }
 }
 
@@ -263,6 +310,23 @@ export async function registerStaffOperatorAccount({ username, label, password }
       nama: label,
     },
   });
+
+  return payload?.user ?? null;
+}
+
+export async function deleteStaffOperatorAccount(username) {
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+
+  if (!normalizedUsername) {
+    throw new Error("Username petugas tidak valid.");
+  }
+
+  const payload = await staffApiFetch(
+    `/auth/operator/${encodeURIComponent(normalizedUsername)}`,
+    {
+      method: "DELETE",
+    },
+  );
 
   return payload?.user ?? null;
 }

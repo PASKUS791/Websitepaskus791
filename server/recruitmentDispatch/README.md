@@ -8,20 +8,15 @@ Folder ini dipisah biar tim backend lebih gampang cari bagian yang mau diubah ta
   - semua text utama
   - warna embed
   - timeout webhook
-  - nama asset logo dan banner
-  - layout dasar PDF
+  - nama asset logo
 
 - `payload.mjs`
   - validasi payload dispatch
   - normalisasi session, operator, laporan, dan lampiran
 
-- `pdf.mjs`
-  - builder PDF laporan recruiter
-  - cocok kalau mau ubah layout teks PDF
-
 - `webhook.mjs`
   - susun embed Discord
-  - kirim lampiran foto, logo, banner, dan PDF
+  - kirim lampiran foto, logo, dan data tag ke Discord
 
 - `service.mjs`
   - entry point alur dispatch
@@ -32,13 +27,9 @@ Folder ini dipisah biar tim backend lebih gampang cari bagian yang mau diubah ta
 
 ## Titik Config Yang Paling Sering Diubah
 
-Kalau mau ubah isi embed, warna, nama webhook, timeout, atau asset logo/banner:
+Kalau mau ubah isi embed, warna, nama webhook, timeout, atau asset logo:
 
 - edit `config.mjs`
-
-Kalau mau ubah format isi PDF:
-
-- edit `pdf.mjs`
 
 Kalau mau ubah struktur payload Discord:
 

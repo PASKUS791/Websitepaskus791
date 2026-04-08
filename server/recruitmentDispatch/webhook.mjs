@@ -13,12 +13,16 @@
 import {
   buildAvatarDataUrl,
   buildMentionText,
+  buildRegistrantMentionText,
   buildWebhookUrlWithWait,
   createDispatchError,
   fetchWithTimeout,
   normalizeText,
 } from "./shared.mjs";
 import { RECRUITMENT_DISPATCH_CONFIG } from "./config.mjs";
+
+const EMBED_FIELD_LIMIT = 1024;
+const CONTENT_LIMIT = 2000;
 
 async function patchWebhookBranding(webhookUrl, assets) {
   try {
@@ -41,17 +45,93 @@ async function patchWebhookBranding(webhookUrl, assets) {
   }
 }
 
+function truncateText(value, maxLength, fallback = "-") {
+  const normalizedValue = normalizeText(value, fallback);
+
+  if (normalizedValue.length <= maxLength) {
+    return normalizedValue;
+  }
+
+  return `${normalizedValue.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+}
+
+function buildCompactLineBlock(lines, maxLength, overflowLabel) {
+  const safeLines = lines.filter(Boolean);
+
+  if (safeLines.length === 0) {
+    return "-";
+  }
+
+  const selectedLines = [];
+
+  safeLines.forEach((line, index) => {
+    const remaining = safeLines.length - (index + 1);
+    const suffix = remaining > 0 ? `\n+${remaining} lainnya` : "";
+    const candidateValue = [...selectedLines, line].join("\n");
+
+    if (`${candidateValue}${suffix}`.length <= maxLength) {
+      selectedLines.push(line);
+    }
+  });
+
+  if (selectedLines.length === safeLines.length) {
+    return safeLines.join("\n");
+  }
+
+  const remaining = safeLines.length - selectedLines.length;
+  const compactSelectedLines = [...selectedLines];
+
+  while (compactSelectedLines.length > 0) {
+    const candidateValue = `${compactSelectedLines.join("\n")}\n+${remaining} lainnya`;
+
+    if (candidateValue.length <= maxLength) {
+      return candidateValue;
+    }
+
+    compactSelectedLines.pop();
+  }
+
+  return truncateText(`+${safeLines.length} ${overflowLabel}`, maxLength, `+${safeLines.length}`);
+}
+
 function buildWebhookMessagePayload(normalizedPayload, generatedAt, assets) {
-  const { mentionText, mentionUserIds } = buildMentionText(normalizedPayload.session.operators);
+  const operatorSummary = buildMentionText(normalizedPayload.session.operators);
+  const registrantSummary = buildRegistrantMentionText(normalizedPayload.reports);
+  const operatorMentionUserIds = operatorSummary.mentionUserIds;
+  const registrantMentionUserIds = registrantSummary.mentionUserIds;
+  const mentionUserIds = [...new Set([...operatorMentionUserIds, ...registrantMentionUserIds])];
   const unitLabel = normalizeText(
     normalizedPayload.session.operators[0]?.unit || normalizedPayload.requestedBy.unit,
     "PASKUS 791",
   );
+  const registrantLines = normalizedPayload.reports.map((report, index) => {
+    const registrantEntry = registrantSummary.entries[index];
+    const registrantIdentity = registrantEntry?.displayText || report.discord || report.name;
+
+    return `${index + 1}. ${report.name} - ${registrantIdentity}`;
+  });
+  const contentLines = [];
+
+  if (operatorSummary.mentionUserIds.length > 0) {
+    contentLines.push(`Instruktur: ${operatorSummary.mentionText}`);
+  }
+
+  if (registrantSummary.mentionUserIds.length > 0) {
+    contentLines.push(
+      `Pendaftar: ${registrantSummary.mentionUserIds
+        .map((userId) => `<@${userId}>`)
+        .join(" ")}`,
+    );
+  }
+
+  const messageContent = contentLines.length
+    ? truncateText(contentLines.join("\n"), CONTENT_LIMIT, "")
+    : undefined;
 
   return {
     messagePayload: {
       username: RECRUITMENT_DISPATCH_CONFIG.webhookName,
-      content: mentionUserIds.length > 0 ? mentionText : undefined,
+      content: messageContent,
       allowed_mentions: {
         parse: [],
         users: mentionUserIds,
@@ -68,17 +148,26 @@ function buildWebhookMessagePayload(normalizedPayload, generatedAt, assets) {
           thumbnail: {
             url: `attachment://${assets.logoFileName}`,
           },
-          image: {
-            url: `attachment://${assets.bannerFileName}`,
-          },
           fields: [
             {
-              name: "Keterangan",
-              value: mentionText,
+              name: "Instruktur",
+              value: truncateText(
+                operatorSummary.mentionText,
+                EMBED_FIELD_LIMIT,
+                "Instruktur tidak tersedia",
+              ),
             },
             {
               name: "Deskripsi",
-              value: normalizedPayload.description,
+              value: truncateText(normalizedPayload.description, EMBED_FIELD_LIMIT),
+            },
+            {
+              name: "Tag Pendaftar",
+              value: buildCompactLineBlock(
+                registrantLines,
+                EMBED_FIELD_LIMIT,
+                "pendaftar",
+              ),
             },
             {
               name: "Sesi",
@@ -95,34 +184,31 @@ function buildWebhookMessagePayload(normalizedPayload, generatedAt, assets) {
               value: `${normalizedPayload.reports.length} kandidat`,
               inline: true,
             },
+            {
+              name: "File Lampiran",
+              value: normalizedPayload.attachment.fileName,
+              inline: true,
+            },
           ],
           footer: {
             text: RECRUITMENT_DISPATCH_CONFIG.embed.footer(unitLabel),
           },
-          timestamp: generatedAt,
-        },
-        {
-          title: RECRUITMENT_DISPATCH_CONFIG.embed.attachmentTitle,
-          description:
-            RECRUITMENT_DISPATCH_CONFIG.embed.attachmentDescription(
-              normalizedPayload.session.title,
-            ),
-          color: RECRUITMENT_DISPATCH_CONFIG.colors.secondaryEmbed,
           image: {
             url: `attachment://${normalizedPayload.attachment.fileName}`,
           },
+          timestamp: generatedAt,
         },
       ],
     },
     mentionUserIds,
+    operatorMentionUserIds,
+    registrantMentionUserIds,
   };
 }
 
 function buildWebhookFormData({
   messagePayload,
   normalizedPayload,
-  pdfBuffer,
-  pdfFileName,
   assets,
 }) {
   const formData = new FormData();
@@ -135,20 +221,10 @@ function buildWebhookFormData({
   );
   formData.append(
     "files[1]",
-    new Blob([assets.bannerBuffer], { type: assets.bannerMimeType }),
-    assets.bannerFileName,
-  );
-  formData.append(
-    "files[2]",
     new Blob([normalizedPayload.attachment.fileBuffer], {
       type: normalizedPayload.attachment.mimeType,
     }),
     normalizedPayload.attachment.fileName,
-  );
-  formData.append(
-    "files[3]",
-    new Blob([pdfBuffer], { type: "application/pdf" }),
-    pdfFileName,
   );
 
   return formData;
@@ -158,13 +234,15 @@ export async function sendRecruitmentDispatch({
   webhookUrl,
   normalizedPayload,
   generatedAt,
-  pdfBuffer,
-  pdfFileName,
   assets,
 }) {
   await patchWebhookBranding(webhookUrl, assets);
 
-  const { messagePayload, mentionUserIds } = buildWebhookMessagePayload(
+  const {
+    messagePayload,
+    operatorMentionUserIds,
+    registrantMentionUserIds,
+  } = buildWebhookMessagePayload(
     normalizedPayload,
     generatedAt,
     assets,
@@ -172,8 +250,6 @@ export async function sendRecruitmentDispatch({
   const formData = buildWebhookFormData({
     messagePayload,
     normalizedPayload,
-    pdfBuffer,
-    pdfFileName,
     assets,
   });
   const response = await fetchWithTimeout(
@@ -202,7 +278,8 @@ export async function sendRecruitmentDispatch({
   return {
     ok: true,
     messageId: message?.id || null,
-    pdfFileName,
-    mentionedOperatorCount: mentionUserIds.length,
+    attachmentFileName: normalizedPayload.attachment.fileName,
+    mentionedOperatorCount: operatorMentionUserIds.length,
+    mentionedRegistrantCount: registrantMentionUserIds.length,
   };
 }

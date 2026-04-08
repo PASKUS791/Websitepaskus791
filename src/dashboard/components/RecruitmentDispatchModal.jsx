@@ -13,7 +13,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-const MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function readFileAsDataUrl(file) {
@@ -57,6 +57,13 @@ export default function RecruitmentDispatchModal({
   const [error, setError] = useState("");
 
   useEffect(() => withModalEscape(onClose), [onClose]);
+  useEffect(() => {
+    setDescription(
+      `Lampiran hasil perekrutan, pelatihan wingman, dan pengambilan latpur fisik serta mental untuk sesi ${trainingSession?.title || "pelatihan aktif"}.`,
+    );
+    setAttachment(null);
+    setError("");
+  }, [trainingSession]);
 
   const operators = useMemo(() => trainingSession?.operators || [], [trainingSession]);
   const mentionReadyOperators = useMemo(
@@ -67,6 +74,7 @@ export default function RecruitmentDispatchModal({
     () => operators.filter((operator) => !operator.discordUserId),
     [operators],
   );
+  const applicantPreview = useMemo(() => reports.slice(0, 6), [reports]);
 
   const handleAttachmentChange = async (event) => {
     const file = event.target.files?.[0];
@@ -82,13 +90,14 @@ export default function RecruitmentDispatchModal({
     }
 
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      setError("Ukuran lampiran maksimal 6MB agar aman dikirim ke server.");
+      setError("Ukuran lampiran maksimal 5MB agar sesuai batas upload backend.");
       return;
     }
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setAttachment({
+        file,
         fileName: file.name,
         mimeType: file.type,
         size: file.size,
@@ -121,7 +130,6 @@ export default function RecruitmentDispatchModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[230] flex items-center justify-center bg-black/72 p-3 md:p-5 backdrop-blur-[4px]"
-      onClick={onClose}
     >
       <motion.form
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -141,8 +149,8 @@ export default function RecruitmentDispatchModal({
               Kirim Laporan Ke Resimen
             </h3>
             <p className="mt-1.5 text-[13px] text-stone-400">
-              Sistem akan generate PDF sesi, melampirkan foto, lalu kirim webhook Discord
-              secara realtime untuk {trainingSession?.title || "sesi aktif"}.
+              Sistem akan kirim satu embed Discord, melampirkan foto, lalu mencantumkan
+              tag instruktur dan pendaftar untuk {trainingSession?.title || "sesi aktif"}.
             </p>
           </div>
 
@@ -296,13 +304,47 @@ export default function RecruitmentDispatchModal({
 
               <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
                 <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                  Pendaftar Di Embed
+                </p>
+                <div className="mt-3 space-y-3">
+                  {applicantPreview.length > 0 ? (
+                    applicantPreview.map((report) => (
+                      <div
+                        key={report.id}
+                        className="rounded-xl border border-white/8 bg-black/20 p-3"
+                      >
+                        <p className="font-sans text-sm font-bold text-stone-100">
+                          {report.name}
+                        </p>
+                        <p className="mt-1 text-[12px] text-stone-400">{report.discord}</p>
+                        <p className="mt-2 font-public text-[9px] uppercase tracking-[0.14em] text-stone-500">
+                          {report.status} • {report.group}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400">
+                      Belum ada pendaftar di sesi ini.
+                    </div>
+                  )}
+                </div>
+
+                {reports.length > applicantPreview.length ? (
+                  <p className="mt-3 text-[12px] text-stone-500">
+                    +{reports.length - applicantPreview.length} pendaftar lain tetap ikut masuk ke embed.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
                   Output Otomatis
                 </p>
                 <div className="mt-3 space-y-2 text-sm leading-6 text-stone-300">
-                  <p>1. Generate PDF sesi pelatihan lengkap.</p>
-                  <p>2. Kirim embed Discord dengan logo dan banner resmi.</p>
-                  <p>3. Lampirkan foto dari modal ini.</p>
-                  <p>4. Tag instruktur yang punya Discord User ID.</p>
+                  <p>1. Kirim satu embed Discord resmi untuk sesi ini.</p>
+                  <p>2. Lampirkan foto dari modal ini.</p>
+                  <p>3. Tag instruktur yang punya Discord User ID.</p>
+                  <p>4. Cantumkan data dan tag pendaftar di dalam embed.</p>
                 </div>
               </div>
             </div>

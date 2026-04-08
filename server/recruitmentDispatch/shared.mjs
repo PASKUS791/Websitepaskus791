@@ -85,6 +85,18 @@ export function buildAvatarDataUrl(buffer, mimeType) {
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
+export function extractDiscordMentionUserId(value) {
+  const source = String(value || "").trim();
+  const mentionMatch = source.match(/<@!?(\d{16,22})>/);
+
+  if (mentionMatch) {
+    return mentionMatch[1];
+  }
+
+  const digits = source.replace(/\D/g, "");
+  return digits.length >= 16 && digits.length <= 22 ? digits : "";
+}
+
 export async function fetchWithTimeout(url, init, timeoutMs) {
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
@@ -135,6 +147,32 @@ export function buildMentionText(operators = []) {
     mentionText:
       operators.map((operator) => operator.label).join(", ") || "Instruktur tidak tersedia",
     mentionUserIds: [],
+  };
+}
+
+export function buildRegistrantMentionText(reports = []) {
+  const entries = reports.map((report, index) => {
+    const fallbackLabel = normalizeText(report?.name, `Pendaftar ${index + 1}`);
+    const identity = normalizeText(report?.discord, fallbackLabel);
+    const mentionUserId = extractDiscordMentionUserId(identity);
+
+    return {
+      name: fallbackLabel,
+      mentionUserId,
+      identity,
+      displayText: mentionUserId ? `<@${mentionUserId}>` : identity,
+    };
+  });
+
+  const mentionUserIds = [
+    ...new Set(entries.map((entry) => entry.mentionUserId).filter(Boolean)),
+  ];
+
+  return {
+    entries,
+    mentionUserIds,
+    mentionText:
+      entries.map((entry) => entry.displayText).join(", ") || "Pendaftar tidak tersedia",
   };
 }
 

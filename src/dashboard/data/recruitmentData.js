@@ -83,11 +83,41 @@ export function formatRelativeMinutes(date, referenceDate = new Date()) {
 }
 
 // Section: shared identity helpers.
+function isMongoObjectId(value) {
+  return /^[a-f0-9]{24}$/i.test(String(value || "").trim());
+}
+
+function normalizeExplicitCandidateIdentity(value) {
+  const normalized = String(value || "").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.includes("::")) {
+    const segments = normalized
+      .split("::")
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    const lastSegment = segments.at(-1) || "";
+
+    if (segments.length > 1 && isMongoObjectId(lastSegment)) {
+      return lastSegment.toLowerCase();
+    }
+  }
+
+  return normalized.toLowerCase();
+}
+
 export function createCandidateIdentity(source = {}, index = 0) {
-  const explicitId = source.id ?? source.candidateId ?? source.identity;
+  const explicitId =
+    source.candidateIdentity ??
+    source.identity ??
+    source.candidateId ??
+    source.id;
 
   if (explicitId) {
-    return String(explicitId).trim().toLowerCase();
+    return normalizeExplicitCandidateIdentity(explicitId);
   }
 
   const roblox = String(source.roblox || source.name || "")
@@ -312,13 +342,20 @@ export function normalizeArchiveSupplement(entry, index = 0) {
 }
 
 export function normalizeRecruitmentReport(report, index = 0) {
+  const candidateIdentity = createCandidateIdentity(report, index);
+  const sessionId = report.sessionId?.trim() || "";
+
   return {
-    id: report.id ?? `archive-report-${index}`,
-    sessionId: report.sessionId?.trim() || "",
+    id:
+      (typeof report.id === "string" && report.id.trim()) ||
+      (sessionId && candidateIdentity
+        ? `${sessionId}::${candidateIdentity}`
+        : `archive-report-${index}`),
+    sessionId,
     sessionDate:
       (typeof report.sessionDate === "string" && report.sessionDate) ||
       formatDateKey(new Date(report.updatedAt || report.createdAt || Date.now())),
-    candidateIdentity: createCandidateIdentity(report, index),
+    candidateIdentity,
     category: resolveCandidateCategory(report),
     name: report.name?.trim() || report.roblox?.trim() || "Unnamed Candidate",
     discord: report.discord?.trim() || "unknown_ops#0000",
@@ -364,7 +401,7 @@ export function loadRecruitmentReports(value = EMPTY_DASHBOARD_DATA) {
 export function createReportsForTrainingSession(session) {
   return session.candidates.map((candidate, index) =>
     normalizeRecruitmentReport({
-      id: `${session.id}-report-${index + 1}`,
+      id: `${session.id}::${candidate.identity}`,
       sessionId: session.id,
       sessionDate: session.scheduledDate,
       candidateIdentity: candidate.identity,

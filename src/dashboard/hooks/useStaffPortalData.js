@@ -16,6 +16,7 @@ import {
   cancelStaffTrainingSession,
   createEmptyStaffPortalSnapshot,
   createStaffTrainingSession,
+  deleteStaffOperator,
   dispatchStaffTrainingSession,
   eliminateStaffCandidate,
   fetchStaffPortalSnapshot,
@@ -96,8 +97,8 @@ export function useStaffPortalData({ enabled = true } = {}) {
 
       return result;
     },
-    saveRecruitmentReport: (report) =>
-      runMutation(() => saveStaffRecruitmentReport(report, user)),
+    saveRecruitmentReport: (report, options = {}) =>
+      runMutation(() => saveStaffRecruitmentReport(report, user, options)),
     dispatchTrainingSession: (sessionId, reports) =>
       runMutation(() => dispatchStaffTrainingSession(sessionId, reports, user)),
     cancelTrainingSession: (sessionId) =>
@@ -110,6 +111,10 @@ export function useStaffPortalData({ enabled = true } = {}) {
     },
     updateOperatorMetadata: async (payload) => {
       await updateStaffOperatorMetadata(payload, user);
+      return reload();
+    },
+    deleteOperator: async (payload) => {
+      await deleteStaffOperator(payload, user);
       return reload();
     },
   };

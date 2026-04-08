@@ -1464,8 +1464,9 @@ async function handleRequest(request, response) {
       sendJson(response, 200, {
         ok: true,
         message: "Laporan recruiter berhasil dikirim ke Discord.",
-        pdfFileName: dispatchResult.pdfFileName,
+        attachmentFileName: dispatchResult.attachmentFileName,
         mentionedOperatorCount: dispatchResult.mentionedOperatorCount,
+        mentionedRegistrantCount: dispatchResult.mentionedRegistrantCount,
         messageId: dispatchResult.messageId,
       });
       return;
