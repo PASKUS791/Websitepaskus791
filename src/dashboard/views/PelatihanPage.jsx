@@ -598,35 +598,45 @@ export default function PelatihanPage() {
       return;
     }
 
-    const dispatchTimestamp = new Date().toISOString();
-
     try {
       setDispatching(true);
       setSessionNotice(
         `Menutup sesi ${trainingSession.title} dan memindahkan seluruh laporan ke Review Laporan...`,
       );
 
+      let finishWarningMessage = "";
       const staffAccessToken = readStoredStaffSession()?.accessToken || "";
-      await axios.post(
-        `https://api.paskus791.cloud/perekrutan/${trainingSession.id}/finish`,
-        undefined,
-        staffAccessToken
-          ? {
-              headers: {
-                Authorization: `Bearer ${staffAccessToken}`,
-              },
-            }
-          : undefined,
-      );
+      try {
+        await axios.post(
+          `https://api.paskus791.cloud/perekrutan/${trainingSession.id}/finish`,
+          undefined,
+          staffAccessToken
+            ? {
+                headers: {
+                  Authorization: `Bearer ${staffAccessToken}`,
+                },
+              }
+            : undefined,
+        );
+      } catch (finishError) {
+        finishWarningMessage = (
+          finishError?.response?.data?.message ||
+          finishError?.response?.data?.error ||
+          finishError?.message ||
+          "Sinkron status finish ke backend eksternal gagal."
+        )
+          .toString()
+          .trim();
+      }
 
       await dispatchTrainingSession(sessionId, sessionReports);
       navigate(`/dashboard/laporan-perekrutan/${trainingSession.id}`, {
         replace: true,
-        state: {
-          archiveNotice: `Sesi ${trainingSession.title} ditutup dan dipindahkan ke Review Laporan pada ${formatArchiveTimestamp(
-            dispatchTimestamp,
-          )}.`,
-        },
+        state: finishWarningMessage
+          ? {
+              archiveNotice: `Sesi ${trainingSession.title} berhasil dipindahkan ke Review Laporan. Catatan: sinkron finish API eksternal gagal (${finishWarningMessage}).`,
+            }
+          : undefined,
       });
     } catch (dispatchError) {
       setSessionNotice(
