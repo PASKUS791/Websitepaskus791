@@ -47,6 +47,21 @@ function DashboardStatCard({ title, value, detail, accent = "emerald" }) {
   );
 }
 
+function DashboardDataFlowInfo({ registrantCount }) {
+  return (
+    <div className="mt-4 rounded-sm border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+      <p className="font-public text-[10px] uppercase tracking-[0.22em] text-emerald-200">
+        Info Jalur Data
+      </p>
+      <p className="mt-2 leading-6">
+        Data pendaftar sudah diterima ({registrantCount} entri) melalui jalur aktif Staff API
+        (`/sipil/data` dan `/perekrutan`). Jalur legacy (`/api/resources`) tidak dipakai untuk
+        tabel kandidat pada dashboard ini.
+      </p>
+    </div>
+  );
+}
+
 function CandidateCategoryBadge({ category }) {
   const isPmc = category === "pmc";
 
@@ -430,6 +445,10 @@ export default function DashboardHomePage() {
             <div className="mt-4 rounded-sm border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
               {launchError}
             </div>
+          ) : null}
+
+          {!portalLoading && !portalError && candidates.length > 0 ? (
+            <DashboardDataFlowInfo registrantCount={candidates.length} />
           ) : null}
 
           <div className="overflow-x-auto">
