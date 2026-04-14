@@ -16,14 +16,38 @@ import { Link, useNavigate } from "react-router-dom";
 import TrainingLaunchModal from "../components/TrainingLaunchModal";
 import {
   createCandidateIdentity,
+  formatArchiveTimestamp,
   formatOperationalDateLabel,
   formatCandidateCategory,
+  formatRelativeMinutes,
   isCandidateAssignedToTraining,
   isTrainingSessionDispatched,
 } from "../data/recruitmentData";
 import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const DASHBOARD_CANDIDATE_PAGE_SIZE = 10;
+
+function resolveIngressTimestamp(...values) {
+  for (const value of values) {
+    const parsedDate = new Date(value);
+
+    if (Number.isFinite(parsedDate.getTime())) {
+      return parsedDate.toISOString();
+    }
+  }
+
+  return "";
+}
+
+function formatIngressTimestamp(...values) {
+  const timestamp = resolveIngressTimestamp(...values);
+
+  if (!timestamp) {
+    return "Timestamp backend belum tersedia";
+  }
+
+  return `${formatRelativeMinutes(timestamp)} • ${formatArchiveTimestamp(timestamp)}`;
+}
 
 // Section: dashboard UI atoms.
 function DashboardStatCard({ title, value, detail, accent = "emerald" }) {
@@ -47,18 +71,137 @@ function DashboardStatCard({ title, value, detail, accent = "emerald" }) {
   );
 }
 
-function DashboardDataFlowInfo({ registrantCount }) {
+function CandidateMetaPill({ label, value, selected = false, tone = "stone" }) {
+  if (!value) {
+    return null;
+  }
+
+  const toneClasses = {
+    stone: selected
+      ? "border-black/12 bg-black/8 text-black/75"
+      : "border-white/8 bg-white/[0.04] text-stone-300",
+    emerald: selected
+      ? "border-black/12 bg-emerald-950/10 text-black/75"
+      : "border-emerald-400/15 bg-emerald-400/[0.08] text-emerald-200",
+    amber: selected
+      ? "border-black/12 bg-amber-950/10 text-black/75"
+      : "border-amber-300/15 bg-amber-300/[0.08] text-amber-200",
+  };
+
   return (
-    <div className="mt-4 rounded-sm border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-      <p className="font-public text-[10px] uppercase tracking-[0.22em] text-emerald-200">
-        Info Jalur Data
-      </p>
-      <p className="mt-2 leading-6">
-        Data pendaftar sudah diterima ({registrantCount} entri) melalui jalur aktif Staff API
-        (`/sipil/data` dan `/perekrutan`). Jalur legacy (`/api/resources`) tidak dipakai untuk
-        tabel kandidat pada dashboard ini.
-      </p>
-    </div>
+    <span
+      className={[
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-public text-[9px] font-bold uppercase tracking-[0.14em]",
+        toneClasses[tone] ?? toneClasses.stone,
+      ].join(" ")}
+    >
+      <span className={selected ? "text-black/45" : "text-stone-500"}>{label}</span>
+      <span>{value}</span>
+    </span>
+  );
+}
+
+function RegistrantIntakeBanner({
+  candidates,
+  availableCandidateCount,
+  selectedCandidateCount,
+}) {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return null;
+  }
+
+  const sortedCandidates = [...candidates].sort(
+    (left, right) =>
+      new Date(right.createdAt || right.updatedAt || 0).getTime() -
+      new Date(left.createdAt || left.updatedAt || 0).getTime(),
+  );
+  const latestCandidate = sortedCandidates[0] || null;
+  const recentCandidates = sortedCandidates.slice(0, 3);
+
+  return (
+    <section className="mt-4 overflow-hidden rounded-2xl border border-emerald-400/20 bg-[radial-gradient(circle_at_top_left,rgba(174,209,143,0.16),transparent_38%),linear-gradient(135deg,rgba(15,23,15,0.96),rgba(10,10,10,0.98))] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="max-w-3xl">
+          <p className="font-public text-[10px] uppercase tracking-[0.24em] text-emerald-300">
+            Registrant Intake Feed
+          </p>
+          <h3 className="mt-2 font-sans text-xl font-bold text-stone-100 md:text-[1.45rem]">
+            Data Pendaftar Baru Sudah Masuk ke Dashboard
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-stone-300">
+            {candidates.length} data pendaftar berhasil diterima dari backend. Kandidat terbaru
+            {latestCandidate ? ` ${latestCandidate.roblox}` : ""} tercatat
+            {latestCandidate
+              ? ` ${formatIngressTimestamp(latestCandidate.createdAt, latestCandidate.updatedAt)}.`
+              : "."}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[440px]">
+          <div className="rounded-xl border border-white/8 bg-black/25 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Total Masuk
+            </p>
+            <p className="mt-2 font-sans text-[1.7rem] font-bold text-stone-100">
+              {candidates.length}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-black/25 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Siap Diseleksi
+            </p>
+            <p className="mt-2 font-sans text-[1.7rem] font-bold text-emerald-200">
+              {availableCandidateCount}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-black/25 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Dipilih Sekarang
+            </p>
+            <p className="mt-2 font-sans text-[1.7rem] font-bold text-amber-200">
+              {selectedCandidateCount}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-3">
+        {recentCandidates.map((candidate) => (
+          <article
+            key={candidate.identity}
+            className="rounded-2xl border border-white/8 bg-black/20 p-3.5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate font-sans text-base font-bold text-stone-100">
+                  {candidate.roblox}
+                </p>
+                <p className="mt-1 truncate text-[13px] text-stone-400">{candidate.discord}</p>
+              </div>
+              <CandidateCategoryBadge category={candidate.category} />
+            </div>
+
+            <p className="mt-3 text-[12px] font-medium text-emerald-200">
+              Masuk {formatIngressTimestamp(candidate.createdAt, candidate.updatedAt)}
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <CandidateMetaPill
+                label="Jalur"
+                value={candidate.joinedVia || "Backend"}
+                tone="emerald"
+              />
+              <CandidateMetaPill label="Resimen" value={candidate.resimen || "Belum ada"} />
+              <CandidateMetaPill
+                label="Device"
+                value={candidate.device || "Tidak tercatat"}
+                tone="amber"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -80,19 +223,31 @@ function CandidateCategoryBadge({ category }) {
 }
 
 function SelectableCandidateRow({ candidate, selected, onToggle }) {
+  const ingressTimestamp = formatIngressTimestamp(candidate.createdAt, candidate.updatedAt);
+
   return (
     <div
       className={[
-        "grid min-h-[80px] grid-cols-[1.3fr_1.1fr_0.5fr_0.75fr_0.7fr] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
+        "grid min-h-[112px] grid-cols-[1.3fr_1.2fr_0.5fr_0.75fr_0.7fr] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
         selected
           ? "border-emerald-300/50 bg-[linear-gradient(90deg,rgba(174,209,143,0.95)_0%,rgba(205,223,165,0.88)_100%)] text-black shadow-[0_18px_40px_rgba(174,209,143,0.14)]"
           : "border-white/6 bg-[#131313] text-stone-100 hover:border-white/12 hover:bg-[#1a1a1a]",
       ].join(" ")}
     >
       <div className="min-w-0">
-        <p className="font-sans text-base font-bold md:text-lg">{candidate.roblox}</p>
-        <p className={`mt-1 text-[13px] ${selected ? "text-black/70" : "text-stone-400"}`}>
+        <p className="truncate font-sans text-base font-bold md:text-lg">{candidate.roblox}</p>
+        <p
+          className={`mt-1 truncate text-[13px] ${selected ? "text-black/70" : "text-stone-400"}`}
+        >
           {candidate.discord}
+        </p>
+        <p
+          className={`mt-2 font-public text-[10px] uppercase tracking-[0.14em] ${selected ? "text-black/55" : "text-emerald-200"}`}
+        >
+          Waktu Masuk
+        </p>
+        <p className={`mt-1 text-[12px] ${selected ? "text-black/70" : "text-stone-300"}`}>
+          {ingressTimestamp}
         </p>
       </div>
 
@@ -102,8 +257,30 @@ function SelectableCandidateRow({ candidate, selected, onToggle }) {
         >
           Kategori
         </p>
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           <CandidateCategoryBadge category={candidate.category} />
+          <CandidateMetaPill
+            label="Status"
+            value={candidate.backendStatus || candidate.categoryLabel}
+            selected={selected}
+          />
+          <CandidateMetaPill
+            label="Jalur"
+            value={candidate.joinedVia || "Backend"}
+            selected={selected}
+            tone="emerald"
+          />
+          <CandidateMetaPill
+            label="Resimen"
+            value={candidate.resimen || "Belum ada"}
+            selected={selected}
+          />
+          <CandidateMetaPill
+            label="Device"
+            value={candidate.device || "Tidak tercatat"}
+            selected={selected}
+            tone="amber"
+          />
         </div>
       </div>
 
@@ -448,14 +625,18 @@ export default function DashboardHomePage() {
           ) : null}
 
           {!portalLoading && !portalError && candidates.length > 0 ? (
-            <DashboardDataFlowInfo registrantCount={candidates.length} />
+            <RegistrantIntakeBanner
+              candidates={candidates}
+              availableCandidateCount={availableCandidates.length}
+              selectedCandidateCount={selectedCandidates.length}
+            />
           ) : null}
 
           <div className="overflow-x-auto">
-            <div className="min-w-[920px]">
-              <div className="mb-3 grid grid-cols-[1.3fr_1.1fr_0.5fr_0.75fr_0.7fr] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
-                <div>Identitas</div>
-                <div>Kategori</div>
+            <div className="min-w-[1040px]">
+              <div className="mb-3 grid grid-cols-[1.3fr_1.2fr_0.5fr_0.75fr_0.7fr] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                <div>Identitas / Masuk</div>
+                <div>Kategori / Intel</div>
                 <div className="text-center">Usia</div>
                 <div className="text-center">Gender</div>
                 <div className="text-right">Aksi</div>

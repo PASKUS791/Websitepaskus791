@@ -51,6 +51,75 @@ function PageStatePanel({
   );
 }
 
+function DispatchArchivePanel({ dispatchRecord }) {
+  if (!dispatchRecord) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="font-public text-[10px] uppercase tracking-[0.24em] text-emerald-300">
+            Dispatch Terakhir
+          </p>
+          <h2 className="mt-2 font-sans text-xl font-bold uppercase text-stone-100">
+            Sinkron Ke Resimen Tercatat
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-stone-300">
+            {dispatchRecord.description || "Tidak ada deskripsi dispatch yang tersimpan."}
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 lg:min-w-[360px]">
+          <div className="rounded-xl border border-white/8 bg-black/20 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Waktu Kirim
+            </p>
+            <p className="mt-2 text-sm text-stone-200">
+              {formatArchiveTimestamp(dispatchRecord.sentAt)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-black/20 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Lampiran
+            </p>
+            <p className="mt-2 text-sm text-stone-200">
+              {dispatchRecord.attachmentFileName || "Tanpa nama file"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-black/20 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Tag Instruktur
+            </p>
+            <p className="mt-2 text-sm text-stone-200">
+              {dispatchRecord.mentionedOperatorCount} petugas
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-black/20 p-3">
+            <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+              Tag Pendaftar
+            </p>
+            <p className="mt-2 text-sm text-stone-200">
+              {dispatchRecord.mentionedRegistrantCount} akun
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {dispatchRecord.attachmentPreviewUrl ? (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-black/20">
+          <img
+            src={dispatchRecord.attachmentPreviewUrl}
+            alt={dispatchRecord.attachmentFileName || "Lampiran dispatch"}
+            className="h-[280px] w-full object-cover"
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function createSupplementSignature(entry) {
   return `${String(entry?.question || "").trim()}::${String(entry?.notes || "").trim()}`;
 }
@@ -131,6 +200,7 @@ export default function RecruitmentReportPage() {
     () => trainingSessions.find((session) => session.id === sessionId) ?? null,
     [sessionId, trainingSessions],
   );
+  const dispatchRecord = trainingSession?.dispatchRecord || null;
   const persistedSessionReports = useMemo(
     () => reports.filter((report) => report.sessionId === sessionId),
     [reports, sessionId],
@@ -253,7 +323,11 @@ export default function RecruitmentReportPage() {
       ? "Mengirim laporan sesi ke resimen..."
       : reportsLoading
         ? "Memuat arsip laporan dari database..."
-        : reportsError || archiveNotice;
+        : reportsError ||
+          archiveNotice ||
+          (dispatchRecord
+            ? `Dispatch terakhir tercatat pada ${formatArchiveTimestamp(dispatchRecord.sentAt)}.`
+            : "");
 
   const handleDispatchReports = async () => {
     if (dispatchSubmitting || reportSubmitting) {
@@ -273,14 +347,18 @@ export default function RecruitmentReportPage() {
 
     try {
       setDispatchSubmitting(true);
-      await dispatchRecruitmentSessionReport({
+      const dispatchResult = await dispatchRecruitmentSessionReport({
         session: trainingSession,
         reports: sessionReports,
         description,
         attachment,
         requestedBy: user,
       });
-      await dispatchTrainingSession(sessionId, sessionReports);
+      await dispatchTrainingSession(sessionId, sessionReports, {
+        description,
+        attachment,
+        dispatchResult,
+      });
       setDispatchModalOpen(false);
       setArchiveNotice(
         `${sessionReports.length} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
@@ -644,6 +722,8 @@ export default function RecruitmentReportPage() {
           </div>
         </div>
       </div>
+
+      <DispatchArchivePanel dispatchRecord={dispatchRecord} />
 
       <AnimatePresence>
         {dispatchModalOpen && trainingSession ? (

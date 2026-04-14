@@ -23,6 +23,11 @@ import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 // Section: calendar helpers.
 const DAY_LABELS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+const HISTORY_REPORT_CALENDAR_STORAGE_KEY = "pelatihdash.history-report.calendar.v1";
+
+function createMonthAnchor(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 12);
+}
 
 function addDays(baseDate, daysToAdd) {
   const nextDate = new Date(baseDate);
@@ -67,6 +72,48 @@ function formatMonthUpper(date) {
       year: "numeric",
     })
     .toUpperCase();
+}
+
+function readPersistedHistoryCalendarMonth() {
+  if (typeof window === "undefined") {
+    return createMonthAnchor(new Date());
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(HISTORY_REPORT_CALENDAR_STORAGE_KEY);
+
+    if (!rawValue) {
+      return createMonthAnchor(new Date());
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    const parsedDate = new Date(parsedValue?.calendarMonth);
+
+    if (!Number.isFinite(parsedDate.getTime())) {
+      return createMonthAnchor(new Date());
+    }
+
+    return createMonthAnchor(parsedDate);
+  } catch {
+    return createMonthAnchor(new Date());
+  }
+}
+
+function persistHistoryCalendarMonth(date) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      HISTORY_REPORT_CALENDAR_STORAGE_KEY,
+      JSON.stringify({
+        calendarMonth: createMonthAnchor(date).toISOString(),
+      }),
+    );
+  } catch {
+    // Ignore storage persistence issues so the page can keep working normally.
+  }
 }
 
 // Section: UI pieces.
@@ -345,19 +392,24 @@ function DateDetailModal({ summary, onClose }) {
 
 // Section: main page.
 export default function HasilLaporanPage() {
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(() => readPersistedHistoryCalendarMonth());
   const [systemTime, setSystemTime] = useState(new Date());
-  const [activeSummary, setActiveSummary] = useState(null);
+  const [activeSummaryDate, setActiveSummaryDate] = useState("");
   const {
     trainingSessions,
     reports,
     loading: trainingSessionsLoading,
+    error: trainingSessionsError,
   } = useStaffPortalData();
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    persistHistoryCalendarMonth(calendarMonth);
+  }, [calendarMonth]);
 
   const sessionDateSummaries = useMemo(
     () => buildSessionDateSummaries(trainingSessions, reports, { historicalOnly: true }),
@@ -381,6 +433,10 @@ export default function HasilLaporanPage() {
   const summaryMap = useMemo(
     () => new Map(sessionDateSummaries.map((summary) => [summary.date, summary])),
     [sessionDateSummaries],
+  );
+  const activeSummary = useMemo(
+    () => (activeSummaryDate ? summaryMap.get(activeSummaryDate) ?? null : null),
+    [activeSummaryDate, summaryMap],
   );
   const monthGrid = useMemo(() => getMonthGrid(calendarMonth), [calendarMonth]);
   const todayKey = formatDateKey(new Date());
@@ -529,12 +585,14 @@ export default function HasilLaporanPage() {
                   type="button"
                   onClick={() =>
                     setCalendarMonth(
-                      new Date(
-                        calendarMonth.getFullYear(),
-                        calendarMonth.getMonth() - 1,
-                        1,
-                        12,
-                      ),
+                      createMonthAnchor(
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() - 1,
+                          1,
+                          12,
+                        ),
+                      )
                     )
                   }
                   className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
@@ -545,12 +603,14 @@ export default function HasilLaporanPage() {
                   type="button"
                   onClick={() =>
                     setCalendarMonth(
-                      new Date(
-                        calendarMonth.getFullYear(),
-                        calendarMonth.getMonth() + 1,
-                        1,
-                        12,
-                      ),
+                      createMonthAnchor(
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() + 1,
+                          1,
+                          12,
+                        ),
+                      )
                     )
                   }
                   className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
@@ -559,7 +619,7 @@ export default function HasilLaporanPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCalendarMonth(new Date())}
+                  onClick={() => setCalendarMonth(createMonthAnchor(new Date()))}
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   Reset
@@ -568,7 +628,14 @@ export default function HasilLaporanPage() {
                   type="button"
                   onClick={() =>
                     setCalendarMonth(
-                      new Date(calendarMonth.getFullYear() - 1, calendarMonth.getMonth(), 1, 12),
+                      createMonthAnchor(
+                        new Date(
+                          calendarMonth.getFullYear() - 1,
+                          calendarMonth.getMonth(),
+                          1,
+                          12,
+                        ),
+                      ),
                     )
                   }
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
@@ -585,7 +652,14 @@ export default function HasilLaporanPage() {
                   type="button"
                   onClick={() =>
                     setCalendarMonth(
-                      new Date(calendarMonth.getFullYear() + 1, calendarMonth.getMonth(), 1, 12),
+                      createMonthAnchor(
+                        new Date(
+                          calendarMonth.getFullYear() + 1,
+                          calendarMonth.getMonth(),
+                          1,
+                          12,
+                        ),
+                      ),
                     )
                   }
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
@@ -623,6 +697,12 @@ export default function HasilLaporanPage() {
             </div>
           ) : null}
 
+          {trainingSessionsError ? (
+            <div className="mt-5 border border-rose-400/25 bg-rose-500/10 px-4 py-6 text-sm text-rose-200">
+              Gagal sinkron data hasil laporan dari backend: {trainingSessionsError}
+            </div>
+          ) : null}
+
           <div className="mt-5 overflow-x-auto overflow-y-hidden pb-2">
             <div className="min-w-[920px]">
               <div className="mb-3 grid grid-cols-7 gap-3">
@@ -647,13 +727,13 @@ export default function HasilLaporanPage() {
                       day={day}
                       summary={summary}
                       isToday={key === todayKey}
-                      active={activeSummary?.date === key}
+                      active={activeSummaryDate === key}
                       onOpen={() => {
                         if (!summary) {
                           return;
                         }
 
-                        setActiveSummary(summary);
+                        setActiveSummaryDate(key);
                       }}
                     />
                   );
@@ -662,7 +742,7 @@ export default function HasilLaporanPage() {
             </div>
           </div>
 
-          {visibleSummaries.length === 0 ? (
+          {!trainingSessionsError && visibleSummaries.length === 0 ? (
             <div className="mt-5 border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400">
               Belum ada histori hasil laporan pada bulan ini.
             </div>
@@ -674,7 +754,7 @@ export default function HasilLaporanPage() {
         {activeSummary ? (
           <DateDetailModal
             summary={activeSummary}
-            onClose={() => setActiveSummary(null)}
+            onClose={() => setActiveSummaryDate("")}
           />
         ) : null}
       </AnimatePresence>

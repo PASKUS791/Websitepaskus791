@@ -15,6 +15,32 @@ export const TRAINING_GOLONGAN_OPTIONS = ["Golongan 1", "Golongan 2"];
 export const RECRUITMENT_REPORT_STATUS_OPTIONS = ["PROSES", "LULUS", "GAGAL"];
 export const TRAINING_SESSION_STATUS_OPTIONS = ["AKTIF", "TERKIRIM"];
 
+function normalizeTrainingDispatchRecord(record) {
+  if (!record || typeof record !== "object") {
+    return null;
+  }
+
+  const sentAt =
+    typeof record.sentAt === "string" && record.sentAt.trim()
+      ? record.sentAt
+      : null;
+
+  if (!sentAt) {
+    return null;
+  }
+
+  return {
+    sentAt,
+    description: String(record.description || "").trim(),
+    attachmentFileName: String(record.attachmentFileName || "").trim(),
+    attachmentPreviewUrl: String(record.attachmentPreviewUrl || "").trim(),
+    reportCount: Number(record.reportCount) || 0,
+    mentionedOperatorCount: Number(record.mentionedOperatorCount) || 0,
+    mentionedRegistrantCount: Number(record.mentionedRegistrantCount) || 0,
+    requestedByLabel: String(record.requestedByLabel || "").trim(),
+  };
+}
+
 // Section: date and formatting helpers.
 export function getCurrentOperationalDate(referenceDate = new Date()) {
   return new Date(
@@ -30,6 +56,16 @@ export function formatDateKey(date) {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function toDateKeyFromTimestamp(value) {
+  const parsedDate = new Date(value);
+
+  if (!Number.isFinite(parsedDate.getTime())) {
+    return "";
+  }
+
+  return formatDateKey(parsedDate);
 }
 
 export function createLocalDate(dateString) {
@@ -279,6 +315,7 @@ export function normalizeTrainingSession(session, index = 0) {
     createdBy: session.createdBy?.trim() || "Paskus Admin",
     status: normalizedStatus,
     dispatchedAt,
+    dispatchRecord: normalizeTrainingDispatchRecord(session.dispatchRecord),
     operators,
     candidates,
   };
@@ -399,7 +436,7 @@ export function loadRecruitmentReports(value = EMPTY_DASHBOARD_DATA) {
 }
 
 export function createReportsForTrainingSession(session) {
-  return session.candidates.map((candidate, index) =>
+  return session.candidates.map((candidate) =>
     normalizeRecruitmentReport({
       id: `${session.id}::${candidate.identity}`,
       sessionId: session.id,
@@ -470,8 +507,11 @@ export function buildSessionDateSummaries(
   const includedSessionIds = new Set(sourceSessions.map((session) => session.id));
 
   sourceSessions.forEach((session) => {
-    const entry = summaryMap.get(session.scheduledDate) ?? {
-      date: session.scheduledDate,
+    const sessionDateKey =
+      (historicalOnly && toDateKeyFromTimestamp(session.dispatchedAt)) ||
+      session.scheduledDate;
+    const entry = summaryMap.get(sessionDateKey) ?? {
+      date: sessionDateKey,
       sessions: [],
       reportCount: 0,
       candidateCount: 0,
@@ -479,7 +519,7 @@ export function buildSessionDateSummaries(
 
     entry.sessions.push(session);
     entry.candidateCount += session.candidates.length;
-    summaryMap.set(session.scheduledDate, entry);
+    summaryMap.set(sessionDateKey, entry);
   });
 
   reports.forEach((report) => {
@@ -487,7 +527,10 @@ export function buildSessionDateSummaries(
       return;
     }
 
-    const key = report.sessionDate || formatDateKey(new Date(report.updatedAt));
+    const key =
+      (historicalOnly && toDateKeyFromTimestamp(report.sentAt)) ||
+      report.sessionDate ||
+      formatDateKey(new Date(report.updatedAt));
     const entry = summaryMap.get(key) ?? {
       date: key,
       sessions: [],

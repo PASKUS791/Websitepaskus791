@@ -33,6 +33,21 @@ const STAFF_OPERATOR_STORAGE_KEY = "pelatihdash.staff.operators.v1";
 const STAFF_SESSION_META_STORAGE_KEY = "pelatihdash.staff.session-meta.v1";
 const STAFF_REPORT_META_STORAGE_KEY = "pelatihdash.staff.report-meta.v1";
 const STAFF_CANDIDATE_META_STORAGE_KEY = "pelatihdash.staff.candidate-meta.v1";
+const MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_LENGTH = 220000;
+const DISPATCHED_SESSION_STATUS_HINTS = [
+  "selesai",
+  "finish",
+  "finished",
+  "complete",
+  "completed",
+  "closed",
+  "done",
+  "terkirim",
+  "sent",
+  "dispatch",
+  "archive",
+  "arsip",
+];
 
 function readStorageObject(key, fallbackValue) {
   if (typeof window === "undefined") {
@@ -167,6 +182,157 @@ function mapRemoteCandidate(candidate, index = 0) {
   };
 }
 
+function normalizeDispatchAttachmentPreview(dataUrl) {
+  const normalizedDataUrl = String(dataUrl || "").trim();
+
+  if (
+    !normalizedDataUrl.startsWith("data:image/") ||
+    normalizedDataUrl.length > MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_LENGTH
+  ) {
+    return "";
+  }
+
+  return normalizedDataUrl;
+}
+
+function createSessionDispatchRecord({
+  description = "",
+  attachment = null,
+  dispatchResult = null,
+  reports = [],
+  currentUser = null,
+} = {}) {
+  const sentAt = new Date().toISOString();
+  const attachmentFileName = String(
+    dispatchResult?.attachmentFileName || attachment?.fileName || "",
+  ).trim();
+  const normalizedDescription = String(description || "").trim();
+
+  if (!normalizedDescription && !attachmentFileName && !dispatchResult) {
+    return null;
+  }
+
+  return {
+    sentAt,
+    description: normalizedDescription,
+    attachmentFileName,
+    attachmentPreviewUrl: normalizeDispatchAttachmentPreview(attachment?.dataUrl),
+    reportCount: Array.isArray(reports) ? reports.length : 0,
+    mentionedOperatorCount: Number(dispatchResult?.mentionedOperatorCount) || 0,
+    mentionedRegistrantCount: Number(dispatchResult?.mentionedRegistrantCount) || 0,
+    requestedByLabel: currentUser?.label || currentUser?.nama || "",
+  };
+}
+
+function normalizeBooleanFlag(value) {
+  if (value === true || value === 1) {
+    return true;
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+    return ["true", "1", "yes", "y", "selesai", "finished", "done"].includes(
+      normalizedValue,
+    );
+  }
+
+  return false;
+}
+
+function toIsoTimestamp(value) {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value.toISOString() : "";
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const epochMs = value > 10_000_000_000 ? value : value * 1000;
+    const parsedDate = new Date(epochMs);
+    return Number.isFinite(parsedDate.getTime()) ? parsedDate.toISOString() : "";
+  }
+
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  const parsedDate = new Date(normalizedValue);
+
+  if (!Number.isFinite(parsedDate.getTime())) {
+    return "";
+  }
+
+  return parsedDate.toISOString();
+}
+
+function findFirstTimestamp(values = []) {
+  for (const value of values) {
+    const timestamp = toIsoTimestamp(value);
+
+    if (timestamp) {
+      return timestamp;
+    }
+  }
+
+  return "";
+}
+
+function resolveBackendDispatchState(rawSession = {}) {
+  const statusText = String(
+    rawSession?.status || rawSession?.state || rawSession?.kondisi || "",
+  )
+    .trim()
+    .toLowerCase();
+  const hasStatusHint = DISPATCHED_SESSION_STATUS_HINTS.some((hint) =>
+    statusText.includes(hint),
+  );
+  const hasDoneFlag = [
+    rawSession?.selesai,
+    rawSession?.finished,
+    rawSession?.isFinished,
+    rawSession?.completed,
+    rawSession?.closed,
+    rawSession?.isClosed,
+    rawSession?.archived,
+    rawSession?.isArchived,
+    rawSession?.terkirim,
+    rawSession?.dispatched,
+  ].some((value) => normalizeBooleanFlag(value));
+  const dispatchedAt = findFirstTimestamp([
+    rawSession?.dispatchedAt,
+    rawSession?.sentAt,
+    rawSession?.finishedAt,
+    rawSession?.completedAt,
+    rawSession?.closedAt,
+    rawSession?.selesaiAt,
+    rawSession?.selesai_pada,
+    rawSession?.waktu_selesai,
+    rawSession?.tanggal_selesai,
+  ]);
+  const isDispatched = hasStatusHint || hasDoneFlag || Boolean(dispatchedAt);
+
+  return {
+    isDispatched,
+    dispatchedAt,
+  };
+}
+
+function normalizeSessionParticipantIdentity(entry) {
+  const rawIdentity = String(
+    entry?.identitas_sipil?._id ||
+      entry?.identitas_sipil?.id ||
+      entry?.identitas_sipil ||
+      entry?.candidateId ||
+      "",
+  ).trim();
+
+  if (!rawIdentity) {
+    return "";
+  }
+
+  return rawIdentity.toLowerCase();
+}
+
 function getDefaultQuestion(candidate, golongan) {
   return `Evaluasi awal untuk ${candidate.roblox} pada ${golongan}?`;
 }
@@ -243,6 +409,7 @@ function buildRecruitmentSessionIds(entries = [], selectors = []) {
 function buildSessionDetailPayload(
   rawSession,
   candidateMap,
+  candidateMetaMap,
   operatorDirectory,
   sessionMetaMap,
   currentUser,
@@ -262,6 +429,16 @@ function buildSessionDetailPayload(
   if (sessionMeta.canceledAt) {
     return null;
   }
+
+  const backendDispatchState = resolveBackendDispatchState(rawSession);
+  const resolvedDispatchedAt =
+    sessionMeta.dispatchedAt ||
+    backendDispatchState.dispatchedAt ||
+    (backendDispatchState.isDispatched
+      ? findFirstTimestamp([rawSession.updatedAt, rawSession.createdAt]) ||
+        new Date().toISOString()
+      : "");
+  const sessionDispatched = Boolean(resolvedDispatchedAt || backendDispatchState.isDispatched);
 
   const operators = Array.isArray(rawSession.pelatih)
     ? rawSession.pelatih.map((operator, index) => {
@@ -290,26 +467,65 @@ function buildSessionDetailPayload(
   const candidates = Array.isArray(rawSession.peserta)
     ? rawSession.peserta
         .map((entry, index) => {
-          const identity = String(
-            entry?.identitas_sipil?._id ||
-              entry?.identitas_sipil ||
-              entry?.candidateId ||
-              "",
-          );
-          const matchedCandidate = candidateMap.get(identity);
+          const identity = normalizeSessionParticipantIdentity(entry);
 
-          if (!matchedCandidate) {
+          if (identity && candidateMetaMap[identity]?.eliminatedAt) {
             return null;
           }
 
+          const matchedCandidate = candidateMap.get(identity);
+          const participantSource =
+            entry?.identitas_sipil && typeof entry.identitas_sipil === "object"
+              ? entry.identitas_sipil
+              : entry || {};
+
+          const fallbackCandidate = normalizeDashboardCandidate(
+            {
+              id: identity || `session-candidate-${sessionId}-${index}`,
+              identity: identity || `session-candidate-${sessionId}-${index}`,
+              roblox:
+                participantSource?.nama_roblox ||
+                participantSource?.namaRoblox ||
+                participantSource?.nama ||
+                participantSource?.name ||
+                "Unknown Candidate",
+              discord:
+                participantSource?.discord_name ||
+                participantSource?.discord ||
+                "unknown#0000",
+              age: participantSource?.age || 0,
+              gender: participantSource?.gender || "Tidak Diketahui",
+              category:
+                participantSource?.status ||
+                participantSource?.kategori ||
+                participantSource?.category ||
+                "sipil",
+              createdAt:
+                participantSource?.createdAt ||
+                rawSession.createdAt ||
+                new Date().toISOString(),
+              updatedAt:
+                participantSource?.updatedAt ||
+                rawSession.updatedAt ||
+                rawSession.createdAt ||
+                new Date().toISOString(),
+            },
+            index,
+          );
+          const resolvedCandidate = matchedCandidate || fallbackCandidate;
+
           return {
-            ...matchedCandidate,
+            ...resolvedCandidate,
             evaluation: Array.isArray(entry?.evaluasi) ? entry.evaluasi : [],
             participantIndex: index,
           };
         })
         .filter(Boolean)
     : [];
+
+  if (candidates.length === 0) {
+    return null;
+  }
 
   return {
     rawSession,
@@ -325,8 +541,9 @@ function buildSessionDetailPayload(
         currentUser?.label ||
         operators[0]?.label ||
         "Paskus Admin",
-      status: sessionMeta.dispatchedAt ? "TERKIRIM" : "AKTIF",
-      dispatchedAt: sessionMeta.dispatchedAt || null,
+      status: sessionDispatched ? "TERKIRIM" : "AKTIF",
+      dispatchedAt: resolvedDispatchedAt || null,
+      dispatchRecord: sessionMeta.dispatchRecord || null,
       operators,
       candidates,
     }),
@@ -400,6 +617,7 @@ export async function fetchStaffPortalSnapshot(currentUser = null) {
       buildSessionDetailPayload(
         detail,
         candidateMap,
+        candidateMetaMap,
         operatorDirectory,
         sessionMetaMap,
         currentUser,
@@ -537,15 +755,23 @@ export async function dispatchStaffTrainingSession(
   sessionId,
   reports = [],
   currentUser = null,
+  options = {},
 ) {
   const dispatchedAt = new Date().toISOString();
   const sessionMetaMap = loadSessionMetaMap();
   const currentMeta = sessionMetaMap[sessionId] || {};
+  const dispatchRecord =
+    createSessionDispatchRecord({
+      ...options,
+      reports,
+      currentUser,
+    }) || currentMeta.dispatchRecord || null;
 
   sessionMetaMap[sessionId] = {
     ...currentMeta,
     dispatchedAt,
     updatedAt: dispatchedAt,
+    dispatchRecord,
   };
   writeSessionMetaMap(sessionMetaMap);
 
@@ -601,6 +827,32 @@ export async function eliminateStaffCandidate(report, currentUser = null) {
 
   const reportMetaMap = loadReportMetaMap();
   delete reportMetaMap[buildReportMetaKey(report.sessionId, report.candidateIdentity)];
+  writeReportMetaMap(reportMetaMap);
+
+  const nextSnapshot = await fetchStaffPortalSnapshot(currentUser);
+  const remainingSession = nextSnapshot.trainingSessions.find(
+    (session) => session.id === report.sessionId,
+  );
+
+  if (remainingSession?.candidates.length > 0) {
+    return nextSnapshot;
+  }
+
+  const sessionMetaMap = loadSessionMetaMap();
+  const currentMeta = sessionMetaMap[report.sessionId] || {};
+
+  sessionMetaMap[report.sessionId] = {
+    ...currentMeta,
+    canceledAt: eliminatedAt,
+    updatedAt: eliminatedAt,
+  };
+  writeSessionMetaMap(sessionMetaMap);
+
+  Object.keys(reportMetaMap).forEach((metaKey) => {
+    if (metaKey.startsWith(`${report.sessionId}::`)) {
+      delete reportMetaMap[metaKey];
+    }
+  });
   writeReportMetaMap(reportMetaMap);
 
   return fetchStaffPortalSnapshot(currentUser);

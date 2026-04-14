@@ -11,11 +11,10 @@
  */
 
 import { AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import TrainingSessionReportModal from "../components/TrainingSessionReportModal";
-import { readStoredStaffSession } from "../../lib/staffApi";
+import { finishStaffRecruitmentSession } from "../../lib/staffApi";
 import {
   formatArchiveTimestamp,
   formatOperationalDateLabel,
@@ -605,23 +604,12 @@ export default function PelatihanPage() {
       );
 
       let finishWarningMessage = "";
-      const staffAccessToken = readStoredStaffSession()?.accessToken || "";
       try {
-        await axios.post(
-          `https://api.paskus791.cloud/perekrutan/${trainingSession.id}/finish`,
-          undefined,
-          staffAccessToken
-            ? {
-                headers: {
-                  Authorization: `Bearer ${staffAccessToken}`,
-                },
-              }
-            : undefined,
-        );
+        await finishStaffRecruitmentSession(trainingSession.id);
       } catch (finishError) {
         finishWarningMessage = (
-          finishError?.response?.data?.message ||
-          finishError?.response?.data?.error ||
+          finishError?.payload?.message ||
+          finishError?.payload?.error ||
           finishError?.message ||
           "Sinkron status finish ke backend eksternal gagal."
         )

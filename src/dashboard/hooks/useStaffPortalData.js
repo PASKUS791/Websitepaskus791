@@ -99,8 +99,8 @@ export function useStaffPortalData({ enabled = true } = {}) {
     },
     saveRecruitmentReport: (report, options = {}) =>
       runMutation(() => saveStaffRecruitmentReport(report, user, options)),
-    dispatchTrainingSession: (sessionId, reports) =>
-      runMutation(() => dispatchStaffTrainingSession(sessionId, reports, user)),
+    dispatchTrainingSession: (sessionId, reports, options = {}) =>
+      runMutation(() => dispatchStaffTrainingSession(sessionId, reports, user, options)),
     cancelTrainingSession: (sessionId) =>
       runMutation(() => cancelStaffTrainingSession(sessionId, user)),
     eliminateCandidate: (report) =>

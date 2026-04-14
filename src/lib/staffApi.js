@@ -220,6 +220,17 @@ export async function fetchStaffRecruitmentDetail(sessionId) {
   return payload?.data ?? null;
 }
 
+export async function finishStaffRecruitmentSession(sessionId) {
+  const payload = await staffApiFetch(
+    `/perekrutan/${encodeURIComponent(sessionId)}/finish`,
+    {
+      method: "POST",
+    },
+  );
+
+  return payload?.data ?? null;
+}
+
 function normalizeSipilIdentity(value) {
   const normalized = String(value || "").trim();
 
