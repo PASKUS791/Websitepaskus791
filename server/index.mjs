@@ -155,6 +155,7 @@ const config = {
   staffBackendBaseUrl: String(
     process.env.STAFF_BACKEND_BASE_URL || "https://api.paskus791.cloud",
   ).trim().replace(/\/$/, ""),
+  serveFrontend: String(process.env.APP_SERVE_FRONTEND || "false").trim() === "true",
   passwordHashN: normalizeScryptCost(process.env.APP_HASH_SCRYPT_N, 16384),
   passwordHashR: parsePositiveInt(process.env.APP_HASH_SCRYPT_R, 8),
   passwordHashP: parsePositiveInt(process.env.APP_HASH_SCRYPT_P, 1),
@@ -245,7 +246,8 @@ const distRoot = resolve(
   projectRoot,
   String(process.env.APP_FRONTEND_DIST_DIR || "dist-staff").trim(),
 );
-const hasBuiltFrontend = existsSync(resolve(distRoot, "index.html"));
+const hasBuiltFrontend =
+  config.serveFrontend && existsSync(resolve(distRoot, "index.html"));
 const storage = await createStorage({
   resourceScopes: RESOURCE_SCOPES,
   resourceDefaults: RESOURCE_DEFAULTS,
@@ -1642,7 +1644,13 @@ async function proxyStaffBackendRequest(request, response, requestUrl) {
 
 async function serveFrontend(request, response, requestUrl) {
   if (!hasBuiltFrontend) {
-    sendError(response, 404, "Frontend build belum tersedia di server.");
+    sendError(
+      response,
+      404,
+      config.serveFrontend
+        ? "Frontend build belum tersedia di server."
+        : "Server ini berjalan sebagai backend API-only.",
+    );
     return;
   }
 
@@ -2379,6 +2387,16 @@ async function handleRequest(request, response) {
   }
 
   if (!path.startsWith("/api/")) {
+    if (!config.serveFrontend && path === "/" && request.method === "GET") {
+      sendJson(response, 200, {
+        ok: true,
+        service: "pelatihdash-api",
+        mode: "api-only",
+        frontendOrigin: config.allowedOrigins[0] || null,
+      });
+      return;
+    }
+
     await serveFrontend(request, response, requestUrl);
     return;
   }

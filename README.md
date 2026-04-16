@@ -12,8 +12,8 @@ Update beta fix:
 
 Setup deploy yang direkomendasikan sekarang:
 
-- website staff: `https://staff.paskus791.cloud`
-- backend staff legacy: `https://api.paskus791.cloud`
+- frontend static: `https://staff.paskus791.cloud`
+- backend API: `https://api.paskus791.cloud`
 
 ## Stack
 
@@ -104,7 +104,9 @@ API_PORT=8787
 APP_ALLOWED_ORIGINS=http://localhost:5173
 APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-berbeda
+APP_SERVE_FRONTEND=false
 VITE_STAFF_SITE_URL=http://localhost:5173
+VITE_API_BASE_URL=http://localhost:8787
 VITE_STAFF_API_BASE_URL=/staff-api
 VITE_RECRUITMENT_DISPATCH_PATH=/sipil/kirim
 PELATIH_ADMIN_USERNAME=PaskusAdmin
@@ -152,8 +154,9 @@ API:   http://localhost:8787
 
 Catatan:
 
+- frontend staff lokal memakai `VITE_API_BASE_URL=http://localhost:8787`
 - frontend staff lokal memakai proxy Vite untuk `/staff-api`
-- saat production, staff sebaiknya tetap memakai `/staff-api` agar cookie dan auth lewat backend internal domain staff
+- saat production dua domain, frontend staff harus memanggil `https://api.paskus791.cloud`
 
 ## Reset dan Isi Data Test
 
@@ -219,10 +222,12 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `APP_API_RATE_LIMIT_PER_MINUTE` | Rate limit umum API |
 | `APP_LOGIN_RATE_LIMIT_PER_WINDOW` | Rate limit khusus endpoint login |
 | `APP_TRUST_PROXY` | Gunakan `true` jika aplikasi di belakang reverse proxy |
+| `APP_SERVE_FRONTEND` | Set `false` bila backend dideploy sebagai API-only |
 | `VITE_STAFF_SITE_URL` | URL website staff |
-| `VITE_STAFF_API_BASE_URL` | Base URL backend staff saat frontend dibuild. Untuk deploy terpadu gunakan `/staff-api` |
+| `VITE_API_BASE_URL` | Base URL backend internal, misalnya `https://api.paskus791.cloud` |
+| `VITE_STAFF_API_BASE_URL` | Base URL backend staff/legacy yang dipanggil frontend |
 | `VITE_RECRUITMENT_DISPATCH_PATH` | Path endpoint dispatch recruiter di backend staff, default `/sipil/kirim` |
-| `STAFF_BACKEND_BASE_URL` | URL backend staff tim lain yang akan diproxy lewat `/staff-api` |
+| `STAFF_BACKEND_BASE_URL` | Origin upstream backend staff bila mode proxy `/staff-api` dipakai |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |
 | `DISCORD_RECRUITMENT_WEBHOOK_URL` | Webhook Discord untuk kirim embed recruiter + lampiran |
@@ -266,8 +271,8 @@ Alur production yang direkomendasikan:
 1. Build frontend dengan `npm run build`.
 2. Deploy backend `server/index.mjs` ke hosting Node / VPS.
 3. Sambungkan backend ke `MongoDB Atlas` atau MongoDB server lain lewat `MONGODB_URI`.
-4. Arahkan domain `staff.paskus791.cloud` ke server ini.
-5. Biarkan server ini melayani frontend build sekaligus endpoint `/api` dan proxy `/staff-api`.
+4. Deploy hasil build `dist-staff/` ke `staff.paskus791.cloud`.
+5. Deploy `server/index.mjs` ke `api.paskus791.cloud`.
 6. Jalankan backend dengan:
 
 ```bash
@@ -283,7 +288,9 @@ APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
 APP_SESSION_SECRET=secret-random-panjang-dan-unik
 APP_PASSWORD_PEPPER=pepper-random-panjang-dan-unik
 APP_TRUST_PROXY=true
-VITE_STAFF_API_BASE_URL=/staff-api
+APP_SERVE_FRONTEND=false
+VITE_API_BASE_URL=https://api.paskus791.cloud
+VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
@@ -308,6 +315,16 @@ Jika mode MongoDB aktif, response akan mengandung:
 ```json
 {"ok":true,"status":"online","database":"mongodb"}
 ```
+
+Mode yang direkomendasikan untuk deploy sekarang:
+
+- `staff.paskus791.cloud` hanya melayani file static frontend
+- `api.paskus791.cloud` hanya melayani backend API
+- frontend memakai `VITE_API_BASE_URL=https://api.paskus791.cloud`
+- frontend memakai `VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud`
+- backend internal memakai `STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud` untuk sinkron ke jalur staff
+
+Kalau kamu masih memakai proxy `/staff-api` di backend internal, pastikan `STAFF_BACKEND_BASE_URL` menunjuk ke upstream backend staff yang sebenarnya, bukan ke domain backend internal yang sama.
 
 ## Catatan Untuk Tim Backend
 

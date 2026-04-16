@@ -2,10 +2,10 @@
 
 ## Target
 
-Project ini siap dideploy sebagai `full-stack deployment`:
+Project ini siap dideploy sebagai `two-domain deployment`:
 
-- frontend build `dist-staff/`
-- backend Node `server/index.mjs`
+- frontend static `staff.paskus791.cloud`
+- backend API `api.paskus791.cloud`
 - database `MongoDB`
 - reverse proxy / CDN / WAF di depan origin
 
@@ -14,7 +14,7 @@ Project ini siap dideploy sebagai `full-stack deployment`:
 1. `CDN / WAF / Reverse Proxy`
 2. `Node server` yang menjalankan `server/index.mjs`
 3. `MongoDB Atlas` atau server MongoDB privat
-4. `Backend staff eksternal` yang diproxy melalui `/staff-api`
+4. `Backend staff eksternal` upstream bila masih dipakai
 
 ## Environment Variable Minimal
 
@@ -25,7 +25,9 @@ APP_ALLOWED_ORIGINS=https://staff.paskus791.cloud
 APP_SESSION_SECRET=ganti-dengan-secret-random-yang-panjang-dan-unik
 APP_PASSWORD_PEPPER=ganti-dengan-pepper-random-yang-panjang-dan-unik
 APP_TRUST_PROXY=true
-VITE_STAFF_API_BASE_URL=/staff-api
+APP_SERVE_FRONTEND=false
+VITE_API_BASE_URL=https://api.paskus791.cloud
+VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud
 STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
@@ -75,9 +77,28 @@ Wajib disiapkan:
 
 - TLS aktif
 - `APP_TRUST_PROXY=true` bila di belakang reverse proxy
+- frontend static tidak perlu diserve dari backend
+- set `APP_SERVE_FRONTEND=false` agar `api.paskus791.cloud` berjalan sebagai `API-only`
 - WAF / edge rate limit untuk burst tinggi
 - bot filtering / reputation
 - origin shielding
+
+## Domain Split
+
+Mode yang direkomendasikan untuk project ini:
+
+- `staff.paskus791.cloud` hanya meng-host hasil build `dist-staff/`
+- `api.paskus791.cloud` hanya menjalankan `server/index.mjs`
+- frontend memanggil internal API lewat `VITE_API_BASE_URL=https://api.paskus791.cloud`
+- frontend memanggil backend staff legacy lewat `VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud`
+- backend internal meneruskan sinkron staff ke `STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud`
+
+Kalau kamu masih perlu proxy internal `/staff-api`, arahkan:
+
+- `VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud/staff-api`
+- `STAFF_BACKEND_BASE_URL` ke origin upstream staff backend yang sebenarnya
+
+Jangan isi `STAFF_BACKEND_BASE_URL` dengan domain backend internal yang sama kalau kamu memakai mode proxy, karena itu akan membuat loop proxy.
 
 ## Checklist Production
 
