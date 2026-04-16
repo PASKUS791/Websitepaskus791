@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../lib/auth";
+import { createApiEventSource } from "../../lib/api";
 import {
   cancelStaffTrainingSession,
   createEmptyStaffPortalSnapshot,
@@ -56,6 +57,36 @@ export function useStaffPortalData({ enabled = true } = {}) {
   useEffect(() => {
     reload().catch(() => undefined);
   }, [reload]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
+    const eventSource = createApiEventSource();
+
+    const handleMessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+
+        if (payload?.type === "resource-updated" && payload?.resource === "staffPortal.shared") {
+          reload().catch(() => undefined);
+        }
+      } catch {
+        // Ignore malformed SSE payloads.
+      }
+    };
+
+    eventSource.addEventListener("message", handleMessage);
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.removeEventListener("message", handleMessage);
+      eventSource.close();
+    };
+  }, [enabled, reload]);
 
   const runMutation = useCallback(
     async (mutation) => {

@@ -1,57 +1,66 @@
-# Catatan Keamanan
+# Security Notes
 
-Dokumen ini merangkum proteksi yang sudah aktif di project dan hal-hal yang perlu dijaga saat deploy production.
+## Ringkasan
 
-## Proteksi yang Sudah Aktif
+Dokumen ini menjelaskan lapisan pertahanan yang sudah ditahan aplikasi, batasnya, dan area yang tetap harus ditopang CDN / WAF / edge.
 
-- Password di-hash di sisi server menggunakan `scrypt` dengan parameter yang bisa dikonfigurasi.
-- Pepper password tambahan dimuat dari file `.env` melalui `APP_PASSWORD_PEPPER`.
-- Session login memakai cookie `HttpOnly`, signed, dan `SameSite=Strict`.
-- Endpoint login memiliki proteksi rate limit dan lockout brute force.
-- Request tulis ke API memvalidasi `Origin` dan `Referer` tepercaya untuk mengurangi risiko CSRF.
-- Backend sekarang memakai MongoDB driver resmi dan tidak membangun query dari string mentah user.
-- Header deploy memblokir framing, sniffing, indexing, dan kebijakan lintas domain yang lemah.
-- Aturan Apache deploy menolak akses ke source file, dotfile, dan file konfigurasi sensitif.
-- Terdapat hardening session secret dan validasi environment untuk production.
+Backend project ini memakai `MongoDB`, jadi ancaman injection yang relevan adalah `NoSQL injection`, bukan literal `MySQL injection`.
 
-## Checklist Production
+## Matriks Ketahanan
 
-1. Isi `APP_SESSION_SECRET` dengan nilai acak yang panjang dan kuat.
-2. Isi `APP_PASSWORD_PEPPER` dengan nilai acak yang berbeda dari session secret.
-3. Set `APP_TRUST_PROXY=true` jika aplikasi berada di belakang reverse proxy tepercaya.
-4. Set `APP_ALLOWED_ORIGINS` hanya ke origin production yang resmi.
-5. Pastikan domain production selalu memakai HTTPS.
-6. Jangan upload `.env`, `server/`, atau source code ke public web root.
-7. Ganti password admin bootstrap sebelum aplikasi benar-benar dipakai.
-8. Letakkan domain publik di belakang WAF/CDN jika membutuhkan ketahanan DDoS yang lebih kuat.
-9. Batasi akses panel admin hanya untuk role dan scope yang benar.
-10. Audit ulang webhook dan kredensial sebelum go-live.
+| Jenis Serangan | Sudah Ditahan Aplikasi | Penjelasan | Masih Butuh CDN/WAF/Edge |
+|---|---|---|---|
+| Brute force login | Ya | Rate limit login, lockout berbasis jendela waktu, hashing `scrypt`, pepper, session rotation | Ya, untuk burst lintas IP dan reputasi IP global |
+| Cross-origin probing / CSRF-like write | Ya | Validasi `Origin`, `Referer`, cookie `SameSite=Strict`, `HttpOnly` | Ya, untuk filtering bot dan request anomali lintas region |
+| Session hijack | Ya, parsial kuat | Signed cookie, TTL terbatas, binding `user-agent`, HSTS di production | Ya, untuk TLS termination aman dan proteksi edge tambahan |
+| XSS / script injection | Ya | Escaping React, CSP, blok signature injeksi skrip umum | Ya, untuk signature filtering di edge |
+| NoSQL injection | Ya, parsial | Validasi schema, whitelist field, query Mongo eksplisit, resource sanitization | WAF tidak menggantikan validasi aplikasi |
+| Request flood / DDoS ringan | Ya, parsial | Rate limit backend origin | Ya, wajib untuk volumetric DDoS, bot challenge, dan absorption layer |
+| Recon / command probing | Ya | Signature block payload berbahaya dan hardening origin | Ya, agar origin tidak jadi titik serang pertama |
 
-## Fokus Pengujian Pentest
+## Batas Ketahanan
 
-- brute force login dan credential stuffing
-- pencurian session dan validasi cookie flag
-- CSRF pada request tulis yang memerlukan autentikasi
-- injection dan query abuse pada endpoint auth, resource, dan admin
-- akses langsung ke file deploy tersembunyi atau directory index
-- broken access control antara scope `pelatih` dan `hco`
-- validasi origin palsu dan probing referer
-- replay request pada endpoint sensitif
+Yang sudah kuat di layer aplikasi:
 
-## Rekomendasi Tambahan
+- validasi input
+- hardening header
+- pengamanan sesi
+- rate limit dan lockout
+- validasi asal request
+- sanitasi payload umum yang menyerupai probing
 
-- Tambahkan audit log login dan perubahan data penting.
-- Pertimbangkan 2FA untuk akun dengan akses strategis.
-- Gunakan secret yang berbeda untuk lokal, beta, dan production.
-- Jangan pernah commit file `.env` ke repository publik.
-- Lakukan rotasi secret secara berkala untuk environment production.
+Yang tetap tidak boleh dibebankan hanya ke aplikasi:
 
-## Identitas dan Kepemilikan Internal
+- volumetric DDoS
+- IP reputation global
+- browser challenge / bot management
+- geo blocking adaptif
+- cache shield / origin shielding
 
-Dokumentasi dan implementasi keamanan project ini dikelola secara internal oleh:
+## Catatan MongoDB dan NoSQL Injection
 
-- Team DUKUN PASKUS 791
-- Jevier — Frontend
-- Teddy — Backend
-- Lee — Cyber Sector
-- Osiris — Bot Manufactur
+Karena backend memakai MongoDB, mitigasi yang benar adalah:
+
+- jangan pernah meneruskan objek query dari request user secara mentah
+- pakai whitelist field untuk filter, sort, dan lookup
+- validasi tipe data sebelum membentuk query Mongo
+- batasi operator seperti `$ne`, `$gt`, `$regex`, `$where`, `$expr`, dan operator sejenis agar tidak berasal dari input user
+- hindari evaluasi string / dynamic query builder tanpa schema guard
+
+## Catatan Trust Wallet
+
+- recovery phrase / seed phrase tidak boleh disimpan di frontend, backend, database, env, atau dokumen deploy
+- integrasi wallet yang aman harus memakai `challenge + signature`
+- standar dasar yang relevan: `ERC-191` dan `ERC-4361`
+- untuk Trust Wallet mobile, koneksi dApp yang aman dilakukan lewat `WalletConnect`
+
+## Referensi Resmi
+
+- [OWASP API Security Top 10 2023](https://owasp.org/API-Security/editions/2023/en/0x11-t10/)
+- [Express Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
+- [CISA Secure by Design](https://www.cisa.gov/securebydesign)
+- [CISA / FBI / NSA Advisory AA24-290A](https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-290a)
+- [ERC-191](https://eips.ethereum.org/EIPS/eip-191)
+- [ERC-4361](https://eips.ethereum.org/EIPS/eip-4361)
+- [Trust Wallet Developer Docs](https://developer.trustwallet.com/developer/develop-for-trust)
+- [Trust Wallet Mobile / WalletConnect Docs](https://developer.trustwallet.com/developer/develop-for-trust/mobile)

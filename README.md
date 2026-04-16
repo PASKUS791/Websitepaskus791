@@ -4,6 +4,12 @@ Dashboard operasional internal `PASKUS 791` yang sekarang difokuskan penuh ke po
 
 Project ini memakai arsitektur `React + Vite` di frontend dan `Node.js` di backend untuk autentikasi server-side, penyimpanan resource, dan sinkronisasi data real-time. Backend sekarang memakai `MongoDB` sebagai storage utama untuk lokal maupun deploy.
 
+Update beta fix:
+
+- shared state portal pelatih sekarang memakai `MongoDB` lewat backend internal, bukan `localStorage` per browser
+- daftar petugas, shadow state sesi, histori laporan, dan metadata eliminasi sekarang bisa terbaca lintas akun dan lintas device selama lewat server yang sama
+- tersedia `Admin Console` baru untuk monitoring, konfigurasi, dan registry akun pelatih
+
 Setup deploy yang direkomendasikan sekarang:
 
 - website staff: `https://staff.paskus791.cloud`
@@ -60,6 +66,8 @@ public/
 Staff website:
 
 - `/` : Login Staff / Pelatih
+- `/admin/login` : Login Admin internal
+- `/admin` : Admin console untuk monitoring, konfigurasi, dan registry akun
 - `/dashboard` : Dashboard utama staff
 - `/dashboard/jadwal` : Redirect ke `Hasil Laporan`
 - `/dashboard/laporan` : Kalender histori hasil laporan
@@ -103,6 +111,13 @@ PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
 PELATIH_ADMIN_UNIT=PASKUS 791
+ADMIN_PANEL_USERNAME=SystemAdmin
+ADMIN_PANEL_PASSWORD=GantiPasswordAdminYangKuat
+ADMIN_PANEL_LABEL=System Admin
+ADMIN_PANEL_UNIT=PASKUS 791 Control
+ADMIN_PANEL_WALLET_ADDRESSES=0xAdminWalletYangDiizinkan
+ADMIN_PANEL_WALLET_AUTH_REQUIRED=true
+APP_WALLET_CHALLENGE_TTL_MINUTES=5
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retryWrites=true&w=majority
 MONGODB_DB_NAME=pelatihdash
 DISCORD_RECRUITMENT_WEBHOOK_URL=
@@ -212,6 +227,10 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `MONGODB_DB_NAME` | Nama database MongoDB |
 | `DISCORD_RECRUITMENT_WEBHOOK_URL` | Webhook Discord untuk kirim embed recruiter + lampiran |
 | `PELATIH_ADMIN_*` | Bootstrap akun admin pelatih |
+| `ADMIN_PANEL_*` | Bootstrap akun admin untuk `Admin Console` |
+| `ADMIN_PANEL_WALLET_ADDRESSES` | Daftar allowlist wallet admin untuk signature challenge |
+| `ADMIN_PANEL_WALLET_AUTH_REQUIRED` | Pakai `true` untuk mewajibkan login admin via wallet |
+| `APP_WALLET_CHALLENGE_TTL_MINUTES` | Masa berlaku challenge signature wallet |
 
 ## Arsitektur Data
 
@@ -227,8 +246,18 @@ Resource yang aktif sekarang:
 - `dashboard.schedules`
 - `dashboard.trainingSessions`
 - `dashboard.reports`
+- `staffPortal.shared`
 
 Frontend memakai `useSyncedResource()` untuk load, save, dan update real-time lewat SSE.
+
+`staffPortal.shared` sekarang menyimpan:
+
+- registry operator bersama
+- `sessionMetaMap`
+- `reportMetaMap`
+- `candidateMetaMap`
+
+Tujuannya agar histori dan shadow state portal staff tidak lagi terpecah per-browser.
 
 ## Deploy MongoDB
 
@@ -260,6 +289,11 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pelatihdash?retr
 MONGODB_DB_NAME=pelatihdash
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=ganti-password-production
+ADMIN_PANEL_USERNAME=SystemAdmin
+ADMIN_PANEL_PASSWORD=ganti-password-admin-console
+ADMIN_PANEL_WALLET_ADDRESSES=0xAdminWalletProduction
+ADMIN_PANEL_WALLET_AUTH_REQUIRED=true
+APP_WALLET_CHALLENGE_TTL_MINUTES=5
 DISCORD_RECRUITMENT_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 ```
 
@@ -342,10 +376,53 @@ Beberapa proteksi yang sudah ada:
 - CSP dan security headers dasar
 - sanitasi resource input
 
+### Batas Ketahanan
+
+Proteksi aplikasi ini sudah cukup kuat untuk:
+
+- brute force login
+- probing origin / referer
+- session hardening
+- validasi input dasar
+- blok payload injeksi yang umum
+
+Tetapi aplikasi origin tetap belum menggantikan:
+
+- CDN / WAF / edge firewall untuk volumetric DDoS
+- reputasi IP global
+- bot challenge / CAPTCHA edge
+- cache shield dan absorption layer
+
+### Catatan MongoDB
+
+Backend project ini memakai `MongoDB`. Jadi ancaman injection yang relevan adalah `NoSQL injection`, bukan literal `MySQL injection`. Fokus mitigasi harus pada:
+
+- whitelist field yang boleh dipakai query
+- validasi tipe data sebelum masuk ke query Mongo
+- jangan pernah meneruskan objek query mentah dari input user
+- batasi operator seperti `$ne`, `$gt`, `$regex`, `$where`, dan pola operator serupa agar tidak berasal dari request user
+
+### Trust Wallet Note
+
+- recovery phrase / seed phrase tidak boleh ditanam ke frontend, backend, env deploy, atau dokumen tim
+- integrasi wallet yang aman harus memakai `challenge + signature` resmi seperti `ERC-191` / `ERC-4361`
+- untuk koneksi mobile Trust Wallet, gunakan jalur resmi `WalletConnect`, bukan frasa wallet
+
+### Referensi Resmi
+
+- [OWASP API Security Top 10 2023](https://owasp.org/API-Security/editions/2023/en/0x11-t10/)
+- [Express Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
+- [CISA Secure by Design](https://www.cisa.gov/securebydesign)
+- [CISA / FBI / NSA Advisory AA24-290A](https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-290a)
+- [ERC-191](https://eips.ethereum.org/EIPS/eip-191)
+- [ERC-4361](https://eips.ethereum.org/EIPS/eip-4361)
+- [Trust Wallet Developer Docs](https://developer.trustwallet.com/developer/develop-for-trust)
+- [Trust Wallet Mobile / WalletConnect Docs](https://developer.trustwallet.com/developer/develop-for-trust/mobile)
+
 Lihat juga:
 
-- [SECURITY.md](/Users/jerikho/Documents/New%20project/PelatihDash/SECURITY.md)
-- [DEPLOY.md](/Users/jerikho/Documents/New%20project/PelatihDash/DEPLOY.md)
+- [SECURITY.md](/Users/jerikho/folder tanpa judul/New project/PelatihWebPaskus-main/SECURITY.md)
+- [DEPLOY.md](/Users/jerikho/folder tanpa judul/New project/PelatihWebPaskus-main/DEPLOY.md)
 
 ## Checklist Sebelum Push / Deploy
 

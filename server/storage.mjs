@@ -266,11 +266,60 @@ export async function createStorage({
         active: 1,
       };
     },
+    async upsertUser(user) {
+      const existing = await users.findOne({
+        scope: user.scope,
+        username: user.username,
+      });
+      const createdAt = existing?.createdAt || user.createdAt;
+
+      await users.updateOne(
+        {
+          scope: user.scope,
+          username: user.username,
+        },
+        {
+          $set: {
+            label: user.label,
+            unit: user.unit ?? null,
+            active: user.active !== false,
+            updatedAt: user.updatedAt,
+            ...(user.passwordHash ? { passwordHash: user.passwordHash } : {}),
+          },
+          $setOnInsert: {
+            createdAt,
+            passwordHash: user.passwordHash ?? existing?.passwordHash ?? "",
+          },
+        },
+        { upsert: true },
+      );
+
+      const nextUser = await users.findOne({
+        scope: user.scope,
+        username: user.username,
+      });
+
+      return mapUserDocument(nextUser);
+    },
     async deleteUserByScopeAndUsername(scope, username) {
       await users.deleteOne({
         scope,
         username,
       });
+    },
+    async countUsersByScope(scope) {
+      return users.countDocuments({
+        scope,
+        active: { $ne: false },
+      });
+    },
+    async countActiveSessions(currentIso) {
+      return sessions.countDocuments({
+        expiresAt: { $gt: currentIso },
+      });
+    },
+    async countResources() {
+      return resources.countDocuments({});
     },
     async close() {
       await client.close();

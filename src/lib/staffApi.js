@@ -11,12 +11,19 @@
  */
 
 import { createJsonHttpClient, normalizeHttpError } from "./httpClient";
+import { apiFetch } from "./api";
 
 const RAW_STAFF_API_BASE_URL =
   import.meta.env.VITE_STAFF_API_BASE_URL || "https://api.paskus791.cloud";
 
 export const STAFF_SESSION_STORAGE_KEY = "pelatihdash.staff.session.v1";
 export const STAFF_DEFAULT_UNIT = "Recruitment Division";
+export const EMPTY_SHARED_PORTAL_STATE = {
+  operators: [],
+  sessionMetaMap: {},
+  reportMetaMap: {},
+  candidateMetaMap: {},
+};
 
 const STAFF_API_BASE_URL = RAW_STAFF_API_BASE_URL.replace(/\/$/, "");
 const staffHttpClient = createJsonHttpClient({
@@ -158,6 +165,7 @@ export async function loginStaff(username, password) {
   };
 
   writeStoredStaffSession(session);
+  await bootstrapInternalStaffSession(session.accessToken);
 
   return session;
 }
@@ -185,6 +193,7 @@ export async function refreshStaffSession() {
   };
 
   writeStoredStaffSession(session);
+  await bootstrapInternalStaffSession(session.accessToken);
 
   return session;
 }
@@ -193,8 +202,118 @@ export async function logoutStaff() {
   try {
     await staffApiFetch("/auth/logout", { method: "POST" });
   } finally {
+    try {
+      await logoutInternalSession();
+    } catch {
+      // Ignore internal logout failures so staff session can still be cleared locally.
+    }
     clearStoredStaffSession();
   }
+}
+
+export async function bootstrapInternalStaffSession(accessToken) {
+  if (!String(accessToken || "").trim()) {
+    return null;
+  }
+
+  const payload = await apiFetch("/api/staff/bootstrap-session", {
+    method: "POST",
+    body: {
+      accessToken,
+    },
+  });
+
+  return payload?.user ?? null;
+}
+
+export async function refreshInternalSession() {
+  const payload = await apiFetch("/api/auth/session");
+  return payload?.authenticated ? payload.user ?? null : null;
+}
+
+export async function loginInternalAccount(scope, username, password) {
+  const payload = await apiFetch("/api/auth/login", {
+    method: "POST",
+    body: {
+      scope,
+      username: String(username || "").trim().toLowerCase(),
+      password,
+    },
+  });
+
+  return payload?.user ?? null;
+}
+
+export async function fetchWalletAuthConfig(scope = "admin") {
+  const payload = await apiFetch(
+    `/api/auth/wallet/config?scope=${encodeURIComponent(scope)}`,
+  );
+  const allowedAddresses = Array.isArray(payload?.allowedAddresses)
+    ? payload.allowedAddresses
+    : [];
+  const allowedAddressHints = Array.isArray(payload?.allowedAddressHints)
+    ? payload.allowedAddressHints
+    : [];
+
+  return {
+    enabled: Boolean(payload?.enabled),
+    providerMode: payload?.providerMode || "injected",
+    allowedAddresses,
+    allowedAddressHints,
+    allowedAddressCount: Number.isFinite(payload?.allowedAddressCount)
+      ? payload.allowedAddressCount
+      : allowedAddresses.length || allowedAddressHints.length,
+    siweDomain: payload?.siweDomain || "",
+    siweUri: payload?.siweUri || "",
+  };
+}
+
+export async function requestWalletAuthChallenge({
+  scope,
+  username,
+  address,
+  chainId,
+}) {
+  const payload = await apiFetch("/api/auth/wallet/challenge", {
+    method: "POST",
+    body: {
+      scope,
+      username: String(username || "").trim().toLowerCase(),
+      address,
+      chainId,
+    },
+  });
+
+  return payload?.challenge ?? null;
+}
+
+export async function verifyWalletAuthLogin({
+  scope,
+  username,
+  password,
+  address,
+  nonce,
+  signature,
+}) {
+  const payload = await apiFetch("/api/auth/wallet/verify", {
+    method: "POST",
+    body: {
+      scope,
+      username: String(username || "").trim().toLowerCase(),
+      password,
+      address,
+      nonce,
+      signature,
+    },
+  });
+
+  return payload?.user ?? null;
+}
+
+export async function logoutInternalSession() {
+  await apiFetch("/api/auth/logout", {
+    method: "POST",
+  });
 }
 
 export async function fetchStaffCandidates() {
@@ -312,17 +431,25 @@ export async function upsertStaffEvaluation(
   }
 }
 
-export async function registerStaffOperatorAccount({ username, label, password }) {
-  const payload = await staffApiFetch("/auth/registrasi", {
+export async function registerStaffOperatorAccount({
+  username,
+  label,
+  password,
+  unit = STAFF_DEFAULT_UNIT,
+  discordUserId = "",
+}) {
+  const payload = await apiFetch("/api/pelatih/operators", {
     method: "POST",
     body: {
       username: String(username || "").trim().toLowerCase(),
+      label,
+      unit,
+      discordUserId,
       password,
-      nama: label,
     },
   });
 
-  return payload?.user ?? null;
+  return payload?.operators ?? [];
 }
 
 export async function deleteStaffOperatorAccount(username) {
@@ -332,12 +459,66 @@ export async function deleteStaffOperatorAccount(username) {
     throw new Error("Username petugas tidak valid.");
   }
 
-  const payload = await staffApiFetch(
-    `/auth/operator/${encodeURIComponent(normalizedUsername)}`,
+  const payload = await apiFetch(
+    `/api/pelatih/operators/${encodeURIComponent(normalizedUsername)}`,
     {
       method: "DELETE",
     },
   );
 
-  return payload?.user ?? null;
+  return payload?.operators ?? [];
+}
+
+export async function fetchSharedStaffOperators() {
+  const payload = await apiFetch("/api/pelatih/operators");
+  return Array.isArray(payload?.operators) ? payload.operators : [];
+}
+
+export async function updateSharedStaffOperatorMetadata({
+  username,
+  discordUserId,
+}) {
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+
+  if (!normalizedUsername) {
+    throw new Error("Username petugas tidak valid.");
+  }
+
+  const payload = await apiFetch(
+    `/api/pelatih/operators/${encodeURIComponent(normalizedUsername)}`,
+    {
+      method: "PATCH",
+      body: {
+        discordUserId,
+      },
+    },
+  );
+
+  return Array.isArray(payload?.operators) ? payload.operators : [];
+}
+
+export async function fetchSharedPortalState() {
+  const payload = await apiFetch(
+    `/api/resources/${encodeURIComponent("staffPortal.shared")}`,
+  );
+  return payload?.value ?? EMPTY_SHARED_PORTAL_STATE;
+}
+
+export async function saveSharedPortalState(value) {
+  const payload = await apiFetch(
+    `/api/resources/${encodeURIComponent("staffPortal.shared")}`,
+    {
+      method: "PUT",
+      body: {
+        value,
+      },
+    },
+  );
+
+  return payload?.value ?? EMPTY_SHARED_PORTAL_STATE;
+}
+
+export async function fetchAdminOverview() {
+  const payload = await apiFetch("/api/admin/overview");
+  return payload?.overview ?? null;
 }

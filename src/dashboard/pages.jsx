@@ -15,6 +15,7 @@
 // agar tim bisa lebih mudah mencari text, helper, dan komponen sesuai area kerja.
 
 export { default as DashboardHome } from "./views/DashboardHomePage";
+export { default as AdminConsolePage } from "./views/AdminConsolePage";
 export { default as HasilLaporanPage } from "./views/HasilLaporanPage";
 export { default as PelatihanPage } from "./views/PelatihanPage";
 export { default as RecruitmentReportPage } from "./views/RecruitmentReportPage";

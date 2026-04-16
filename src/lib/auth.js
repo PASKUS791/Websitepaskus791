@@ -21,11 +21,17 @@ import {
 } from "react";
 import {
   clearStoredStaffSession,
+  fetchWalletAuthConfig,
+  loginInternalAccount,
   loginStaff,
+  logoutInternalSession,
   logoutStaff,
   normalizeStaffUser,
+  requestWalletAuthChallenge,
   readStoredStaffSession,
+  refreshInternalSession,
   refreshStaffSession,
+  verifyWalletAuthLogin,
 } from "./staffApi";
 
 const AuthContext = createContext(null);
@@ -38,14 +44,21 @@ function AuthProviderInner({ children }) {
   const refreshSession = useCallback(async () => {
     try {
       const session = await refreshStaffSession();
-      const nextUser =
-        session?.user ||
-        normalizeStaffUser(readStoredStaffSession()?.user);
+      const nextUser = session?.user || normalizeStaffUser(readStoredStaffSession()?.user);
+      setUser(nextUser);
+      setError("");
+      return;
+    } catch {
+      clearStoredStaffSession();
+    }
+
+    try {
+      const internalUser = await refreshInternalSession();
+      const nextUser = internalUser?.scope === "admin" ? internalUser : null;
       setUser(nextUser);
       setError("");
     } catch {
       setUser(null);
-      clearStoredStaffSession();
       setError("");
     } finally {
       setLoading(false);
@@ -57,9 +70,16 @@ function AuthProviderInner({ children }) {
   }, [refreshSession]);
 
   const login = useCallback(
-    async (_scope, username, password) => {
-      const session = await loginStaff(username, password);
-      const nextUser = session?.user ?? null;
+    async (scope, username, password) => {
+      let nextUser = null;
+
+      if (scope === "admin") {
+        clearStoredStaffSession();
+        nextUser = await loginInternalAccount(scope, username, password);
+      } else {
+        nextUser = (await loginStaff(username, password))?.user ?? null;
+      }
+
       setUser(nextUser);
       setError("");
       return nextUser;
@@ -69,13 +89,69 @@ function AuthProviderInner({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await logoutStaff();
+      if (user?.scope === "admin") {
+        await logoutInternalSession();
+      } else {
+        await logoutStaff();
+      }
     } catch {
       clearStoredStaffSession();
+      try {
+        await logoutInternalSession();
+      } catch {
+        // Ignore logout cleanup failures from the internal API.
+      }
     }
 
     setUser(null);
-  }, []);
+  }, [user?.scope]);
+
+  const loginWithWallet = useCallback(
+    async ({
+      scope = "admin",
+      username,
+      password,
+      address,
+      chainId,
+      signMessage,
+    }) => {
+      const walletConfig = await fetchWalletAuthConfig(scope);
+
+      if (!walletConfig.enabled) {
+        throw new Error("Wallet auth belum aktif untuk scope ini.");
+      }
+
+      if (typeof signMessage !== "function") {
+        throw new Error("Provider wallet belum siap untuk proses signature.");
+      }
+
+      const challenge = await requestWalletAuthChallenge({
+        scope,
+        username,
+        address,
+        chainId,
+      });
+
+      if (!challenge?.message || !challenge?.nonce) {
+        throw new Error("Challenge wallet tidak valid.");
+      }
+
+      const signature = await signMessage(challenge.message);
+      const nextUser = await verifyWalletAuthLogin({
+        scope,
+        username,
+        password,
+        address,
+        nonce: challenge.nonce,
+        signature,
+      });
+
+      setUser(nextUser);
+      setError("");
+      return nextUser;
+    },
+    [],
+  );
 
   const value = useMemo(
     () => ({
@@ -83,11 +159,12 @@ function AuthProviderInner({ children }) {
       loading,
       error,
       login,
+      loginWithWallet,
       logout,
       refreshSession,
       isScopeAuthenticated: (scope) => user?.scope === scope,
     }),
-    [error, loading, login, logout, refreshSession, user],
+    [error, loading, login, loginWithWallet, logout, refreshSession, user],
   );
 
   return createElement(AuthContext.Provider, { value }, children);

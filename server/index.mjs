@@ -13,6 +13,7 @@ import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { getAddress, isAddress, verifyMessage } from "ethers";
 import { createRecruitmentDispatchService } from "./recruitmentDispatch.mjs";
 import { createStorage } from "./storage.mjs";
 
@@ -170,6 +171,15 @@ const config = {
   mongodbDbName: String(
     process.env.MONGODB_DB_NAME || process.env.APP_MONGODB_DB_NAME || "pelatihdash",
   ).trim(),
+  adminWalletAddresses: String(process.env.ADMIN_PANEL_WALLET_ADDRESSES || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean),
+  adminWalletAuthRequired: String(
+    process.env.ADMIN_PANEL_WALLET_AUTH_REQUIRED || "true",
+  ).trim() !== "false",
+  walletChallengeTtlMs:
+    parsePositiveInt(process.env.APP_WALLET_CHALLENGE_TTL_MINUTES, 5) * 60 * 1000,
 };
 
 if (!config.mongodbUri) {
@@ -188,11 +198,30 @@ if (config.production && !config.passwordPepper) {
   throw new Error("APP_PASSWORD_PEPPER wajib diisi di production.");
 }
 
+const normalizedAdminWalletAddresses = config.adminWalletAddresses
+  .map((entry) => {
+    try {
+      return getAddress(entry);
+    } catch {
+      return "";
+    }
+  })
+  .filter(Boolean);
+
+if (config.adminWalletAuthRequired && normalizedAdminWalletAddresses.length === 0) {
+  throw new Error(
+    "ADMIN_PANEL_WALLET_ADDRESSES wajib diisi saat ADMIN_PANEL_WALLET_AUTH_REQUIRED aktif.",
+  );
+}
+
+const STAFF_PORTAL_SHARED_RESOURCE = "staffPortal.shared";
+
 const RESOURCE_SCOPES = {
   "dashboard.candidates": "pelatih",
   "dashboard.schedules": "pelatih",
   "dashboard.reports": "pelatih",
   "dashboard.trainingSessions": "pelatih",
+  [STAFF_PORTAL_SHARED_RESOURCE]: "pelatih",
 };
 
 const RESOURCE_DEFAULTS = {
@@ -200,10 +229,17 @@ const RESOURCE_DEFAULTS = {
   "dashboard.schedules": [],
   "dashboard.reports": [],
   "dashboard.trainingSessions": [],
+  [STAFF_PORTAL_SHARED_RESOURCE]: {
+    operators: [],
+    sessionMetaMap: {},
+    reportMetaMap: {},
+    candidateMetaMap: {},
+  },
 };
 
 const requestRateBuckets = new Map();
 const loginAttemptBuckets = new Map();
+const walletChallengeBuckets = new Map();
 const sseClients = new Set();
 const distRoot = resolve(
   projectRoot,
@@ -223,6 +259,43 @@ const recruitmentDispatchService = createRecruitmentDispatchService({
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function isPlainRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeSharedOperatorEntry(entry) {
+  const username = normalizeUsername(entry?.username);
+
+  if (!username) {
+    return null;
+  }
+
+  return {
+    id: String(entry?.id || username),
+    username,
+    label: String(entry?.label || username)
+      .trim()
+      .replace(/\s+/g, " "),
+    unit: String(entry?.unit || "PASKUS 791")
+      .trim()
+      .replace(/\s+/g, " "),
+    discordUserId: String(entry?.discordUserId || "").replace(/\D/g, ""),
+  };
+}
+
+function normalizeSharedPortalState(value = {}) {
+  const operators = Array.isArray(value?.operators)
+    ? value.operators.map((entry) => normalizeSharedOperatorEntry(entry)).filter(Boolean)
+    : [];
+
+  return {
+    operators,
+    sessionMetaMap: isPlainRecord(value?.sessionMetaMap) ? value.sessionMetaMap : {},
+    reportMetaMap: isPlainRecord(value?.reportMetaMap) ? value.reportMetaMap : {},
+    candidateMetaMap: isPlainRecord(value?.candidateMetaMap) ? value.candidateMetaMap : {},
+  };
 }
 
 function createHttpError(statusCode, message) {
@@ -350,6 +423,7 @@ async function ensureResourceDefaults() {
 }
 
 await seedAdminUser("pelatih", "PELATIH_ADMIN", "Paskus Admin");
+await seedAdminUser("admin", "ADMIN_PANEL", "System Admin", "PASKUS 791 Control");
 await ensureResourceDefaults();
 
 function getClientIp(request) {
@@ -576,6 +650,93 @@ function clearSessionCookie() {
   return serializeSessionCookie("", 0);
 }
 
+function getPrimaryAppOrigin() {
+  return config.allowedOrigins[0] || "http://localhost:5173";
+}
+
+function normalizeWalletAddress(value) {
+  try {
+    return getAddress(String(value || "").trim());
+  } catch {
+    return "";
+  }
+}
+
+function maskWalletAddress(address) {
+  const normalizedAddress = normalizeWalletAddress(address);
+
+  if (!normalizedAddress) {
+    return "";
+  }
+
+  return `${normalizedAddress.slice(0, 6)}...${normalizedAddress.slice(-4)}`;
+}
+
+function isAllowedAdminWalletAddress(address) {
+  const normalizedAddress = normalizeWalletAddress(address);
+  return Boolean(
+    normalizedAddress && normalizedAdminWalletAddresses.includes(normalizedAddress),
+  );
+}
+
+function cleanupExpiredWalletChallenges() {
+  const now = Date.now();
+
+  for (const [nonce, challenge] of walletChallengeBuckets.entries()) {
+    if (!challenge || challenge.expiresAtMs <= now || challenge.usedAtMs) {
+      walletChallengeBuckets.delete(nonce);
+    }
+  }
+}
+
+function createWalletChallengeMessage({
+  scope,
+  username,
+  address,
+  chainId,
+  nonce,
+  issuedAt,
+  expirationTime,
+}) {
+  const appOrigin = getPrimaryAppOrigin();
+  const domain = new URL(appOrigin).host;
+
+  return `${domain} wants you to sign in with your Ethereum account:
+${address}
+
+PASKUS 791 ${scope.toUpperCase()} access verification.
+
+URI: ${appOrigin}
+Version: 1
+Chain ID: ${chainId}
+Nonce: ${nonce}
+Issued At: ${issuedAt}
+Expiration Time: ${expirationTime}
+Resources:
+- urn:paskus791:scope:${scope}
+- urn:paskus791:username:${username}`;
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const base64Section = String(token || "").split(".")[1];
+
+    if (!base64Section) {
+      return null;
+    }
+
+    const normalized = base64Section.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+
+    return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
 async function cleanupExpiredSessions() {
   await storage.cleanupExpiredSessions(nowIso());
 }
@@ -650,6 +811,247 @@ async function getAuthenticatedSession(request) {
   };
 }
 
+async function ensureInternalStaffSessionFromAccessToken(accessToken, request) {
+  if (!accessToken) {
+    throw createHttpError(400, "Access token staff wajib diisi.");
+  }
+
+  const profilePayload = await requestStaffBackendJson("/auth/me", {
+    accessToken,
+  });
+  const decodedAccessToken = decodeJwtPayload(profilePayload?.accessToken || accessToken);
+  const remoteUser = profilePayload?.user;
+  const username = normalizeUsername(
+    remoteUser?.username ||
+      remoteUser?.user?.username ||
+      decodedAccessToken?.username ||
+      decodedAccessToken?.sub,
+  );
+  const label = String(
+    remoteUser?.nama ||
+      remoteUser?.label ||
+      decodedAccessToken?.nama ||
+      decodedAccessToken?.label ||
+      remoteUser?.username ||
+      username,
+  )
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!username) {
+    throw createHttpError(401, "Profil staff dari backend utama tidak valid.");
+  }
+
+  const timestamp = nowIso();
+  const internalUser = await storage.upsertUser({
+    scope: "pelatih",
+    username,
+    label,
+    unit: "PASKUS 791",
+    passwordHash: DUMMY_PASSWORD_HASH,
+    active: true,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  await storage.deleteSessionsByUser(internalUser.id);
+  const nextSession = await createSession(
+    {
+      ...internalUser,
+      scope: "pelatih",
+    },
+    request,
+  );
+
+  return {
+    session: nextSession,
+    user: {
+      id: internalUser.id,
+      scope: "pelatih",
+      username: internalUser.username,
+      label: internalUser.label,
+      unit: internalUser.unit,
+    },
+  };
+}
+
+function validateWalletChallengePayload(body) {
+  const scope = String(body?.scope || "").trim();
+  const username = normalizeUsername(body?.username);
+  const address = normalizeWalletAddress(body?.address);
+  const rawChainId = body?.chainId;
+  const chainId =
+    typeof rawChainId === "string" && rawChainId.startsWith("0x")
+      ? Number.parseInt(rawChainId, 16)
+      : parsePositiveInt(rawChainId, 1);
+
+  if (!["admin"].includes(scope)) {
+    throw createHttpError(400, "Scope wallet login tidak valid.");
+  }
+
+  if (!username) {
+    throw createHttpError(400, "Username admin wajib diisi.");
+  }
+
+  if (!address || !isAddress(address)) {
+    throw createHttpError(400, "Alamat wallet tidak valid.");
+  }
+
+  if (!chainId) {
+    throw createHttpError(400, "Chain ID wallet tidak valid.");
+  }
+
+  return {
+    scope,
+    username,
+    address,
+    chainId,
+  };
+}
+
+function issueWalletChallenge({ scope, username, address, chainId }) {
+  cleanupExpiredWalletChallenges();
+
+  if (scope === "admin" && !isAllowedAdminWalletAddress(address)) {
+    throw createHttpError(403, "Wallet ini tidak terdaftar untuk akses admin.");
+  }
+
+  const nonce = randomBytes(16).toString("hex");
+  const issuedAt = nowIso();
+  const expirationTime = new Date(Date.now() + config.walletChallengeTtlMs).toISOString();
+  const message = createWalletChallengeMessage({
+    scope,
+    username,
+    address,
+    chainId,
+    nonce,
+    issuedAt,
+    expirationTime,
+  });
+
+  walletChallengeBuckets.set(nonce, {
+    scope,
+    username,
+    address,
+    chainId,
+    nonce,
+    issuedAt,
+    expiresAtMs: new Date(expirationTime).getTime(),
+    message,
+    usedAtMs: 0,
+  });
+
+  return {
+    scope,
+    username,
+    address,
+    chainId,
+    nonce,
+    issuedAt,
+    expirationTime,
+    message,
+  };
+}
+
+async function verifyWalletLogin(body, request) {
+  cleanupExpiredWalletChallenges();
+
+  const { scope, username, password } = validateLoginPayload({
+    scope: body?.scope,
+    username: body?.username,
+    password: body?.password,
+  });
+  const address = normalizeWalletAddress(body?.address);
+  const nonce = String(body?.nonce || "").trim();
+  const signature = String(body?.signature || "").trim();
+
+  if (scope !== "admin") {
+    throw createHttpError(400, "Wallet login saat ini hanya aktif untuk scope admin.");
+  }
+
+  ensureLoginAttemptAllowed(username, request);
+
+  if (!address || !nonce || !signature) {
+    throw createHttpError(400, "Payload verifikasi wallet tidak lengkap.");
+  }
+
+  const challenge = walletChallengeBuckets.get(nonce);
+
+  if (!challenge || challenge.expiresAtMs <= Date.now()) {
+    walletChallengeBuckets.delete(nonce);
+    throw createHttpError(401, "Challenge wallet sudah kadaluarsa. Minta challenge baru.");
+  }
+
+  if (challenge.usedAtMs) {
+    throw createHttpError(409, "Challenge wallet ini sudah dipakai.");
+  }
+
+  if (
+    challenge.scope !== scope ||
+    challenge.username !== username ||
+    challenge.address !== address
+  ) {
+    throw createFailedLoginError(
+      username,
+      request,
+      "Challenge wallet tidak cocok dengan permintaan login.",
+      403,
+    );
+  }
+
+  if (!isAllowedAdminWalletAddress(address)) {
+    throw createFailedLoginError(
+      username,
+      request,
+      "Wallet ini tidak diizinkan untuk login admin.",
+      403,
+    );
+  }
+
+  let recoveredAddress = "";
+
+  try {
+    recoveredAddress = normalizeWalletAddress(verifyMessage(challenge.message, signature));
+  } catch {
+    throw createFailedLoginError(username, request, "Signature wallet tidak valid.");
+  }
+
+  if (!recoveredAddress || recoveredAddress !== challenge.address) {
+    throw createFailedLoginError(
+      username,
+      request,
+      "Signature wallet tidak cocok dengan address yang terhubung.",
+    );
+  }
+
+  const user = await storage.getUserByScopeAndUsername(scope, username);
+  const candidateHash = user?.passwordHash || DUMMY_PASSWORD_HASH;
+  const isPasswordValid = verifyPassword(password, candidateHash);
+
+  if (!user || !user.active || !isPasswordValid) {
+    throw createFailedLoginError(username, request, "Kredensial admin tidak valid.");
+  }
+
+  await maybeUpgradePasswordHash(user, password);
+  clearFailedLogins(username, request);
+  await storage.deleteSessionsByUser(user.id);
+  const nextSession = await createSession({ ...user, scope }, request);
+
+  challenge.usedAtMs = Date.now();
+  walletChallengeBuckets.set(nonce, challenge);
+
+  return {
+    session: nextSession,
+    user: {
+      id: user.id,
+      scope,
+      username: user.username,
+      label: user.label,
+      unit: user.unit,
+    },
+  };
+}
+
 function getRequestBucketKey(request, scope = "general") {
   return `${scope}:${getClientIp(request)}`;
 }
@@ -661,8 +1063,13 @@ function pruneRequestBucket(entries, windowMs) {
 
 function applyRequestRateLimit(request, response) {
   const path = new URL(request.url, "http://localhost").pathname;
+  const isLoginPath = [
+    "/api/auth/login",
+    "/api/auth/wallet/challenge",
+    "/api/auth/wallet/verify",
+  ].includes(path);
   const rule =
-    path === "/api/auth/login"
+    isLoginPath
       ? {
           scope: "login",
           limit: config.loginRateLimitPerWindow,
@@ -753,6 +1160,32 @@ function clearFailedLogins(username, request) {
   loginAttemptBuckets.delete(bucketKey);
 }
 
+function ensureLoginAttemptAllowed(username, request) {
+  const attemptState = getLoginAttemptState(username, request);
+
+  if (attemptState.lockUntil && attemptState.lockUntil > Date.now()) {
+    throw Object.assign(
+      createHttpError(429, "Terlalu banyak percobaan login. Coba lagi nanti."),
+      {
+        extra: {
+          retryAfterSeconds: Math.ceil((attemptState.lockUntil - Date.now()) / 1000),
+        },
+      },
+    );
+  }
+}
+
+function createFailedLoginError(username, request, message, statusCode = 401, extra = {}) {
+  const failedState = registerFailedLogin(username, request);
+
+  return Object.assign(createHttpError(statusCode, message), {
+    extra: {
+      remainingAttempts: Math.max(0, config.loginMaxAttempts - failedState.count),
+      ...extra,
+    },
+  });
+}
+
 function ensureTrustedOrigin(request, response) {
   const origin = normalizeOrigin(request.headers.origin);
 
@@ -794,7 +1227,9 @@ function ensureTrustedOrigin(request, response) {
 }
 
 function validateLoginPayload(body) {
-  const scope = body?.scope === "pelatih" ? "pelatih" : null;
+  const scope = ["pelatih", "admin"].includes(String(body?.scope || ""))
+    ? String(body.scope)
+    : null;
   const username = normalizeUsername(body?.username);
   const password = String(body?.password || "");
 
@@ -826,6 +1261,7 @@ function validateOperatorPayload(body) {
   const unit = String(body?.unit || "PASKUS 791")
     .trim()
     .replace(/\s+/g, " ");
+  const discordUserId = String(body?.discordUserId || "").replace(/\D/g, "");
   const password = String(body?.password || "");
 
   if (
@@ -853,6 +1289,7 @@ function validateOperatorPayload(body) {
     username,
     label,
     unit,
+    discordUserId,
     password,
   };
 }
@@ -907,7 +1344,17 @@ function sanitizeResourceValue(resourceName, value) {
     return null;
   }
 
-  return Array.isArray(value) ? value : RESOURCE_DEFAULTS[resourceName];
+  const defaultValue = RESOURCE_DEFAULTS[resourceName];
+
+  if (Array.isArray(defaultValue)) {
+    return Array.isArray(value) ? value : cloneResourceDefault(resourceName);
+  }
+
+  if (isPlainRecord(defaultValue)) {
+    return isPlainRecord(value) ? value : cloneResourceDefault(resourceName);
+  }
+
+  return cloneResourceDefault(resourceName);
 }
 
 async function readResource(resourceName) {
@@ -955,6 +1402,47 @@ async function writeResource(resourceName, value) {
   };
 }
 
+async function readSharedPortalState() {
+  const resource = await readResource(STAFF_PORTAL_SHARED_RESOURCE);
+  return normalizeSharedPortalState(resource?.value);
+}
+
+async function writeSharedPortalState(value) {
+  return writeResource(STAFF_PORTAL_SHARED_RESOURCE, normalizeSharedPortalState(value));
+}
+
+function mergeOperatorProfiles(users = [], operatorDirectory = []) {
+  const directoryMap = new Map(
+    operatorDirectory
+      .map((entry) => normalizeSharedOperatorEntry(entry))
+      .filter(Boolean)
+      .map((entry) => [entry.username, entry]),
+  );
+  const mergedUsers = users.map((user) => {
+    const sharedEntry = directoryMap.get(user.username);
+
+    return {
+      id: user.id,
+      username: user.username,
+      label: sharedEntry?.label || user.label,
+      unit: sharedEntry?.unit || user.unit || "PASKUS 791",
+      discordUserId: sharedEntry?.discordUserId || "",
+    };
+  });
+
+  return mergedUsers.sort((left, right) =>
+    left.label.localeCompare(right.label, "id-ID"),
+  );
+}
+
+function canManagePelatihScope(session) {
+  return ["pelatih", "admin"].includes(String(session?.user?.scope || ""));
+}
+
+function isAdminSession(session) {
+  return String(session?.user?.scope || "") === "admin";
+}
+
 function broadcastResourceChange(resourceName) {
   const scope = RESOURCE_SCOPES[resourceName];
   const payload = `data: ${JSON.stringify({
@@ -979,7 +1467,17 @@ function broadcastResourceChange(resourceName) {
 
 async function isAuthorizedForResource(session, resourceName, method = "GET") {
   void method;
-  return session?.user?.scope === RESOURCE_SCOPES[resourceName];
+  const resourceScope = RESOURCE_SCOPES[resourceName];
+
+  if (!session?.user?.scope || !resourceScope) {
+    return false;
+  }
+
+  if (session.user.scope === resourceScope) {
+    return true;
+  }
+
+  return session.user.scope === "admin" && resourceScope === "pelatih";
 }
 
 function notAuthorized(response) {
@@ -1032,6 +1530,53 @@ function getMimeType(filePath) {
 
 function rewriteProxySetCookie(cookieValue) {
   return String(cookieValue || "").replace(/;\s*Domain=[^;]+/gi, "");
+}
+
+async function requestStaffBackendJson(
+  backendPath,
+  { method = "GET", accessToken = "", body = null } = {},
+) {
+  const upstreamUrl = `${config.staffBackendBaseUrl}${backendPath}`;
+  const headers = new Headers({
+    Accept: "application/json",
+    origin: config.staffBackendBaseUrl,
+    referer: `${config.staffBackendBaseUrl}/`,
+  });
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  if (body !== null) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const upstreamResponse = await fetch(upstreamUrl, {
+    method,
+    headers,
+    body: body !== null ? JSON.stringify(body) : undefined,
+    redirect: "manual",
+  });
+  const rawText = await upstreamResponse.text();
+  let payload = null;
+
+  try {
+    payload = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    payload = rawText ? { raw: rawText } : null;
+  }
+
+  if (!upstreamResponse.ok) {
+    throw createHttpError(
+      upstreamResponse.status,
+      payload?.message ||
+        payload?.error ||
+        rawText ||
+        "Request ke backend staff gagal.",
+    );
+  }
+
+  return payload;
 }
 
 async function proxyStaffBackendRequest(request, response, requestUrl) {
@@ -1179,6 +1724,116 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (path === "/api/auth/wallet/config" && request.method === "GET") {
+    const requestedScope = String(requestUrl.searchParams.get("scope") || "admin").trim();
+
+    sendJson(response, 200, {
+      ok: true,
+      scope: requestedScope,
+      enabled: requestedScope === "admin" && config.adminWalletAuthRequired,
+      providerMode: "injected",
+      siweDomain: new URL(getPrimaryAppOrigin()).host,
+      siweUri: getPrimaryAppOrigin(),
+      allowedAddressCount:
+        requestedScope === "admin" ? normalizedAdminWalletAddresses.length : 0,
+      allowedAddressHints:
+        requestedScope === "admin"
+          ? normalizedAdminWalletAddresses.map((address) => maskWalletAddress(address))
+          : [],
+      allowedAddresses:
+        requestedScope === "admin" && !config.production
+          ? normalizedAdminWalletAddresses
+          : [],
+    });
+    return;
+  }
+
+  if (path === "/api/auth/wallet/challenge" && request.method === "POST") {
+    try {
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request);
+      const challengePayload = validateWalletChallengePayload(body);
+      ensureLoginAttemptAllowed(challengePayload.username, request);
+      const challenge = issueWalletChallenge(challengePayload);
+
+      sendJson(response, 200, {
+        ok: true,
+        challenge,
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal membuat wallet challenge.",
+      );
+      return;
+    }
+  }
+
+  if (path === "/api/auth/wallet/verify" && request.method === "POST") {
+    try {
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request);
+      const verifiedLogin = await verifyWalletLogin(body, request);
+
+      appendSecurityHeaders(response);
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Set-Cookie": serializeSessionCookie(verifiedLogin.session.sessionId),
+      });
+      response.end(
+        JSON.stringify({
+          ok: true,
+          user: verifiedLogin.user,
+        }),
+      );
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Verifikasi wallet login gagal.",
+        error.extra || {},
+      );
+      return;
+    }
+  }
+
+  if (path === "/api/staff/bootstrap-session" && request.method === "POST") {
+    try {
+      ensureJsonRequest(request);
+      const body = await parseJsonBody(request);
+      const accessToken = String(body?.accessToken || "").trim();
+      const bootstrapResult = await ensureInternalStaffSessionFromAccessToken(
+        accessToken,
+        request,
+      );
+
+      appendSecurityHeaders(response);
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Set-Cookie": serializeSessionCookie(bootstrapResult.session.sessionId),
+      });
+      response.end(
+        JSON.stringify({
+          ok: true,
+          user: bootstrapResult.user,
+        }),
+      );
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal membuat sesi internal staff.",
+      );
+      return;
+    }
+  }
+
   if (path === "/api/auth/login" && request.method === "POST") {
     try {
       ensureJsonRequest(request);
@@ -1196,6 +1851,16 @@ async function handleRequest(request, response) {
       }
 
       const { scope, username, password } = validateLoginPayload(body);
+
+      if (scope === "admin" && config.adminWalletAuthRequired) {
+        sendError(
+          response,
+          403,
+          "Login admin wajib memakai wallet signature challenge.",
+        );
+        return;
+      }
+
       const attemptState = getLoginAttemptState(username, request);
 
       if (attemptState.lockUntil && attemptState.lockUntil > Date.now()) {
@@ -1269,18 +1934,16 @@ async function handleRequest(request, response) {
   }
 
   if (path === "/api/pelatih/operators" && request.method === "GET") {
-    if (!session || session.user.scope !== "pelatih") {
+    if (!canManagePelatihScope(session)) {
       notAuthorized(response);
       return;
     }
 
-    const operators = (await storage.listUsersByScope("pelatih"))
-      .map((user) => ({
-        id: user.id,
-        username: user.username,
-        label: user.label,
-        unit: user.unit,
-      }));
+    const [users, sharedState] = await Promise.all([
+      storage.listUsersByScope("pelatih"),
+      readSharedPortalState(),
+    ]);
+    const operators = mergeOperatorProfiles(users, sharedState.operators);
 
     sendJson(response, 200, {
       ok: true,
@@ -1290,7 +1953,7 @@ async function handleRequest(request, response) {
   }
 
   if (path === "/api/pelatih/operators" && request.method === "POST") {
-    if (!session || session.user.scope !== "pelatih") {
+    if (!canManagePelatihScope(session)) {
       notAuthorized(response);
       return;
     }
@@ -1326,8 +1989,16 @@ async function handleRequest(request, response) {
         return;
       }
 
+      await requestStaffBackendJson("/auth/registrasi", {
+        method: "POST",
+        body: {
+          username: operator.username,
+          password: operator.password,
+          nama: operator.label,
+        },
+      });
       const timestamp = nowIso();
-      await storage.createUser({
+      const internalUser = await storage.createUser({
         scope: "pelatih",
         username: operator.username,
         label: operator.label,
@@ -1336,13 +2007,34 @@ async function handleRequest(request, response) {
         createdAt: timestamp,
         updatedAt: timestamp,
       });
+      const sharedState = await readSharedPortalState();
+      const directoryMap = new Map(
+        sharedState.operators.map((entry) => [entry.username, normalizeSharedOperatorEntry(entry)]),
+      );
 
-      const operators = (await storage.listUsersByScope("pelatih")).map((user) => ({
-        id: user.id,
-        username: user.username,
-        label: user.label,
-        unit: user.unit,
-      }));
+      directoryMap.set(
+        operator.username,
+        normalizeSharedOperatorEntry({
+          id: internalUser.id,
+          username: operator.username,
+          label: operator.label,
+          unit: operator.unit,
+          discordUserId: operator.discordUserId,
+        }),
+      );
+
+      const nextSharedState = {
+        ...sharedState,
+        operators: [...directoryMap.values()].sort((left, right) =>
+          left.label.localeCompare(right.label, "id-ID"),
+        ),
+      };
+      await writeSharedPortalState(nextSharedState);
+
+      const operators = mergeOperatorProfiles(
+        await storage.listUsersByScope("pelatih"),
+        nextSharedState.operators,
+      );
 
       sendJson(response, 201, {
         ok: true,
@@ -1358,6 +2050,198 @@ async function handleRequest(request, response) {
       );
       return;
     }
+  }
+
+  if (path.startsWith("/api/pelatih/operators/") && request.method === "PATCH") {
+    if (!canManagePelatihScope(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      ensureJsonRequest(request);
+      const normalizedUsername = normalizeUsername(
+        decodeURIComponent(path.replace("/api/pelatih/operators/", "")),
+      );
+      const body = await parseJsonBody(request);
+      const discordUserId = String(body?.discordUserId || "").replace(/\D/g, "");
+
+      if (!normalizedUsername) {
+        sendError(response, 400, "Username petugas tidak valid.");
+        return;
+      }
+
+      const [users, sharedState] = await Promise.all([
+        storage.listUsersByScope("pelatih"),
+        readSharedPortalState(),
+      ]);
+      const targetUser = users.find((entry) => entry.username === normalizedUsername);
+
+      if (!targetUser) {
+        sendError(response, 404, "Petugas tidak ditemukan.");
+        return;
+      }
+
+      const directoryMap = new Map(
+        sharedState.operators.map((entry) => [entry.username, normalizeSharedOperatorEntry(entry)]),
+      );
+      directoryMap.set(
+        normalizedUsername,
+        normalizeSharedOperatorEntry({
+          id: targetUser.id,
+          username: normalizedUsername,
+          label: directoryMap.get(normalizedUsername)?.label || targetUser.label,
+          unit: directoryMap.get(normalizedUsername)?.unit || targetUser.unit || "PASKUS 791",
+          discordUserId,
+        }),
+      );
+
+      const nextSharedState = {
+        ...sharedState,
+        operators: [...directoryMap.values()].sort((left, right) =>
+          left.label.localeCompare(right.label, "id-ID"),
+        ),
+      };
+      await writeSharedPortalState(nextSharedState);
+
+      sendJson(response, 200, {
+        ok: true,
+        message: "Discord User ID petugas berhasil diperbarui.",
+        operators: mergeOperatorProfiles(users, nextSharedState.operators),
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal memperbarui metadata petugas.",
+      );
+      return;
+    }
+  }
+
+  if (path.startsWith("/api/pelatih/operators/") && request.method === "DELETE") {
+    if (!canManagePelatihScope(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      const normalizedUsername = normalizeUsername(
+        decodeURIComponent(path.replace("/api/pelatih/operators/", "")),
+      );
+      const currentUsername = normalizeUsername(session?.user?.username);
+
+      if (!normalizedUsername) {
+        sendError(response, 400, "Username petugas tidak valid.");
+        return;
+      }
+
+      if (normalizedUsername === currentUsername) {
+        sendError(response, 400, "Akun yang sedang aktif tidak bisa dihapus.");
+        return;
+      }
+
+      const existingUser = await storage.getUserByScopeAndUsername("pelatih", normalizedUsername);
+
+      if (!existingUser) {
+        sendError(response, 404, "Petugas tidak ditemukan.");
+        return;
+      }
+
+      let externalDeletionWarning = "";
+
+      try {
+        await requestStaffBackendJson(`/auth/operator/${encodeURIComponent(normalizedUsername)}`, {
+          method: "DELETE",
+        });
+      } catch (error) {
+        if (![401, 403, 404].includes(error.statusCode || 0)) {
+          throw error;
+        }
+
+        externalDeletionWarning =
+          " Sinkron hapus ke backend eksternal belum dipastikan dan mungkin perlu dicek manual.";
+      }
+
+      await storage.deleteSessionsByUser(existingUser.id);
+      await storage.deleteUserByScopeAndUsername("pelatih", normalizedUsername);
+
+      const sharedState = await readSharedPortalState();
+      const nextSharedState = {
+        ...sharedState,
+        operators: sharedState.operators.filter((entry) => entry.username !== normalizedUsername),
+      };
+      await writeSharedPortalState(nextSharedState);
+
+      sendJson(response, 200, {
+        ok: true,
+        message: `Petugas berhasil dihapus.${externalDeletionWarning}`,
+        operators: mergeOperatorProfiles(
+          await storage.listUsersByScope("pelatih"),
+          nextSharedState.operators,
+        ),
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal menghapus petugas.",
+      );
+      return;
+    }
+  }
+
+  if (path === "/api/admin/overview" && request.method === "GET") {
+    if (!isAdminSession(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    const [sharedState, pelatihUserCount, adminUserCount, activeSessionCount, resourceCount] =
+      await Promise.all([
+        readSharedPortalState(),
+        storage.countUsersByScope("pelatih"),
+        storage.countUsersByScope("admin"),
+        storage.countActiveSessions(nowIso()),
+        storage.countResources(),
+      ]);
+
+    sendJson(response, 200, {
+      ok: true,
+      overview: {
+        generatedAt: nowIso(),
+        environment: {
+          production: config.production,
+          database: storage.kind,
+          databaseName: storage.databaseName,
+          trustProxy: config.trustProxy,
+          allowedOrigins: config.allowedOrigins,
+          sessionTtlHours: Math.round(config.sessionTtlMs / (60 * 60 * 1000)),
+          loginWindowMinutes: Math.round(config.loginWindowMs / (60 * 1000)),
+          loginMaxAttempts: config.loginMaxAttempts,
+          lockoutMinutes: Math.round(config.lockoutMs / (60 * 1000)),
+          apiRateLimitPerMinute: config.apiRateLimitPerMinute,
+          loginRateLimitPerWindow: config.loginRateLimitPerWindow,
+          externalStaffBackend: config.staffBackendBaseUrl,
+          webhookConfigured: Boolean(config.recruitmentWebhookUrl),
+        },
+        counts: {
+          pelatihUsers: pelatihUserCount,
+          adminUsers: adminUserCount,
+          activeSessions: activeSessionCount,
+          resources: resourceCount,
+          sharedOperators: sharedState.operators.length,
+          sessionMetaEntries: Object.keys(sharedState.sessionMetaMap).length,
+          reportMetaEntries: Object.keys(sharedState.reportMetaMap).length,
+          eliminatedCandidates: Object.keys(sharedState.candidateMetaMap).filter(
+            (key) => Boolean(sharedState.candidateMetaMap[key]?.eliminatedAt),
+          ).length,
+        },
+      },
+    });
+    return;
   }
 
   if (path === "/api/events" && request.method === "GET") {

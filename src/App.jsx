@@ -10,6 +10,7 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import DashboardNavbar from "./dashboard/DashboardNavbar";
 import {
+  AdminConsolePage,
   DashboardHome,
   HasilLaporanPage,
   PelatihanPage,
@@ -19,6 +20,7 @@ import {
   TindakanPage,
 } from "./dashboard/pages";
 import { useAuth } from "./lib/auth";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import LoginPortal from "./pages/LoginPortal";
 
 function AuthLoadingScreen() {
@@ -59,6 +61,10 @@ function RootRedirect() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  if (user?.scope === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
   return <Navigate to="/" replace />;
 }
 
@@ -66,6 +72,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPortal />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
       <Route
         element={<ProtectedRoute requiredScope="pelatih" redirectTo="/" />}
@@ -83,6 +90,12 @@ export default function App() {
           <Route path="tindakan" element={<TindakanPage />} />
           <Route path="sop" element={<SopPage />} />
         </Route>
+      </Route>
+
+      <Route
+        element={<ProtectedRoute requiredScope="admin" redirectTo="/admin/login" />}
+      >
+        <Route path="/admin" element={<AdminConsolePage />} />
       </Route>
 
       <Route path="*" element={<RootRedirect />} />

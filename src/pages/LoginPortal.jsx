@@ -247,6 +247,10 @@ export default function LoginPortal() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  if (user?.scope === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div
       onMouseMove={handleMouseMove}

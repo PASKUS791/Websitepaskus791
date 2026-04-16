@@ -20,19 +20,20 @@ import {
   normalizeTrainingSession,
 } from "./recruitmentData";
 import {
+  EMPTY_SHARED_PORTAL_STATE,
+  fetchSharedPortalState,
+  fetchSharedStaffOperators,
   createStaffRecruitmentSession,
   deleteStaffOperatorAccount,
   fetchStaffCandidates,
   fetchStaffRecruitmentDetail,
   fetchStaffRecruitmentSummaries,
   registerStaffOperatorAccount,
+  saveSharedPortalState,
+  updateSharedStaffOperatorMetadata,
   upsertStaffEvaluation,
 } from "../../lib/staffApi";
 
-const STAFF_OPERATOR_STORAGE_KEY = "pelatihdash.staff.operators.v1";
-const STAFF_SESSION_META_STORAGE_KEY = "pelatihdash.staff.session-meta.v1";
-const STAFF_REPORT_META_STORAGE_KEY = "pelatihdash.staff.report-meta.v1";
-const STAFF_CANDIDATE_META_STORAGE_KEY = "pelatihdash.staff.candidate-meta.v1";
 const MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_LENGTH = 220000;
 const DISPATCHED_SESSION_STATUS_HINTS = [
   "selesai",
@@ -49,34 +50,6 @@ const DISPATCHED_SESSION_STATUS_HINTS = [
   "arsip",
 ];
 
-function readStorageObject(key, fallbackValue) {
-  if (typeof window === "undefined") {
-    return fallbackValue;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallbackValue;
-  } catch {
-    return fallbackValue;
-  }
-}
-
-function writeStorageObject(key, value) {
-  if (typeof window === "undefined") {
-    return value;
-  }
-
-  const serialized = JSON.stringify(value);
-  window.localStorage.setItem(key, serialized);
-  window.dispatchEvent(
-    new CustomEvent("pelatihdash:staff-storage", {
-      detail: { key, value },
-    }),
-  );
-  return value;
-}
-
 function getEmptyPortalSnapshot() {
   return {
     candidates: [],
@@ -84,6 +57,32 @@ function getEmptyPortalSnapshot() {
     reports: [],
     operators: [],
   };
+}
+
+function normalizeSharedPortalState(value = EMPTY_SHARED_PORTAL_STATE) {
+  return {
+    operators: Array.isArray(value?.operators) ? value.operators : [],
+    sessionMetaMap:
+      value?.sessionMetaMap && typeof value.sessionMetaMap === "object"
+        ? value.sessionMetaMap
+        : {},
+    reportMetaMap:
+      value?.reportMetaMap && typeof value.reportMetaMap === "object"
+        ? value.reportMetaMap
+        : {},
+    candidateMetaMap:
+      value?.candidateMetaMap && typeof value.candidateMetaMap === "object"
+        ? value.candidateMetaMap
+        : {},
+  };
+}
+
+async function readSharedPortalShadowState() {
+  return normalizeSharedPortalState(await fetchSharedPortalState());
+}
+
+async function writeSharedPortalShadowState(value) {
+  return normalizeSharedPortalState(await saveSharedPortalState(value));
 }
 
 function normalizeOperatorFromUser(user) {
@@ -100,12 +99,10 @@ function normalizeOperatorFromUser(user) {
   });
 }
 
-function loadOperatorDirectory(currentUser = null) {
-  const persisted = readStorageObject(STAFF_OPERATOR_STORAGE_KEY, []);
+async function loadOperatorDirectory(currentUser = null) {
+  const persisted = await fetchSharedStaffOperators();
   const normalizedPersisted = Array.isArray(persisted)
-    ? persisted
-        .map((entry, index) => normalizeOperatorEntry(entry, index))
-        .filter(Boolean)
+    ? persisted.map((entry, index) => normalizeOperatorEntry(entry, index)).filter(Boolean)
     : [];
   const currentOperator = normalizeOperatorFromUser(currentUser);
   const directoryMap = new Map(
@@ -129,33 +126,7 @@ function loadOperatorDirectory(currentUser = null) {
     left.label.localeCompare(right.label, "id-ID"),
   );
 
-  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, directory);
-
   return directory;
-}
-
-function loadSessionMetaMap() {
-  return readStorageObject(STAFF_SESSION_META_STORAGE_KEY, {});
-}
-
-function writeSessionMetaMap(value) {
-  return writeStorageObject(STAFF_SESSION_META_STORAGE_KEY, value);
-}
-
-function loadReportMetaMap() {
-  return readStorageObject(STAFF_REPORT_META_STORAGE_KEY, {});
-}
-
-function writeReportMetaMap(value) {
-  return writeStorageObject(STAFF_REPORT_META_STORAGE_KEY, value);
-}
-
-function loadCandidateMetaMap() {
-  return readStorageObject(STAFF_CANDIDATE_META_STORAGE_KEY, {});
-}
-
-function writeCandidateMetaMap(value) {
-  return writeStorageObject(STAFF_CANDIDATE_META_STORAGE_KEY, value);
 }
 
 function mapRemoteCandidate(candidate, index = 0) {
@@ -594,10 +565,13 @@ function buildReportsFromSession(session, reportMetaMap) {
 }
 
 export async function fetchStaffPortalSnapshot(currentUser = null) {
-  const operatorDirectory = loadOperatorDirectory(currentUser);
-  const candidateMetaMap = loadCandidateMetaMap();
-  const sessionMetaMap = loadSessionMetaMap();
-  const reportMetaMap = loadReportMetaMap();
+  const [operatorDirectory, sharedPortalState] = await Promise.all([
+    loadOperatorDirectory(currentUser),
+    readSharedPortalShadowState(),
+  ]);
+  const candidateMetaMap = sharedPortalState.candidateMetaMap;
+  const sessionMetaMap = sharedPortalState.sessionMetaMap;
+  const reportMetaMap = sharedPortalState.reportMetaMap;
 
   const remoteCandidates = await fetchStaffCandidates();
   const candidates = remoteCandidates
@@ -675,7 +649,10 @@ export async function createStaffTrainingSession({
     peserta,
   });
   const sessionId = String(payload?._id || "");
-  const sessionMetaMap = loadSessionMetaMap();
+  const sharedPortalState = await readSharedPortalShadowState();
+  const sessionMetaMap = {
+    ...sharedPortalState.sessionMetaMap,
+  };
   const createdAt = new Date().toISOString();
 
   if (sessionId) {
@@ -686,7 +663,10 @@ export async function createStaffTrainingSession({
       dispatchedAt: null,
       canceledAt: null,
     };
-    writeSessionMetaMap(sessionMetaMap);
+    await writeSharedPortalShadowState({
+      ...sharedPortalState,
+      sessionMetaMap,
+    });
   }
 
   const snapshot = await fetchStaffPortalSnapshot(currentUser);
@@ -723,7 +703,10 @@ export async function saveStaffRecruitmentReport(
     { mode },
   );
 
-  const reportMetaMap = loadReportMetaMap();
+  const sharedPortalState = await readSharedPortalShadowState();
+  const reportMetaMap = {
+    ...sharedPortalState.reportMetaMap,
+  };
   const metaKey = buildReportMetaKey(report.sessionId, report.candidateIdentity);
   const currentMeta = reportMetaMap[metaKey] || {};
   const nextUpdatedAt = report.updatedAt || new Date().toISOString();
@@ -737,16 +720,21 @@ export async function saveStaffRecruitmentReport(
     ...reportDraftShadow,
     sentAt: currentMeta.sentAt || reportDraftShadow.sentAt || null,
   };
-  writeReportMetaMap(reportMetaMap);
-
-  const sessionMetaMap = loadSessionMetaMap();
+  const sessionMetaMap = {
+    ...sharedPortalState.sessionMetaMap,
+  };
   if (sessionMetaMap[report.sessionId]) {
     sessionMetaMap[report.sessionId] = {
       ...sessionMetaMap[report.sessionId],
       updatedAt: nextUpdatedAt,
     };
-    writeSessionMetaMap(sessionMetaMap);
   }
+
+  await writeSharedPortalShadowState({
+    ...sharedPortalState,
+    reportMetaMap,
+    sessionMetaMap,
+  });
 
   return fetchStaffPortalSnapshot(currentUser);
 }
@@ -758,7 +746,10 @@ export async function dispatchStaffTrainingSession(
   options = {},
 ) {
   const dispatchedAt = new Date().toISOString();
-  const sessionMetaMap = loadSessionMetaMap();
+  const sharedPortalState = await readSharedPortalShadowState();
+  const sessionMetaMap = {
+    ...sharedPortalState.sessionMetaMap,
+  };
   const currentMeta = sessionMetaMap[sessionId] || {};
   const dispatchRecord =
     createSessionDispatchRecord({
@@ -773,9 +764,10 @@ export async function dispatchStaffTrainingSession(
     updatedAt: dispatchedAt,
     dispatchRecord,
   };
-  writeSessionMetaMap(sessionMetaMap);
 
-  const reportMetaMap = loadReportMetaMap();
+  const reportMetaMap = {
+    ...sharedPortalState.reportMetaMap,
+  };
   reports.forEach((report) => {
     const metaKey = buildReportMetaKey(report.sessionId, report.candidateIdentity);
     reportMetaMap[metaKey] = {
@@ -785,14 +777,21 @@ export async function dispatchStaffTrainingSession(
       updatedAt: report.updatedAt || dispatchedAt,
     };
   });
-  writeReportMetaMap(reportMetaMap);
+  await writeSharedPortalShadowState({
+    ...sharedPortalState,
+    sessionMetaMap,
+    reportMetaMap,
+  });
 
   return fetchStaffPortalSnapshot(currentUser);
 }
 
 export async function cancelStaffTrainingSession(sessionId, currentUser = null) {
   const canceledAt = new Date().toISOString();
-  const sessionMetaMap = loadSessionMetaMap();
+  const sharedPortalState = await readSharedPortalShadowState();
+  const sessionMetaMap = {
+    ...sharedPortalState.sessionMetaMap,
+  };
   const currentMeta = sessionMetaMap[sessionId] || {};
 
   sessionMetaMap[sessionId] = {
@@ -800,21 +799,29 @@ export async function cancelStaffTrainingSession(sessionId, currentUser = null) 
     canceledAt,
     updatedAt: canceledAt,
   };
-  writeSessionMetaMap(sessionMetaMap);
 
-  const reportMetaMap = loadReportMetaMap();
+  const reportMetaMap = {
+    ...sharedPortalState.reportMetaMap,
+  };
   Object.keys(reportMetaMap).forEach((metaKey) => {
     if (metaKey.startsWith(`${sessionId}::`)) {
       delete reportMetaMap[metaKey];
     }
   });
-  writeReportMetaMap(reportMetaMap);
+  await writeSharedPortalShadowState({
+    ...sharedPortalState,
+    sessionMetaMap,
+    reportMetaMap,
+  });
 
   return fetchStaffPortalSnapshot(currentUser);
 }
 
 export async function eliminateStaffCandidate(report, currentUser = null) {
-  const candidateMetaMap = loadCandidateMetaMap();
+  const sharedPortalState = await readSharedPortalShadowState();
+  const candidateMetaMap = {
+    ...sharedPortalState.candidateMetaMap,
+  };
   const eliminatedAt = new Date().toISOString();
 
   candidateMetaMap[report.candidateIdentity] = {
@@ -823,11 +830,16 @@ export async function eliminateStaffCandidate(report, currentUser = null) {
     updatedAt: eliminatedAt,
     category: formatCandidateCategory(report.category),
   };
-  writeCandidateMetaMap(candidateMetaMap);
 
-  const reportMetaMap = loadReportMetaMap();
+  const reportMetaMap = {
+    ...sharedPortalState.reportMetaMap,
+  };
   delete reportMetaMap[buildReportMetaKey(report.sessionId, report.candidateIdentity)];
-  writeReportMetaMap(reportMetaMap);
+  await writeSharedPortalShadowState({
+    ...sharedPortalState,
+    candidateMetaMap,
+    reportMetaMap,
+  });
 
   const nextSnapshot = await fetchStaffPortalSnapshot(currentUser);
   const remainingSession = nextSnapshot.trainingSessions.find(
@@ -838,7 +850,10 @@ export async function eliminateStaffCandidate(report, currentUser = null) {
     return nextSnapshot;
   }
 
-  const sessionMetaMap = loadSessionMetaMap();
+  const latestSharedPortalState = await readSharedPortalShadowState();
+  const sessionMetaMap = {
+    ...latestSharedPortalState.sessionMetaMap,
+  };
   const currentMeta = sessionMetaMap[report.sessionId] || {};
 
   sessionMetaMap[report.sessionId] = {
@@ -846,76 +861,53 @@ export async function eliminateStaffCandidate(report, currentUser = null) {
     canceledAt: eliminatedAt,
     updatedAt: eliminatedAt,
   };
-  writeSessionMetaMap(sessionMetaMap);
 
   Object.keys(reportMetaMap).forEach((metaKey) => {
     if (metaKey.startsWith(`${report.sessionId}::`)) {
       delete reportMetaMap[metaKey];
     }
   });
-  writeReportMetaMap(reportMetaMap);
+  await writeSharedPortalShadowState({
+    ...latestSharedPortalState,
+    sessionMetaMap,
+    reportMetaMap,
+  });
 
   return fetchStaffPortalSnapshot(currentUser);
 }
 
-export async function registerStaffOperator(formState, currentUser = null) {
-  const user = await registerStaffOperatorAccount(formState);
-  const operatorDirectory = loadOperatorDirectory(currentUser);
-  const normalizedOperator = normalizeOperatorEntry({
-    id: user?.id || user?._id || formState.username,
-    username: formState.username,
-    label: formState.label,
-    unit: formState.unit || "PASKUS 791",
-    discordUserId: formState.discordUserId || "",
-  });
-  const directoryMap = new Map(
-    operatorDirectory.map((entry) => [entry.username, entry]),
+export async function registerStaffOperator(formState) {
+  const nextOperators = await registerStaffOperatorAccount(formState);
+  const normalizedOperator = normalizeOperatorEntry(
+    {
+      username: formState.username,
+      label: formState.label,
+      unit: formState.unit || "PASKUS 791",
+      discordUserId: formState.discordUserId || "",
+    },
+    0,
   );
-
-  directoryMap.set(normalizedOperator.username, normalizedOperator);
-  const nextDirectory = [...directoryMap.values()].sort((left, right) =>
-    left.label.localeCompare(right.label, "id-ID"),
-  );
-  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, nextDirectory);
 
   return {
     operator: normalizedOperator,
-    operators: nextDirectory,
+    operators: nextOperators,
     message: "Petugas berhasil ditambahkan.",
   };
 }
 
 export async function updateStaffOperatorMetadata(
   { username, discordUserId },
-  currentUser = null,
 ) {
-  const operatorDirectory = loadOperatorDirectory(currentUser);
   const normalizedUsername = String(username || "").trim().toLowerCase();
 
   if (!normalizedUsername) {
     throw new Error("Username petugas tidak valid.");
   }
 
-  const targetOperator = operatorDirectory.find(
-    (entry) => entry.username === normalizedUsername,
-  );
-
-  if (!targetOperator) {
-    throw new Error("Petugas tidak ditemukan.");
-  }
-
-  const nextDirectory = operatorDirectory
-    .map((entry) =>
-      entry.username === normalizedUsername
-        ? normalizeOperatorEntry({
-            ...entry,
-            discordUserId,
-          })
-        : entry,
-    )
-    .sort((left, right) => left.label.localeCompare(right.label, "id-ID"));
-
-  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, nextDirectory);
+  const nextDirectory = await updateSharedStaffOperatorMetadata({
+    username: normalizedUsername,
+    discordUserId,
+  });
 
   return {
     operator: nextDirectory.find((entry) => entry.username === normalizedUsername) || null,
@@ -928,7 +920,7 @@ export async function deleteStaffOperator(
   { username },
   currentUser = null,
 ) {
-  const operatorDirectory = loadOperatorDirectory(currentUser);
+  const operatorDirectory = await loadOperatorDirectory(currentUser);
   const normalizedUsername = String(username || "").trim().toLowerCase();
   const currentUsername = String(currentUser?.username || "")
     .trim()
@@ -950,19 +942,7 @@ export async function deleteStaffOperator(
     throw new Error("Petugas tidak ditemukan.");
   }
 
-  try {
-    await deleteStaffOperatorAccount(normalizedUsername);
-  } catch (error) {
-    if (error?.status !== 404) {
-      throw error;
-    }
-  }
-
-  const nextDirectory = operatorDirectory
-    .filter((entry) => entry.username !== normalizedUsername)
-    .sort((left, right) => left.label.localeCompare(right.label, "id-ID"));
-
-  writeStorageObject(STAFF_OPERATOR_STORAGE_KEY, nextDirectory);
+  const nextDirectory = await deleteStaffOperatorAccount(normalizedUsername);
 
   return {
     operator: targetOperator,
