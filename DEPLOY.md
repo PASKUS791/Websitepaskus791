@@ -53,6 +53,23 @@ npm run lint
 npm run build
 ```
 
+## Encrypted Env In Repo
+
+Kalau `.env` production ingin disimpan di repo tanpa plain text:
+
+1. Simpan file asli lokal di `.env.production`
+2. Jalankan `npm run env:encrypt`
+3. Commit file hasil enkripsi `deploy/staff.paskus791.cloud.env.enc`
+4. Simpan kunci lokal di `.env.production.key` dan jangan pernah push file itu
+
+Untuk restore:
+
+```bash
+npm run env:decrypt -- --output .env.production.restored
+```
+
+Workflow ini memakai `AES-256-GCM` + `scrypt`. File terenkripsi aman untuk repo, tetapi file kunci lokal tetap harus dijaga di luar Git.
+
 ## Run Backend
 
 ```bash

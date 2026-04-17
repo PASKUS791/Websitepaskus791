@@ -24,6 +24,8 @@
     "dev:client": "npm run dev:staff",
     "build": "npm run build:staff",
     "build:staff": "vite build --config vite.staff.config.js",
+    "env:encrypt": "node scripts/env-crypto.mjs encrypt",
+    "env:decrypt": "node scripts/env-crypto.mjs decrypt",
     "lint": "eslint .",
     "preview": "npm run preview:staff",
     "preview:staff": "vite preview --config vite.staff.config.js"
