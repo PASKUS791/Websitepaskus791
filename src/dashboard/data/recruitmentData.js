@@ -29,11 +29,38 @@ function normalizeTrainingDispatchRecord(record) {
     return null;
   }
 
+  const attachmentFileNames = [
+    ...new Set(
+      [
+        ...(Array.isArray(record.attachmentFileNames) ? record.attachmentFileNames : []),
+        record.attachmentFileName,
+      ]
+        .map((fileName) => String(fileName || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const attachmentPreviewUrls = [
+    ...new Set(
+      [
+        ...(Array.isArray(record.attachmentPreviewUrls) ? record.attachmentPreviewUrls : []),
+        record.attachmentPreviewUrl,
+      ]
+        .map((previewUrl) => String(previewUrl || "").trim())
+        .filter((previewUrl) => previewUrl.startsWith("data:image/")),
+    ),
+  ];
+
   return {
     sentAt,
     description: String(record.description || "").trim(),
-    attachmentFileName: String(record.attachmentFileName || "").trim(),
-    attachmentPreviewUrl: String(record.attachmentPreviewUrl || "").trim(),
+    attachmentCount:
+      Number(record.attachmentCount) ||
+      attachmentFileNames.length ||
+      attachmentPreviewUrls.length,
+    attachmentFileName: attachmentFileNames[0] || "",
+    attachmentFileNames,
+    attachmentPreviewUrl: attachmentPreviewUrls[0] || "",
+    attachmentPreviewUrls,
     reportCount: Number(record.reportCount) || 0,
     mentionedOperatorCount: Number(record.mentionedOperatorCount) || 0,
     mentionedRegistrantCount: Number(record.mentionedRegistrantCount) || 0,
@@ -66,6 +93,35 @@ function toDateKeyFromTimestamp(value) {
   }
 
   return formatDateKey(parsedDate);
+}
+
+function resolveStableReportDateKey(report = {}) {
+  if (typeof report.sessionDate === "string" && report.sessionDate.trim()) {
+    return report.sessionDate.trim();
+  }
+
+  return (
+    toDateKeyFromTimestamp(report.sentAt) ||
+    toDateKeyFromTimestamp(report.createdAt) ||
+    toDateKeyFromTimestamp(report.updatedAt) ||
+    formatDateKey(new Date())
+  );
+}
+
+function resolveHistoricalSessionDateKey(session = {}) {
+  return (
+    toDateKeyFromTimestamp(session.dispatchedAt) ||
+    (typeof session.scheduledDate === "string" ? session.scheduledDate.trim() : "") ||
+    toDateKeyFromTimestamp(session.createdAt) ||
+    formatDateKey(new Date())
+  );
+}
+
+function resolveHistoricalReportDateKey(report = {}) {
+  return (
+    toDateKeyFromTimestamp(report.sentAt) ||
+    resolveStableReportDateKey(report)
+  );
 }
 
 export function createLocalDate(dateString) {
@@ -389,9 +445,7 @@ export function normalizeRecruitmentReport(report, index = 0) {
         ? `${sessionId}::${candidateIdentity}`
         : `archive-report-${index}`),
     sessionId,
-    sessionDate:
-      (typeof report.sessionDate === "string" && report.sessionDate) ||
-      formatDateKey(new Date(report.updatedAt || report.createdAt || Date.now())),
+    sessionDate: resolveStableReportDateKey(report),
     candidateIdentity,
     category: resolveCandidateCategory(report),
     name: report.name?.trim() || report.roblox?.trim() || "Unnamed Candidate",
@@ -507,9 +561,9 @@ export function buildSessionDateSummaries(
   const includedSessionIds = new Set(sourceSessions.map((session) => session.id));
 
   sourceSessions.forEach((session) => {
-    const sessionDateKey =
-      (historicalOnly && toDateKeyFromTimestamp(session.dispatchedAt)) ||
-      session.scheduledDate;
+    const sessionDateKey = historicalOnly
+      ? resolveHistoricalSessionDateKey(session)
+      : session.scheduledDate;
     const entry = summaryMap.get(sessionDateKey) ?? {
       date: sessionDateKey,
       sessions: [],
@@ -527,10 +581,9 @@ export function buildSessionDateSummaries(
       return;
     }
 
-    const key =
-      (historicalOnly && toDateKeyFromTimestamp(report.sentAt)) ||
-      report.sessionDate ||
-      formatDateKey(new Date(report.updatedAt));
+    const key = historicalOnly
+      ? resolveHistoricalReportDateKey(report)
+      : resolveStableReportDateKey(report);
     const entry = summaryMap.get(key) ?? {
       date: key,
       sessions: [],

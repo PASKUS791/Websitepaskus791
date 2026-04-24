@@ -97,6 +97,7 @@ function buildCompactLineBlock(lines, maxLength, overflowLabel) {
 function buildWebhookMessagePayload(normalizedPayload, generatedAt, assets) {
   const operatorSummary = buildMentionText(normalizedPayload.session.operators);
   const registrantSummary = buildRegistrantMentionText(normalizedPayload.reports);
+  const primaryAttachment = normalizedPayload.attachments[0] || null;
   const operatorMentionUserIds = operatorSummary.mentionUserIds;
   const registrantMentionUserIds = registrantSummary.mentionUserIds;
   const mentionUserIds = [...new Set([...operatorMentionUserIds, ...registrantMentionUserIds])];
@@ -186,16 +187,23 @@ function buildWebhookMessagePayload(normalizedPayload, generatedAt, assets) {
             },
             {
               name: "File Lampiran",
-              value: normalizedPayload.attachment.fileName,
+              value:
+                normalizedPayload.attachments.length === 1
+                  ? primaryAttachment?.fileName || "Lampiran tidak tersedia"
+                  : `${normalizedPayload.attachments.length} foto dikirim`,
               inline: true,
             },
           ],
           footer: {
             text: RECRUITMENT_DISPATCH_CONFIG.embed.footer(unitLabel),
           },
-          image: {
-            url: `attachment://${normalizedPayload.attachment.fileName}`,
-          },
+          ...(primaryAttachment
+            ? {
+                image: {
+                  url: `attachment://${primaryAttachment.fileName}`,
+                },
+              }
+            : {}),
           timestamp: generatedAt,
         },
       ],
@@ -219,13 +227,15 @@ function buildWebhookFormData({
     new Blob([assets.logoBuffer], { type: assets.logoMimeType }),
     assets.logoFileName,
   );
-  formData.append(
-    "files[1]",
-    new Blob([normalizedPayload.attachment.fileBuffer], {
-      type: normalizedPayload.attachment.mimeType,
-    }),
-    normalizedPayload.attachment.fileName,
-  );
+  normalizedPayload.attachments.forEach((attachment, index) => {
+    formData.append(
+      `files[${index + 1}]`,
+      new Blob([attachment.fileBuffer], {
+        type: attachment.mimeType,
+      }),
+      attachment.fileName,
+    );
+  });
 
   return formData;
 }
@@ -237,6 +247,7 @@ export async function sendRecruitmentDispatch({
   assets,
 }) {
   await patchWebhookBranding(webhookUrl, assets);
+  const primaryAttachment = normalizedPayload.attachments[0] || null;
 
   const {
     messagePayload,
@@ -278,7 +289,9 @@ export async function sendRecruitmentDispatch({
   return {
     ok: true,
     messageId: message?.id || null,
-    attachmentFileName: normalizedPayload.attachment.fileName,
+    attachmentCount: normalizedPayload.attachments.length,
+    attachmentFileName: primaryAttachment?.fileName || "",
+    attachmentFileNames: normalizedPayload.attachments.map((attachment) => attachment.fileName),
     mentionedOperatorCount: operatorMentionUserIds.length,
     mentionedRegistrantCount: registrantMentionUserIds.length,
   };

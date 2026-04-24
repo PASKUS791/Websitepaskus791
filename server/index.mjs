@@ -571,10 +571,106 @@ function hasJsonContentType(request) {
   return contentType.toLowerCase().startsWith("application/json");
 }
 
+function hasMultipartFormDataContentType(request) {
+  const contentType = String(request.headers["content-type"] || "");
+  return contentType.toLowerCase().startsWith("multipart/form-data");
+}
+
 function ensureJsonRequest(request) {
   if (!hasJsonContentType(request)) {
     throw createHttpError(415, "Request harus menggunakan Content-Type application/json.");
   }
+}
+
+async function parseMultipartFormData(request, maxBytes = 25 * 1024 * 1024) {
+  if (!hasMultipartFormDataContentType(request)) {
+    throw createHttpError(415, "Request harus menggunakan Content-Type multipart/form-data.");
+  }
+
+  const contentType = String(request.headers["content-type"] || "");
+  const rawBody = (await parseRawBody(request, maxBytes)) || Buffer.alloc(0);
+  const webRequest = new Request("http://localhost/internal-upload", {
+    method: "POST",
+    headers: {
+      "content-type": contentType,
+    },
+    body: rawBody,
+  });
+
+  try {
+    return await webRequest.formData();
+  } catch {
+    throw createHttpError(400, "Form data dispatch recruiter tidak valid.");
+  }
+}
+
+async function parseRecruitmentDispatchBody(request) {
+  if (hasJsonContentType(request)) {
+    return parseJsonBody(request, 16 * 1024 * 1024);
+  }
+
+  if (!hasMultipartFormDataContentType(request)) {
+    throw createHttpError(
+      415,
+      "Dispatch recruiter harus menggunakan JSON atau multipart/form-data.",
+    );
+  }
+
+  const formData = await parseMultipartFormData(request);
+  const rawPayload = formData.get("payload");
+
+  if (typeof rawPayload !== "string" || !rawPayload.trim()) {
+    throw createHttpError(400, "Payload dispatch recruiter tidak ditemukan.");
+  }
+
+  let parsedPayload = {};
+
+  try {
+    parsedPayload = JSON.parse(rawPayload);
+  } catch {
+    throw createHttpError(400, "Payload JSON dispatch recruiter tidak valid.");
+  }
+
+  const attachmentEntries = (() => {
+    const directAttachments = formData.getAll("attachments");
+
+    if (directAttachments.length > 0) {
+      return directAttachments;
+    }
+
+    const bracketAttachments = formData.getAll("attachments[]");
+
+    if (bracketAttachments.length > 0) {
+      return bracketAttachments;
+    }
+
+    const legacyAttachment = formData.get("attachment");
+    return legacyAttachment ? [legacyAttachment] : [];
+  })();
+  const attachments = await Promise.all(
+    attachmentEntries.map(async (attachmentEntry, index) => {
+      if (!(attachmentEntry instanceof File)) {
+        throw createHttpError(400, "Lampiran dispatch recruiter tidak valid.");
+      }
+
+      const mimeType = String(attachmentEntry.type || "")
+        .trim()
+        .toLowerCase();
+      const fileBuffer = Buffer.from(await attachmentEntry.arrayBuffer());
+
+      return {
+        fileName: attachmentEntry.name || `lampiran-${Date.now()}-${index + 1}.jpg`,
+        mimeType,
+        fileBuffer,
+      };
+    }),
+  );
+
+  return {
+    ...parsedPayload,
+    attachments,
+    attachment: attachments[0] || null,
+  };
 }
 
 function parseCookies(request) {
@@ -855,6 +951,7 @@ async function ensureInternalStaffSessionFromAccessToken(accessToken, request) {
     createdAt: timestamp,
     updatedAt: timestamp,
   });
+  await syncSharedPortalOperators([internalUser]);
 
   await storage.deleteSessionsByUser(internalUser.id);
   const nextSession = await createSession(
@@ -1413,28 +1510,84 @@ async function writeSharedPortalState(value) {
   return writeResource(STAFF_PORTAL_SHARED_RESOURCE, normalizeSharedPortalState(value));
 }
 
-function mergeOperatorProfiles(users = [], operatorDirectory = []) {
+function compareOperatorProfiles(left, right) {
+  const labelComparison = left.label.localeCompare(right.label, "id-ID");
+
+  if (labelComparison !== 0) {
+    return labelComparison;
+  }
+
+  return left.username.localeCompare(right.username, "id-ID");
+}
+
+function buildSharedOperatorDirectory(users = [], operatorDirectory = [], { prune = false } = {}) {
+  const normalizedUsers = Array.isArray(users)
+    ? users
+        .map((user) =>
+          normalizeSharedOperatorEntry({
+            id: user?.id,
+            username: user?.username,
+            label: user?.label,
+            unit: user?.unit,
+          }),
+        )
+        .filter(Boolean)
+    : [];
+  const activeUsernames = new Set(normalizedUsers.map((user) => user.username));
   const directoryMap = new Map(
-    operatorDirectory
+    (Array.isArray(operatorDirectory) ? operatorDirectory : [])
       .map((entry) => normalizeSharedOperatorEntry(entry))
       .filter(Boolean)
+      .filter((entry) => !prune || activeUsernames.has(entry.username))
       .map((entry) => [entry.username, entry]),
   );
-  const mergedUsers = users.map((user) => {
+
+  for (const user of normalizedUsers) {
     const sharedEntry = directoryMap.get(user.username);
+    directoryMap.set(
+      user.username,
+      normalizeSharedOperatorEntry({
+        id: user.id,
+        username: user.username,
+        label: user.label || sharedEntry?.label || user.username,
+        unit: user.unit || sharedEntry?.unit || "PASKUS 791",
+        discordUserId: sharedEntry?.discordUserId || "",
+      }),
+    );
+  }
 
-    return {
-      id: user.id,
-      username: user.username,
-      label: sharedEntry?.label || user.label,
-      unit: sharedEntry?.unit || user.unit || "PASKUS 791",
-      discordUserId: sharedEntry?.discordUserId || "",
-    };
-  });
+  return [...directoryMap.values()].sort(compareOperatorProfiles);
+}
 
-  return mergedUsers.sort((left, right) =>
-    left.label.localeCompare(right.label, "id-ID"),
+function serializeSharedOperatorDirectory(entries = []) {
+  return JSON.stringify(
+    (Array.isArray(entries) ? entries : [])
+      .map((entry) => normalizeSharedOperatorEntry(entry))
+      .filter(Boolean)
+      .sort(compareOperatorProfiles),
   );
+}
+
+async function syncSharedPortalOperators(users = [], { prune = false } = {}) {
+  if (!prune && (!Array.isArray(users) || users.length === 0)) {
+    return readSharedPortalState();
+  }
+
+  const sharedState = await readSharedPortalState();
+  const nextOperators = buildSharedOperatorDirectory(users, sharedState.operators, { prune });
+
+  if (serializeSharedOperatorDirectory(sharedState.operators) === serializeSharedOperatorDirectory(nextOperators)) {
+    return sharedState;
+  }
+
+  return writeSharedPortalState({
+    ...sharedState,
+    operators: nextOperators,
+  });
+}
+
+function mergeOperatorProfiles(users = [], operatorDirectory = []) {
+  return buildSharedOperatorDirectory(users, operatorDirectory, { prune: true });
 }
 
 function canManagePelatihScope(session) {
@@ -1947,10 +2100,8 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const [users, sharedState] = await Promise.all([
-      storage.listUsersByScope("pelatih"),
-      readSharedPortalState(),
-    ]);
+    const users = await storage.listUsersByScope("pelatih");
+    const sharedState = await syncSharedPortalOperators(users, { prune: true });
     const operators = mergeOperatorProfiles(users, sharedState.operators);
 
     sendJson(response, 200, {
@@ -2349,14 +2500,15 @@ async function handleRequest(request, response) {
 
   if (path === "/api/recruitment/dispatch" && request.method === "POST") {
     try {
-      ensureJsonRequest(request);
-      const body = await parseJsonBody(request, 16 * 1024 * 1024);
+      const body = await parseRecruitmentDispatchBody(request);
       const dispatchResult = await recruitmentDispatchService.dispatch(body);
 
       sendJson(response, 200, {
         ok: true,
         message: "Laporan recruiter berhasil dikirim ke Discord.",
+        attachmentCount: dispatchResult.attachmentCount,
         attachmentFileName: dispatchResult.attachmentFileName,
+        attachmentFileNames: dispatchResult.attachmentFileNames,
         mentionedOperatorCount: dispatchResult.mentionedOperatorCount,
         mentionedRegistrantCount: dispatchResult.mentionedRegistrantCount,
         messageId: dispatchResult.messageId,

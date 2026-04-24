@@ -19,6 +19,9 @@ import {
   sanitizeFileName,
 } from "./shared.mjs";
 
+const ACCEPTED_ATTACHMENT_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_DISPATCH_ATTACHMENT_COUNT = 4;
+
 function normalizeOperator(operator, index = 0) {
   return {
     id: String(operator?.id || `operator-${index}`),
@@ -58,11 +61,56 @@ function normalizeReport(report, index = 0) {
   };
 }
 
+function normalizeAttachment(attachment, index = 0) {
+  if (!attachment || typeof attachment !== "object") {
+    throw new Error("Lampiran foto dispatch tidak valid.");
+  }
+
+  let mimeType = "";
+  let fileBuffer = null;
+
+  if (attachment.dataUrl) {
+    const parsedAttachment = parseImageDataUrl(attachment.dataUrl);
+    mimeType = parsedAttachment.mimeType;
+    fileBuffer = parsedAttachment.fileBuffer;
+  } else if (attachment.fileBuffer) {
+    mimeType = String(attachment.mimeType || "")
+      .trim()
+      .toLowerCase();
+    fileBuffer = Buffer.isBuffer(attachment.fileBuffer)
+      ? attachment.fileBuffer
+      : Buffer.from(attachment.fileBuffer);
+  } else {
+    throw new Error("Lampiran foto wajib diisi sebelum dispatch recruiter.");
+  }
+
+  if (!ACCEPTED_ATTACHMENT_MIME_TYPES.includes(mimeType)) {
+    throw new Error("Lampiran foto tidak valid. Gunakan gambar JPG, PNG, atau WEBP.");
+  }
+
+  if (!fileBuffer?.length) {
+    throw new Error("Lampiran foto kosong atau gagal dibaca.");
+  }
+
+  return {
+    fileName: sanitizeFileName(
+      attachment.fileName,
+      `lampiran-${Date.now()}-${index + 1}.${mimeTypeToExtension(mimeType)}`,
+    ),
+    mimeType,
+    fileBuffer,
+  };
+}
+
 export function normalizeDispatchPayload(payload) {
   const session = payload?.session && typeof payload.session === "object" ? payload.session : null;
   const reports = Array.isArray(payload?.reports) ? payload.reports : [];
-  const attachment =
-    payload?.attachment && typeof payload.attachment === "object" ? payload.attachment : null;
+  const attachmentsSource =
+    Array.isArray(payload?.attachments) && payload.attachments.length > 0
+      ? payload.attachments
+      : payload?.attachment && typeof payload.attachment === "object"
+        ? [payload.attachment]
+        : [];
 
   if (!session) {
     throw new Error("Session recruiter tidak valid.");
@@ -72,11 +120,17 @@ export function normalizeDispatchPayload(payload) {
     throw new Error("Belum ada laporan yang bisa dikirim ke resimen.");
   }
 
-  if (!attachment?.dataUrl) {
+  if (attachmentsSource.length === 0) {
     throw new Error("Lampiran foto wajib diisi sebelum dispatch recruiter.");
   }
 
-  const { fileBuffer, mimeType } = parseImageDataUrl(attachment.dataUrl);
+  if (attachmentsSource.length > MAX_DISPATCH_ATTACHMENT_COUNT) {
+    throw new Error(`Maksimal ${MAX_DISPATCH_ATTACHMENT_COUNT} foto per dispatch recruiter.`);
+  }
+
+  const attachments = attachmentsSource.map((attachment, index) =>
+    normalizeAttachment(attachment, index),
+  );
   const normalizedOperators = Array.isArray(session.operators)
     ? session.operators.map((operator, index) => normalizeOperator(operator, index))
     : [];
@@ -102,13 +156,6 @@ export function normalizeDispatchPayload(payload) {
       ),
       unit: normalizeText(payload?.requestedBy?.unit, "PASKUS 791"),
     },
-    attachment: {
-      fileName: sanitizeFileName(
-        attachment.fileName,
-        `lampiran-${Date.now()}.${mimeTypeToExtension(mimeType)}`,
-      ),
-      mimeType,
-      fileBuffer,
-    },
+    attachments,
   };
 }

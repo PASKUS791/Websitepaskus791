@@ -108,7 +108,7 @@ APP_SERVE_FRONTEND=false
 VITE_STAFF_SITE_URL=http://localhost:5173
 VITE_API_BASE_URL=http://localhost:8787
 VITE_STAFF_API_BASE_URL=/staff-api
-VITE_RECRUITMENT_DISPATCH_PATH=/sipil/kirim
+VITE_RECRUITMENT_DISPATCH_PATH=/api/recruitment/dispatch
 PELATIH_ADMIN_USERNAME=PaskusAdmin
 PELATIH_ADMIN_PASSWORD=Paskus123
 PELATIH_ADMIN_LABEL=Paskus Admin
@@ -226,7 +226,7 @@ node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 | `VITE_STAFF_SITE_URL` | URL website staff |
 | `VITE_API_BASE_URL` | Base URL backend internal, misalnya `https://api.paskus791.cloud` |
 | `VITE_STAFF_API_BASE_URL` | Base URL backend staff/legacy yang dipanggil frontend |
-| `VITE_RECRUITMENT_DISPATCH_PATH` | Path endpoint dispatch recruiter di backend staff, default `/sipil/kirim` |
+| `VITE_RECRUITMENT_DISPATCH_PATH` | Path endpoint dispatch recruiter internal, default `/api/recruitment/dispatch` |
 | `STAFF_BACKEND_BASE_URL` | Origin upstream backend staff bila mode proxy `/staff-api` dipakai |
 | `MONGODB_URI` | URI MongoDB untuk deploy / production |
 | `MONGODB_DB_NAME` | Nama database MongoDB |

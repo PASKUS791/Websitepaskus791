@@ -35,6 +35,7 @@ import {
 } from "../../lib/staffApi";
 
 const MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_LENGTH = 220000;
+const MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_COUNT = 4;
 const DISPATCHED_SESSION_STATUS_HINTS = [
   "selesai",
   "finish",
@@ -166,28 +167,65 @@ function normalizeDispatchAttachmentPreview(dataUrl) {
   return normalizedDataUrl;
 }
 
+function normalizeDispatchAttachmentPreviews(attachments = []) {
+  return (Array.isArray(attachments) ? attachments : [])
+    .map((attachment) => normalizeDispatchAttachmentPreview(attachment?.dataUrl))
+    .filter(Boolean)
+    .slice(0, MAX_STORED_DISPATCH_ATTACHMENT_PREVIEW_COUNT);
+}
+
+function normalizeDispatchAttachmentFileNames(fileNames = []) {
+  return [
+    ...new Set(
+      (Array.isArray(fileNames) ? fileNames : [])
+        .map((fileName) => String(fileName || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
 function createSessionDispatchRecord({
   description = "",
+  attachments = [],
   attachment = null,
   dispatchResult = null,
   reports = [],
   currentUser = null,
 } = {}) {
   const sentAt = new Date().toISOString();
-  const attachmentFileName = String(
-    dispatchResult?.attachmentFileName || attachment?.fileName || "",
-  ).trim();
+  const normalizedAttachments =
+    Array.isArray(attachments) && attachments.length > 0
+      ? attachments
+      : attachment
+        ? [attachment]
+        : [];
+  const attachmentFileNames = normalizeDispatchAttachmentFileNames([
+    ...(Array.isArray(dispatchResult?.attachmentFileNames)
+      ? dispatchResult.attachmentFileNames
+      : []),
+    dispatchResult?.attachmentFileName,
+    ...normalizedAttachments.map((entry) => entry?.fileName),
+  ]);
+  const attachmentPreviewUrls = normalizeDispatchAttachmentPreviews(normalizedAttachments);
+  const attachmentFileName = attachmentFileNames[0] || "";
   const normalizedDescription = String(description || "").trim();
+  const attachmentCount =
+    Number(dispatchResult?.attachmentCount) ||
+    attachmentFileNames.length ||
+    attachmentPreviewUrls.length;
 
-  if (!normalizedDescription && !attachmentFileName && !dispatchResult) {
+  if (!normalizedDescription && attachmentCount === 0 && !dispatchResult) {
     return null;
   }
 
   return {
     sentAt,
     description: normalizedDescription,
+    attachmentCount,
     attachmentFileName,
-    attachmentPreviewUrl: normalizeDispatchAttachmentPreview(attachment?.dataUrl),
+    attachmentFileNames,
+    attachmentPreviewUrl: attachmentPreviewUrls[0] || "",
+    attachmentPreviewUrls,
     reportCount: Array.isArray(reports) ? reports.length : 0,
     mentionedOperatorCount: Number(dispatchResult?.mentionedOperatorCount) || 0,
     mentionedRegistrantCount: Number(dispatchResult?.mentionedRegistrantCount) || 0,

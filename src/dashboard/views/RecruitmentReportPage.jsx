@@ -56,6 +56,19 @@ function DispatchArchivePanel({ dispatchRecord }) {
     return null;
   }
 
+  const attachmentFileNames =
+    dispatchRecord.attachmentFileNames?.length > 0
+      ? dispatchRecord.attachmentFileNames
+      : dispatchRecord.attachmentFileName
+        ? [dispatchRecord.attachmentFileName]
+        : [];
+  const attachmentPreviewUrls =
+    dispatchRecord.attachmentPreviewUrls?.length > 0
+      ? dispatchRecord.attachmentPreviewUrls
+      : dispatchRecord.attachmentPreviewUrl
+        ? [dispatchRecord.attachmentPreviewUrl]
+        : [];
+
   return (
     <section className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -85,7 +98,7 @@ function DispatchArchivePanel({ dispatchRecord }) {
               Lampiran
             </p>
             <p className="mt-2 text-sm text-stone-200">
-              {dispatchRecord.attachmentFileName || "Tanpa nama file"}
+              {dispatchRecord.attachmentCount || attachmentFileNames.length || 0} foto
             </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-black/20 p-3">
@@ -107,13 +120,40 @@ function DispatchArchivePanel({ dispatchRecord }) {
         </div>
       </div>
 
-      {dispatchRecord.attachmentPreviewUrl ? (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-black/20">
-          <img
-            src={dispatchRecord.attachmentPreviewUrl}
-            alt={dispatchRecord.attachmentFileName || "Lampiran dispatch"}
-            className="h-[280px] w-full object-cover"
-          />
+      {attachmentFileNames.length > 0 ? (
+        <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
+          <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
+            File Terkirim
+          </p>
+          <p className="mt-2 text-sm leading-6 text-stone-200">
+            {attachmentFileNames.join(", ")}
+          </p>
+        </div>
+      ) : null}
+
+      {attachmentPreviewUrls.length > 0 ? (
+        <div
+          className={[
+            "mt-4 grid gap-3",
+            attachmentPreviewUrls.length > 1 ? "md:grid-cols-2" : "",
+          ].join(" ")}
+        >
+          {attachmentPreviewUrls.map((previewUrl, index) => (
+            <div
+              key={`${previewUrl.slice(0, 48)}-${index}`}
+              className="overflow-hidden rounded-2xl border border-white/8 bg-black/20"
+            >
+              <img
+                src={previewUrl}
+                alt={
+                  attachmentFileNames[index] ||
+                  dispatchRecord.attachmentFileName ||
+                  `Lampiran dispatch ${index + 1}`
+                }
+                className="h-[280px] w-full object-cover"
+              />
+            </div>
+          ))}
         </div>
       ) : null}
     </section>
@@ -342,7 +382,7 @@ export default function RecruitmentReportPage() {
     setDispatchModalOpen(true);
   };
 
-  const handleSubmitDispatch = async ({ description, attachment }) => {
+  const handleSubmitDispatch = async ({ description, attachments }) => {
     const dispatchTimestamp = new Date().toISOString();
 
     try {
@@ -351,12 +391,12 @@ export default function RecruitmentReportPage() {
         session: trainingSession,
         reports: sessionReports,
         description,
-        attachment,
+        attachments,
         requestedBy: user,
       });
       await dispatchTrainingSession(sessionId, sessionReports, {
         description,
-        attachment,
+        attachments,
         dispatchResult,
       });
       setDispatchModalOpen(false);

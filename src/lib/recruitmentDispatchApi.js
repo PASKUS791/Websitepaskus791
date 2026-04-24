@@ -7,13 +7,13 @@
  * Internal proprietary source notice.
  *
  * Module: Recruiter Dispatch API
- * Purpose: Menyesuaikan frontend dengan backend dispatch recruiter yang menerima POST multipart/form-data ke endpoint /sipil/kirim.
+ * Purpose: Menyesuaikan frontend dengan backend dispatch recruiter yang menerima POST multipart/form-data ke endpoint dispatch internal.
  */
 
 import { staffApiFetch } from "./staffApi";
 
 const RECRUITMENT_DISPATCH_PATH = (
-  import.meta.env.VITE_RECRUITMENT_DISPATCH_PATH || "/sipil/kirim"
+  import.meta.env.VITE_RECRUITMENT_DISPATCH_PATH || "/api/recruitment/dispatch"
 ).trim();
 
 async function dataUrlToBlob(dataUrl, mimeType = "application/octet-stream") {
@@ -42,12 +42,24 @@ async function buildAttachmentFile(attachment) {
   });
 }
 
+async function buildAttachmentFiles(attachments = [], fallbackAttachment = null) {
+  const normalizedAttachments =
+    Array.isArray(attachments) && attachments.length > 0 ? attachments : [fallbackAttachment];
+  const validAttachments = normalizedAttachments.filter(Boolean);
+
+  if (validAttachments.length === 0) {
+    throw new Error("Minimal satu lampiran foto wajib diisi sebelum laporan dikirim ke resimen.");
+  }
+
+  return Promise.all(validAttachments.map((attachment) => buildAttachmentFile(attachment)));
+}
+
 function buildDispatchFormData({
   session,
   reports,
   description,
   requestedBy,
-  attachmentFile,
+  attachmentFiles,
 }) {
   const formData = new FormData();
 
@@ -60,19 +72,28 @@ function buildDispatchFormData({
       requestedBy,
     }),
   );
-  formData.append("attachment", attachmentFile, attachmentFile.name);
+  attachmentFiles.forEach((attachmentFile, index) => {
+    formData.append("attachments", attachmentFile, attachmentFile.name);
+
+    if (index === 0) {
+      formData.append("attachment", attachmentFile, attachmentFile.name);
+    }
+  });
 
   return formData;
 }
 
 export async function dispatchRecruitmentSessionReport(payload) {
-  const attachmentFile = await buildAttachmentFile(payload?.attachment);
+  const attachmentFiles = await buildAttachmentFiles(
+    payload?.attachments,
+    payload?.attachment,
+  );
   const formData = buildDispatchFormData({
     session: payload?.session,
     reports: payload?.reports,
     description: payload?.description,
     requestedBy: payload?.requestedBy,
-    attachmentFile,
+    attachmentFiles,
   });
   const response = await staffApiFetch(RECRUITMENT_DISPATCH_PATH, {
     method: "POST",
@@ -80,11 +101,11 @@ export async function dispatchRecruitmentSessionReport(payload) {
     timeout: 65000,
   });
 
-  if (!response || response.success !== true) {
+  if (!response || (response.success !== true && response.ok !== true)) {
     throw new Error(
       response?.message ||
         response?.error ||
-        "Backend dispatch belum merespons sukses. Pastikan endpoint POST /sipil/kirim aktif.",
+        "Backend dispatch belum merespons sukses. Pastikan endpoint dispatch recruiter aktif.",
     );
   }
 
