@@ -17,6 +17,7 @@
 export { default as DashboardHome } from "./views/DashboardHomePage";
 export { default as AdminConsolePage } from "./views/AdminConsolePage";
 export { default as HasilLaporanPage } from "./views/HasilLaporanPage";
+export { default as JadwalPage } from "./views/JadwalPage";
 export { default as PelatihanPage } from "./views/PelatihanPage";
 export { default as RecruitmentReportPage } from "./views/RecruitmentReportPage";
 export { default as TambahPetugasPage } from "./views/TambahPetugasPage";

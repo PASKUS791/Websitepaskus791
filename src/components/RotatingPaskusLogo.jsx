@@ -7,8 +7,7 @@
  * Internal proprietary source notice.
  */
 
-import { motion } from "framer-motion";
-import paskusAnimatedLogo from "../assets/paskus-light.gif";
+import paskusLogo from "../assets/paskus.webp";
 
 export default function RotatingPaskusLogo({
   sizeClassName = "h-28 w-28",
@@ -25,27 +24,16 @@ export default function RotatingPaskusLogo({
         className,
       ].join(" ")}
     >
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
-        className={`absolute rounded-full blur-[72px] ${glowClassName} h-28 w-28`}
+      <div
+        className={`absolute h-28 w-28 rounded-full blur-[72px] ${glowClassName} animate-[pulse_6s_ease-in-out_infinite] motion-reduce:animate-none`}
       />
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
-        className="absolute h-[120%] w-[120%] rounded-full border border-emerald-300/18 border-t-emerald-300/85 border-r-transparent border-b-emerald-300/20 border-l-transparent"
-      />
-      <motion.div
-        animate={{ rotate: -360 }}
-        transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-        className="absolute h-[138%] w-[138%] rounded-full border border-white/6 border-t-white/40 border-r-transparent border-b-transparent border-l-white/10"
-      />
-      <motion.img
-        src={paskusAnimatedLogo}
+      <div className="absolute h-[120%] w-[120%] transform-gpu rounded-full border border-emerald-300/18 border-t-emerald-300/85 border-r-transparent border-b-emerald-300/20 border-l-transparent animate-[spin_11s_linear_infinite] will-change-transform motion-reduce:animate-none" />
+      <div className="absolute h-[138%] w-[138%] transform-gpu rounded-full border border-white/6 border-t-white/40 border-r-transparent border-b-transparent border-l-white/10 animate-[spin_18s_linear_infinite_reverse] will-change-transform motion-reduce:animate-none" />
+      <img
+        src={paskusLogo}
         alt="Paskus insignia"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
-        className={`relative z-10 rounded-full object-contain ${sizeClassName} ${imageClassName}`}
+        decoding="async"
+        className={`relative z-10 transform-gpu rounded-full object-contain animate-[spin_24s_linear_infinite] will-change-transform motion-reduce:animate-none ${sizeClassName} ${imageClassName}`}
       />
     </div>
   );

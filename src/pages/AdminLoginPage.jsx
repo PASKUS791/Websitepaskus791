@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import AuthSessionLoader from "../components/AuthSessionLoader";
 import { useAuth } from "../lib/auth";
 import { fetchWalletAuthConfig } from "../lib/staffApi";
 
@@ -188,7 +189,13 @@ export default function AdminLoginPage() {
   };
 
   if (loading) {
-    return null;
+    return (
+      <AuthSessionLoader
+        eyebrow="Admin Session"
+        title="Memeriksa kontrol admin..."
+        message="Sesi internal dan konfigurasi wallet admin sedang divalidasi sebelum halaman login dibuka."
+      />
+    );
   }
 
   if (user?.scope === "admin") {

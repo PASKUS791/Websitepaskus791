@@ -15,9 +15,8 @@ import { Link } from "react-router-dom";
 import {
   createLocalDate,
   formatOperationalDateLabel,
-  loadTrainingSessions,
 } from "../data/recruitmentData";
-import { RESOURCE_KEYS, useSyncedResource } from "../../lib/resources";
+import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 // Section: calendar helpers.
 const DAY_LABELS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
@@ -227,14 +226,11 @@ function SessionFeedItem({ session, onSelect }) {
 export default function JadwalPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDateKey, setSelectedDateKey] = useState("");
-  const { data: trainingSessions, loading } = useSyncedResource(
-    RESOURCE_KEYS.dashboardTrainingSessions,
-    {
-      defaultValue: [],
-      saveDelay: 450,
-      normalize: loadTrainingSessions,
-    },
-  );
+  const {
+    trainingSessions,
+    loading,
+    error,
+  } = useStaffPortalData();
 
   const sessionsByDate = useMemo(() => groupSessionsByDate(trainingSessions), [trainingSessions]);
   const monthGrid = useMemo(() => getMonthGrid(calendarMonth), [calendarMonth]);
@@ -352,6 +348,12 @@ export default function JadwalPage() {
           {loading ? (
             <div className="border border-dashed border-white/8 bg-black/20 px-4 py-6 text-sm text-stone-400">
               Memuat sesi jadwal dari database...
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="mb-5 border border-rose-400/25 bg-rose-500/10 px-4 py-6 text-sm text-rose-200">
+              Gagal sinkron data jadwal dari backend: {error}
             </div>
           ) : null}
 

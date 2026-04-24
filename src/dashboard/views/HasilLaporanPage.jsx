@@ -24,6 +24,12 @@ import { useStaffPortalData } from "../hooks/useStaffPortalData";
 // Section: calendar helpers.
 const DAY_LABELS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const HISTORY_REPORT_CALENDAR_STORAGE_KEY = "pelatihdash.history-report.calendar.v1";
+const HISTORY_REPORT_VIEW_MODE_STORAGE_KEY = "pelatihdash.history-report.view-mode.v1";
+const HISTORY_VIEW_MODES = {
+  day: "DAY",
+  week: "WEEK",
+  month: "MONTH",
+};
 
 function createMonthAnchor(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1, 12);
@@ -74,6 +80,50 @@ function formatMonthUpper(date) {
     .toUpperCase();
 }
 
+function formatDayUpper(date) {
+  return date
+    .toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+    .toUpperCase();
+}
+
+function createWeekGrid(date) {
+  const weekStart = addDays(date, -((date.getDay() + 6) % 7));
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const currentDate = addDays(weekStart, index);
+    return {
+      date: currentDate,
+      outside: false,
+      weekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
+    };
+  });
+}
+
+function formatWeekUpper(date) {
+  const weekDays = createWeekGrid(date);
+  const weekStart = weekDays[0]?.date || date;
+  const weekEnd = weekDays[6]?.date || date;
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  const sameYear = weekStart.getFullYear() === weekEnd.getFullYear();
+
+  const startLabel = weekStart.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: sameYear ? undefined : "numeric",
+  });
+  const endLabel = weekEnd.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: sameMonth ? undefined : "short",
+    year: "numeric",
+  });
+
+  return `${startLabel} - ${endLabel}`.toUpperCase();
+}
+
 function readPersistedHistoryCalendarMonth() {
   if (typeof window === "undefined") {
     return createMonthAnchor(new Date());
@@ -111,6 +161,31 @@ function persistHistoryCalendarMonth(date) {
         calendarMonth: createMonthAnchor(date).toISOString(),
       }),
     );
+  } catch {
+    // Ignore storage persistence issues so the page can keep working normally.
+  }
+}
+
+function readPersistedHistoryViewMode() {
+  if (typeof window === "undefined") {
+    return "month";
+  }
+
+  try {
+    const storedValue = window.sessionStorage.getItem(HISTORY_REPORT_VIEW_MODE_STORAGE_KEY);
+    return Object.hasOwn(HISTORY_VIEW_MODES, storedValue) ? storedValue : "month";
+  } catch {
+    return "month";
+  }
+}
+
+function persistHistoryViewMode(viewMode) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(HISTORY_REPORT_VIEW_MODE_STORAGE_KEY, viewMode);
   } catch {
     // Ignore storage persistence issues so the page can keep working normally.
   }
@@ -393,8 +468,10 @@ function DateDetailModal({ summary, onClose }) {
 // Section: main page.
 export default function HasilLaporanPage() {
   const [calendarMonth, setCalendarMonth] = useState(() => readPersistedHistoryCalendarMonth());
+  const [viewMode, setViewMode] = useState(() => readPersistedHistoryViewMode());
   const [systemTime, setSystemTime] = useState(new Date());
-  const [activeSummaryDate, setActiveSummaryDate] = useState("");
+  const [focusedDateKey, setFocusedDateKey] = useState("");
+  const [detailSummaryDate, setDetailSummaryDate] = useState("");
   const {
     trainingSessions,
     reports,
@@ -410,6 +487,10 @@ export default function HasilLaporanPage() {
   useEffect(() => {
     persistHistoryCalendarMonth(calendarMonth);
   }, [calendarMonth]);
+
+  useEffect(() => {
+    persistHistoryViewMode(viewMode);
+  }, [viewMode]);
 
   const sessionDateSummaries = useMemo(
     () => buildSessionDateSummaries(trainingSessions, reports, { historicalOnly: true }),
@@ -433,10 +514,6 @@ export default function HasilLaporanPage() {
   const summaryMap = useMemo(
     () => new Map(sessionDateSummaries.map((summary) => [summary.date, summary])),
     [sessionDateSummaries],
-  );
-  const activeSummary = useMemo(
-    () => (activeSummaryDate ? summaryMap.get(activeSummaryDate) ?? null : null),
-    [activeSummaryDate, summaryMap],
   );
   const monthGrid = useMemo(() => getMonthGrid(calendarMonth), [calendarMonth]);
   const todayKey = formatDateKey(new Date());
@@ -464,6 +541,137 @@ export default function HasilLaporanPage() {
     () => visibleSummaries.reduce((total, summary) => total + summary.candidateCount, 0),
     [visibleSummaries],
   );
+  const focusDateKey = useMemo(() => {
+    if (focusedDateKey) {
+      return focusedDateKey;
+    }
+
+    return visibleSummaries[0]?.date || sessionDateSummaries[0]?.date || todayKey;
+  }, [focusedDateKey, sessionDateSummaries, todayKey, visibleSummaries]);
+  const focusDate = useMemo(() => createLocalDate(focusDateKey), [focusDateKey]);
+  const detailSummary = useMemo(
+    () => (detailSummaryDate ? summaryMap.get(detailSummaryDate) ?? null : null),
+    [detailSummaryDate, summaryMap],
+  );
+  const visibleCalendarDays = useMemo(() => {
+    if (viewMode === "day") {
+      return [
+        {
+          date: focusDate,
+          outside: false,
+          weekend: focusDate.getDay() === 0 || focusDate.getDay() === 6,
+        },
+      ];
+    }
+
+    if (viewMode === "week") {
+      return createWeekGrid(focusDate);
+    }
+
+    return monthGrid;
+  }, [focusDate, monthGrid, viewMode]);
+  const visibleDayLabels = useMemo(() => {
+    if (viewMode === "day") {
+      return [focusDate.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase()];
+    }
+
+    return DAY_LABELS;
+  }, [focusDate, viewMode]);
+  const currentWindowSummaryCount = useMemo(
+    () =>
+      visibleCalendarDays.reduce((total, day) => {
+        const key = formatDateKey(day.date);
+        return total + (summaryMap.has(key) ? 1 : 0);
+      }, 0),
+    [summaryMap, visibleCalendarDays],
+  );
+  const calendarHeading = useMemo(() => {
+    if (viewMode === "day") {
+      return formatDayUpper(focusDate);
+    }
+
+    if (viewMode === "week") {
+      return formatWeekUpper(focusDate);
+    }
+
+    return formatMonthUpper(calendarMonth);
+  }, [calendarMonth, focusDate, viewMode]);
+
+  const alignFocusDate = (nextDate) => {
+    const normalizedDate = createLocalDate(formatDateKey(nextDate));
+    setCalendarMonth(createMonthAnchor(normalizedDate));
+    setFocusedDateKey(formatDateKey(normalizedDate));
+  };
+
+  const handleChangeViewMode = (nextMode) => {
+    setViewMode(nextMode);
+
+    if (nextMode === "month") {
+      if (focusedDateKey) {
+        setCalendarMonth(createMonthAnchor(createLocalDate(focusedDateKey)));
+      }
+      return;
+    }
+
+    if (focusDateKey) {
+      alignFocusDate(createLocalDate(focusDateKey));
+    }
+  };
+
+  const handleStepWindow = (direction) => {
+    if (viewMode === "day") {
+      alignFocusDate(addDays(focusDate, direction));
+      return;
+    }
+
+    if (viewMode === "week") {
+      alignFocusDate(addDays(focusDate, direction * 7));
+      return;
+    }
+
+    setCalendarMonth(
+      createMonthAnchor(
+        new Date(
+          calendarMonth.getFullYear(),
+          calendarMonth.getMonth() + direction,
+          1,
+          12,
+        ),
+      ),
+    );
+  };
+
+  const handleShiftYear = (direction) => {
+    if (viewMode === "month") {
+      setCalendarMonth(
+        createMonthAnchor(
+          new Date(
+            calendarMonth.getFullYear() + direction,
+            calendarMonth.getMonth(),
+            1,
+            12,
+          ),
+        ),
+      );
+      return;
+    }
+
+    alignFocusDate(
+      new Date(
+        focusDate.getFullYear() + direction,
+        focusDate.getMonth(),
+        focusDate.getDate(),
+        12,
+      ),
+    );
+  };
+
+  const handleResetWindow = () => {
+    const today = new Date();
+    setCalendarMonth(createMonthAnchor(today));
+    setFocusedDateKey(viewMode === "month" ? "" : todayKey);
+    setDetailSummaryDate("");
+  };
 
   const metrics = [
     {
@@ -575,7 +783,7 @@ export default function HasilLaporanPage() {
                 Tactical Overview
               </p>
               <h2 className="mt-2 font-sans text-[34px] font-bold uppercase leading-none text-stone-100 md:text-[38px]">
-                {formatMonthUpper(calendarMonth)}
+                {calendarHeading}
               </h2>
             </div>
 
@@ -583,61 +791,28 @@ export default function HasilLaporanPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    setCalendarMonth(
-                      createMonthAnchor(
-                        new Date(
-                          calendarMonth.getFullYear(),
-                          calendarMonth.getMonth() - 1,
-                          1,
-                          12,
-                        ),
-                      )
-                    )
-                  }
+                  onClick={() => handleStepWindow(-1)}
                   className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   ‹
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setCalendarMonth(
-                      createMonthAnchor(
-                        new Date(
-                          calendarMonth.getFullYear(),
-                          calendarMonth.getMonth() + 1,
-                          1,
-                          12,
-                        ),
-                      )
-                    )
-                  }
+                  onClick={() => handleStepWindow(1)}
                   className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   ›
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCalendarMonth(createMonthAnchor(new Date()))}
+                  onClick={handleResetWindow}
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   Reset
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setCalendarMonth(
-                      createMonthAnchor(
-                        new Date(
-                          calendarMonth.getFullYear() - 1,
-                          calendarMonth.getMonth(),
-                          1,
-                          12,
-                        ),
-                      ),
-                    )
-                  }
+                  onClick={() => handleShiftYear(-1)}
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   -1Y
@@ -646,22 +821,11 @@ export default function HasilLaporanPage() {
                   type="button"
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300"
                 >
-                  {calendarMonth.getFullYear()}
+                  {(viewMode === "month" ? calendarMonth : focusDate).getFullYear()}
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setCalendarMonth(
-                      createMonthAnchor(
-                        new Date(
-                          calendarMonth.getFullYear() + 1,
-                          calendarMonth.getMonth(),
-                          1,
-                          12,
-                        ),
-                      ),
-                    )
-                  }
+                  onClick={() => handleShiftYear(1)}
                   className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
                 >
                   +1Y
@@ -671,21 +835,39 @@ export default function HasilLaporanPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-500"
+                  onClick={() => handleChangeViewMode("day")}
+                  className={[
+                    "border px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] transition",
+                    viewMode === "day"
+                      ? "border-[#d8c15f]/30 bg-[#d8c15f] text-black"
+                      : "border-white/8 bg-black/20 text-stone-300 hover:bg-white/5 hover:text-stone-100",
+                  ].join(" ")}
                 >
-                  Day
+                  {HISTORY_VIEW_MODES.day}
                 </button>
                 <button
                   type="button"
-                  className="border border-white/8 bg-black/20 px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-500"
+                  onClick={() => handleChangeViewMode("week")}
+                  className={[
+                    "border px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] transition",
+                    viewMode === "week"
+                      ? "border-[#d8c15f]/30 bg-[#d8c15f] text-black"
+                      : "border-white/8 bg-black/20 text-stone-300 hover:bg-white/5 hover:text-stone-100",
+                  ].join(" ")}
                 >
-                  Week
+                  {HISTORY_VIEW_MODES.week}
                 </button>
                 <button
                   type="button"
-                  className="border border-[#d8c15f]/30 bg-[#d8c15f] px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-black"
+                  onClick={() => handleChangeViewMode("month")}
+                  className={[
+                    "border px-4 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] transition",
+                    viewMode === "month"
+                      ? "border-[#d8c15f]/30 bg-[#d8c15f] text-black"
+                      : "border-white/8 bg-black/20 text-stone-300 hover:bg-white/5 hover:text-stone-100",
+                  ].join(" ")}
                 >
-                  Month
+                  {HISTORY_VIEW_MODES.month}
                 </button>
               </div>
             </div>
@@ -704,9 +886,9 @@ export default function HasilLaporanPage() {
           ) : null}
 
           <div className="mt-5 overflow-x-auto overflow-y-hidden pb-2">
-            <div className="min-w-[920px]">
-              <div className="mb-3 grid grid-cols-7 gap-3">
-                {DAY_LABELS.map((label) => (
+            <div className={viewMode === "day" ? "min-w-[280px]" : "min-w-[920px]"}>
+              <div className={`mb-3 grid gap-3 ${viewMode === "day" ? "grid-cols-1" : "grid-cols-7"}`}>
+                {visibleDayLabels.map((label) => (
                   <div
                     key={label}
                     className="px-2 text-center font-public text-[9px] uppercase tracking-[0.18em] text-stone-500"
@@ -716,8 +898,8 @@ export default function HasilLaporanPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-3">
-                {monthGrid.map((day) => {
+              <div className={`grid gap-3 ${viewMode === "day" ? "grid-cols-1" : "grid-cols-7"}`}>
+                {visibleCalendarDays.map((day) => {
                   const key = formatDateKey(day.date);
                   const summary = summaryMap.get(key);
 
@@ -727,13 +909,14 @@ export default function HasilLaporanPage() {
                       day={day}
                       summary={summary}
                       isToday={key === todayKey}
-                      active={activeSummaryDate === key}
+                      active={focusDateKey === key}
                       onOpen={() => {
                         if (!summary) {
                           return;
                         }
 
-                        setActiveSummaryDate(key);
+                        setFocusedDateKey(key);
+                        setDetailSummaryDate(key);
                       }}
                     />
                   );
@@ -742,19 +925,23 @@ export default function HasilLaporanPage() {
             </div>
           </div>
 
-          {!trainingSessionsError && visibleSummaries.length === 0 ? (
+          {!trainingSessionsError && currentWindowSummaryCount === 0 ? (
             <div className="mt-5 border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400">
-              Belum ada histori hasil laporan pada bulan ini.
+              {viewMode === "month"
+                ? "Belum ada histori hasil laporan pada bulan ini."
+                : viewMode === "week"
+                  ? "Belum ada histori hasil laporan pada minggu aktif ini."
+                  : "Belum ada histori hasil laporan pada tanggal yang sedang dibuka."}
             </div>
           ) : null}
         </section>
       </div>
 
       <AnimatePresence>
-        {activeSummary ? (
+        {detailSummary ? (
           <DateDetailModal
-            summary={activeSummary}
-            onClose={() => setActiveSummaryDate("")}
+            summary={detailSummary}
+            onClose={() => setDetailSummaryDate("")}
           />
         ) : null}
       </AnimatePresence>

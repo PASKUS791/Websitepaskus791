@@ -7,40 +7,43 @@
  * Internal proprietary source notice.
  */
 
+import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import DashboardNavbar from "./dashboard/DashboardNavbar";
-import {
-  AdminConsolePage,
-  DashboardHome,
-  HasilLaporanPage,
-  PelatihanPage,
-  RecruitmentReportPage,
-  TambahPetugasPage,
-  SopPage,
-  TindakanPage,
-} from "./dashboard/pages";
+import AuthSessionLoader from "./components/AuthSessionLoader";
 import { useAuth } from "./lib/auth";
-import AdminLoginPage from "./pages/AdminLoginPage";
-import LoginPortal from "./pages/LoginPortal";
 
-function AuthLoadingScreen() {
+const LoginPortal = lazy(() => import("./pages/LoginPortal"));
+const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage"));
+const DashboardHome = lazy(() => import("./dashboard/views/DashboardHomePage"));
+const HasilLaporanPage = lazy(() => import("./dashboard/views/HasilLaporanPage"));
+const JadwalPage = lazy(() => import("./dashboard/views/JadwalPage"));
+const RecruitmentReportPage = lazy(() => import("./dashboard/views/RecruitmentReportPage"));
+const PelatihanPage = lazy(() => import("./dashboard/views/PelatihanPage"));
+const TambahPetugasPage = lazy(() => import("./dashboard/views/TambahPetugasPage"));
+const TindakanPage = lazy(() => import("./dashboard/views/TindakanPage"));
+const SopPage = lazy(() => import("./dashboard/views/SopPage"));
+const AdminConsolePage = lazy(() => import("./dashboard/views/AdminConsolePage"));
+
+function RouteLoader() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#06090b] font-sans text-stone-100">
-      <div className="rounded-[28px] border border-white/8 bg-white/[0.04] px-8 py-6 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <p className="font-public text-[10px] uppercase tracking-[0.32em] text-lime-300/80">
-          Secure Session
-        </p>
-        <p className="mt-3 text-sm text-stone-300">Memeriksa sesi server...</p>
-      </div>
-    </div>
+    <AuthSessionLoader
+      eyebrow="Route Loader"
+      title="Memuat halaman portal..."
+      message="Komponen halaman sedang diambil sesuai route yang kamu buka."
+    />
   );
+}
+
+function RouteSuspense({ children }) {
+  return <Suspense fallback={<RouteLoader />}>{children}</Suspense>;
 }
 
 function ProtectedRoute({ requiredScope, redirectTo }) {
   const { loading, isScopeAuthenticated } = useAuth();
 
   if (loading) {
-    return <AuthLoadingScreen />;
+    return <AuthSessionLoader />;
   }
 
   return isScopeAuthenticated(requiredScope) ? (
@@ -54,7 +57,7 @@ function RootRedirect() {
   const { loading, user } = useAuth();
 
   if (loading) {
-    return <AuthLoadingScreen />;
+    return <AuthSessionLoader />;
   }
 
   if (user?.scope === "pelatih") {
@@ -71,31 +74,31 @@ function RootRedirect() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LoginPortal />} />
-      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/" element={<RouteSuspense><LoginPortal /></RouteSuspense>} />
+      <Route path="/admin/login" element={<RouteSuspense><AdminLoginPage /></RouteSuspense>} />
 
       <Route
         element={<ProtectedRoute requiredScope="pelatih" redirectTo="/" />}
       >
         <Route path="/dashboard" element={<DashboardNavbar />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="jadwal" element={<Navigate to="/dashboard/laporan" replace />} />
-          <Route path="laporan" element={<HasilLaporanPage />} />
+          <Route index element={<RouteSuspense><DashboardHome /></RouteSuspense>} />
+          <Route path="jadwal" element={<RouteSuspense><JadwalPage /></RouteSuspense>} />
+          <Route path="laporan" element={<RouteSuspense><HasilLaporanPage /></RouteSuspense>} />
           <Route
             path="laporan-perekrutan/:sessionId"
-            element={<RecruitmentReportPage />}
+            element={<RouteSuspense><RecruitmentReportPage /></RouteSuspense>}
           />
-          <Route path="pelatihan/:sessionId" element={<PelatihanPage />} />
-          <Route path="petugas" element={<TambahPetugasPage />} />
-          <Route path="tindakan" element={<TindakanPage />} />
-          <Route path="sop" element={<SopPage />} />
+          <Route path="pelatihan/:sessionId" element={<RouteSuspense><PelatihanPage /></RouteSuspense>} />
+          <Route path="petugas" element={<RouteSuspense><TambahPetugasPage /></RouteSuspense>} />
+          <Route path="tindakan" element={<RouteSuspense><TindakanPage /></RouteSuspense>} />
+          <Route path="sop" element={<RouteSuspense><SopPage /></RouteSuspense>} />
         </Route>
       </Route>
 
       <Route
         element={<ProtectedRoute requiredScope="admin" redirectTo="/admin/login" />}
       >
-        <Route path="/admin" element={<AdminConsolePage />} />
+        <Route path="/admin" element={<RouteSuspense><AdminConsolePage /></RouteSuspense>} />
       </Route>
 
       <Route path="*" element={<RootRedirect />} />

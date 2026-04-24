@@ -11,6 +11,10 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  formatOperationalDateLabel,
+  isTrainingSessionDispatched,
+} from "../data/recruitmentData";
 import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const TINDAKAN_PRIORITY_ORDER = {
@@ -21,49 +25,27 @@ const TINDAKAN_PRIORITY_ORDER = {
 };
 
 function createLocalDate(dateString) {
-  const [year, month, day] = dateString.split("-").map(Number);
+  const [year, month, day] = String(dateString || "")
+    .split("-")
+    .map(Number);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return new Date();
+  }
+
   return new Date(year, month - 1, day, 12);
 }
 
-function parseScheduleTimeRange(timeLabel) {
-  const match = timeLabel.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    startHour: Number(match[1]),
-    startMinute: Number(match[2]),
-    endHour: Number(match[3]),
-    endMinute: Number(match[4]),
-  };
-}
-
-function getScheduleEventDateTime(event, boundary = "start") {
-  const baseDate = createLocalDate(event.date);
-  const range = parseScheduleTimeRange(event.time);
-
-  if (!range) {
-    return new Date(
-      baseDate.getFullYear(),
-      baseDate.getMonth(),
-      baseDate.getDate(),
-      boundary === "end" ? 13 : 12,
-      0,
-      0,
-      0,
-    );
-  }
-
+function getSessionScheduleDeadline(session) {
+  const baseDate = createLocalDate(session?.scheduledDate);
   return new Date(
     baseDate.getFullYear(),
     baseDate.getMonth(),
     baseDate.getDate(),
-    boundary === "end" ? range.endHour : range.startHour,
-    boundary === "end" ? range.endMinute : range.startMinute,
-    0,
-    0,
+    23,
+    59,
+    59,
+    999,
   );
 }
 
@@ -265,8 +247,7 @@ function TindakanEmptyState({ message }) {
 
 export default function TindakanPage() {
   const [systemTime, setSystemTime] = useState(new Date());
-  const { reports, candidates } = useStaffPortalData();
-  const scheduleEvents = useMemo(() => [], []);
+  const { reports, candidates, trainingSessions } = useStaffPortalData();
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
@@ -309,27 +290,42 @@ export default function TindakanPage() {
   }, [candidates, reports]);
 
   const overdueSchedules = useMemo(() => {
-    return scheduleEvents
-      .filter((event) => getScheduleEventDateTime(event, "end").getTime() < systemTime.getTime())
-      .map((event) => {
-        const endAt = getScheduleEventDateTime(event, "end");
+    return trainingSessions
+      .filter((session) => !isTrainingSessionDispatched(session, reports))
+      .map((session) => {
+        const endAt = getSessionScheduleDeadline(session);
         const overdueMs = systemTime.getTime() - endAt.getTime();
         const severity =
-          overdueMs > 24 * 60 * 60 * 1000
+          overdueMs > 72 * 60 * 60 * 1000
             ? "critical"
-            : overdueMs > 6 * 60 * 60 * 1000
+            : overdueMs > 24 * 60 * 60 * 1000
               ? "high"
               : "medium";
+        const operatorNames = session.operators
+          .map((operator) => operator.label)
+          .filter(Boolean);
+        const coordinator = operatorNames.join(", ") || session.createdBy || "Belum ada petugas";
 
         return {
-          ...event,
+          ...session,
+          title: session.title,
+          subtitle: session.golongan,
+          date: session.scheduledDate,
+          dateLabel: formatOperationalDateLabel(session.scheduledDate),
+          coordinator,
+          objective:
+            session.candidates.length > 0
+              ? `${session.candidates.length} kandidat masih berada di sesi aktif dan perlu penutupan atau pengiriman laporan.`
+              : "Sesi ini belum ditutup, tetapi tidak lagi memiliki kandidat aktif.",
+          metaSummary: `${session.candidates.length} kandidat • ${coordinator}`,
           endAt,
           overdueMs,
           severity,
         };
       })
+      .filter((event) => event.overdueMs > 0)
       .sort((left, right) => right.endAt.getTime() - left.endAt.getTime());
-  }, [scheduleEvents, systemTime]);
+  }, [reports, systemTime, trainingSessions]);
 
   const pendingDispatchReports = useMemo(() => {
     return reports
@@ -362,8 +358,8 @@ export default function TindakanPage() {
       severity: event.severity,
       category: "Jadwal Terlewat",
       title: `${event.title} / ${event.subtitle}`,
-      detail: `Window ${formatScheduleDistance(event.overdueMs)} terlewat dan perlu tindak lanjut recruiter.`,
-      meta: `${event.date} • ${event.time} • ${event.coordinator}`,
+      detail: event.objective,
+      meta: `${event.dateLabel} • ${event.metaSummary}`,
       stamp: event.endAt.getTime(),
     }));
 
@@ -525,10 +521,10 @@ export default function TindakanPage() {
                   <TindakanAlertCard
                     key={event.id}
                     severity={event.severity}
-                    eyebrow={event.date}
+                    eyebrow={event.dateLabel}
                     title={`${event.title} / ${event.subtitle}`}
                     description={event.objective}
-                    meta={`${event.time} • ${event.location}`}
+                    meta={`${event.subtitle} • ${event.metaSummary}`}
                     footer={`Coordinator: ${event.coordinator} • Terlewat ${formatScheduleDistance(event.overdueMs)}`}
                   />
                 ))

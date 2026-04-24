@@ -20,7 +20,7 @@ import {
   useRef,
   useState,
 } from "react";
-import mbahErrorOverlayImage from "../assets/mbah-error-overlay.png";
+import mbahErrorOverlayImage from "../assets/mbah-error-overlay.jpg";
 import { GLOBAL_FRONTEND_ERROR_EVENT } from "../lib/httpClient";
 
 const DEFAULT_OVERLAY_TITLE = "Sistem Eror";
@@ -91,11 +91,13 @@ function GlobalErrorOverlay({ detail, onClose }) {
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/88 p-4 backdrop-blur-md">
       <div className="relative grid w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 bg-[#090909] shadow-[0_40px_120px_rgba(0,0,0,0.62)] lg:grid-cols-[0.9fr_1.1fr]">
         <div className="relative min-h-[320px] overflow-hidden bg-black">
-          <img
-            src={mbahErrorOverlayImage}
-            alt="Mbah error overlay"
-            className="h-full w-full object-cover"
-          />
+              <img
+                src={mbahErrorOverlayImage}
+                alt="Mbah error overlay"
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,rgba(0,0,0,0.56)_100%)]" />
         </div>
 
@@ -287,6 +289,7 @@ export function ErrorOverlayProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useErrorOverlay() {
   const context = useContext(ErrorOverlayContext);
 

@@ -50,7 +50,7 @@ function resolvePageTitle(pathname) {
   }
 
   if (pathname === "/dashboard/jadwal") {
-    return "Hasil Laporan";
+    return "Jadwal";
   }
 
   if (pathname === "/dashboard/laporan") {

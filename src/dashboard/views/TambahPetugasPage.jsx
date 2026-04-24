@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../lib/auth";
-import mbahDeleteOverlayImage from "../../assets/mbah-error-overlay.png";
+import mbahDeleteOverlayImage from "../../assets/mbah-error-overlay.jpg";
 import { useStaffPortalData } from "../hooks/useStaffPortalData";
 
 const INITIAL_FORM_STATE = {
@@ -164,6 +164,8 @@ function DeleteOperatorOverlay({ operator }) {
           <img
             src={mbahDeleteOverlayImage}
             alt="Overlay hapus petugas"
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.62)_100%)]" />
