@@ -136,18 +136,29 @@ const SOP_LIBRARY = [
       },
       {
         index: "08",
-        title: "Phase 8: Penjelasan Alur Pelatihan",
+        title: "Phase 8: Pembacaan SOP",
         description:
-          "Jelaskan bahwa setelah lulus seleksi wawancara, kandidat akan mengikuti pelatihan fisik dan teknis di BRM5. Setelah pelatihan selesai dan laporan dikirim ke resimen, pengambilan pin Komodo dan Sertijab dilakukan manual oleh admin. Kandidat yang gagal atau masuk probation akan dicatat untuk evaluasi lanjutan.",
+          "Minta kandidat untuk membaca dokumen SOP resmi komunitas dan resimen secara aktif. Evaluasi pemahaman mereka mengenai aturan IC/OOC, hierarki komando, serta larangan powergaming dan metagaming.",
         bullets: [
-          "Jelaskan jadwal pelatihan berikutnya",
-          "Terangkan proses pin dan Sertijab manual",
-          "Jelaskan jalur probation jika berlaku",
+          "Pandu pembacaan materi SOP",
+          "Konfirmasi pemahaman kandidat",
+          "Catat respons pemahaman SOP",
         ],
       },
       {
         index: "09",
-        title: "Phase 9: Penutup dan Rekomendasi",
+        title: "Phase 9: Pembacaan Sumpah Prajurit",
+        description:
+          "Pandu kandidat untuk membacakan Sumpah Prajurit PASKUS 791 secara khidmat dan jelas. Ini merupakan komitmen formal kandidat sebelum resmi bergabung ke resimen.",
+        bullets: [
+          "Pandu pembacaan teks sumpah",
+          "Pastikan pengucapan khidmat dan jelas",
+          "Catat kesungguhan kandidat",
+        ],
+      },
+      {
+        index: "10",
+        title: "Phase 10: Penutup dan Rekomendasi",
         description:
           "Tutup sesi wawancara dengan mengucapkan terima kasih atas waktu kandidat. Beri tahu bahwa hasil akan dicatat dan keputusan akhir ditentukan oleh komando. Catat rekomendasi perekrut: LULUS, GAGAL, atau PROBATION beserta alasan singkat di laporan.",
         bullets: [

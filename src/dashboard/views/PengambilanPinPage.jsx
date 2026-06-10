@@ -25,17 +25,26 @@ const PIN_TYPE_LABELS = {
   latpur: "Pin Latpur",
 };
 
-const SOP_PHASES = [
-  { phase: 1, name: "Interview & BGC", desc: "Verifikasi dualisme resimen, umur, & motivasi" },
-  { phase: 2, name: "Latihan Fisik (Obby)", desc: "Hafal C/X & penyelesaian rintangan obby" },
-  { phase: 3, name: "Latihan Tembak (Recoil Control)", desc: "Kontrol recoil senjata di full auto" },
-  { phase: 4, name: "Latihan Grenade", desc: "Akurasi lemparan granat (min. 3/4 masuk)" },
-  { phase: 5, name: "Reaction Time Test", desc: "Pencatatan waktu reaksi & civilian penalty" },
-  { phase: 6, name: "Doper Drill", desc: "Ketahanan mental tiarap & merangkak lurus" },
-  { phase: 7, name: "Wingman & Parachute", desc: "Ketepatan callsign & navigasi lampu parachute" },
-  { phase: 8, name: "Pembacaan SOP", desc: "Aturan IC/OOC, hierarki resimen, & larangan" },
-  { phase: 9, name: "Sumpah Prajurit", desc: "Pengucapan sumpah prajurit secara khidmat" },
+const WINGMAN_PHASES = [
+  { phase: 1, name: "Baris & Formasi Heli sebelum Masuk", desc: "Baris sesuai tugas sebelum masuk helikopter & duduk sesuai formasi" },
+  { phase: 2, name: "Pemahaman Sandi Lampu (Putih, Merah, Hijau)", desc: "Hafal arti lampu putih, merah, dan hijau dalam operasi penerjunan" },
+  { phase: 3, name: "Ketepatan Ketinggian Drop (2500m – 3000m)", desc: "Minimal ketinggian keluar adalah 2500m, optimal hingga 3000m" },
+  { phase: 4, name: "Buka Parasut 100m & Akurasi Terjun", desc: "Membuka parasut di ketinggian 100m dari tanah dengan akurasi terjun yang tepat" },
+  { phase: 5, name: "Kedisiplinan Aba-Aba dari Ketinggian", desc: "Kepatuhan terhadap aba-aba instruktur selama penerjunan dari ketinggian" },
 ];
+
+const LATPUR_PHASES = [
+  { phase: 1, name: "Latihan Fisik (Obby)", desc: "Hafal C/X & penyelesaian rintangan obby" },
+  { phase: 2, name: "Latihan Tembak (Recoil Control)", desc: "Kontrol recoil senjata di full auto" },
+  { phase: 3, name: "Latihan Grenade", desc: "Akurasi lemparan granat (min. 3/4 masuk)" },
+  { phase: 4, name: "Reaction Time Test", desc: "Pencatatan waktu reaksi & civilian penalty" },
+  { phase: 5, name: "Doper Drill", desc: "Ketahanan mental tiarap & merangkak lurus" },
+];
+
+const SOP_PHASES_MAP = {
+  wingman: WINGMAN_PHASES,
+  latpur: LATPUR_PHASES,
+};
 
 export default function PengambilanPinPage() {
   const [sessions, setSessions] = useState([]);
@@ -156,7 +165,7 @@ export default function PengambilanPinPage() {
       let displayName = selectedMemberReport.displayName;
       let username = selectedMemberReport.username;
       if (voiceData?.members) {
-        const vm = voiceData.members.find((m) => m.id === selectedMemberReport.discordUserId);
+        const vm = voiceData.members.find((m) => m.discordUserId === selectedMemberReport.discordUserId);
         if (vm) {
           displayName = vm.displayName || vm.username || displayName;
           username = vm.username || username;
@@ -192,7 +201,7 @@ export default function PengambilanPinPage() {
       let displayName = selectedMemberReport.displayName;
       let username = selectedMemberReport.username;
       if (voiceData?.members) {
-        const vm = voiceData.members.find((m) => m.id === selectedMemberReport.discordUserId);
+        const vm = voiceData.members.find((m) => m.discordUserId === selectedMemberReport.discordUserId);
         if (vm) {
           displayName = vm.displayName || vm.username || displayName;
           username = vm.username || username;
@@ -262,7 +271,7 @@ export default function PengambilanPinPage() {
     for (const member of activeSession.memberReports) {
       let name = member.displayName || member.username || member.discordUserId;
       if (voiceData?.members) {
-        const vm = voiceData.members.find((m) => m.id === member.discordUserId);
+        const vm = voiceData.members.find((m) => m.discordUserId === member.discordUserId);
         if (vm) {
           name = vm.displayName || vm.username || name;
         }
@@ -300,8 +309,8 @@ export default function PengambilanPinPage() {
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-400">
               Evaluasi prajurit berdasarkan SOP Silere Impetum secara terstruktur.
-              Buka sesi latihan, nilai ke-9 fase kelulusan, dan kirim laporan sertijab
-              untuk memberikan role Wingman atau Pin Latpur secara otomatis di Discord.
+              Buka sesi latihan, nilai setiap fase kelulusan, dan kirim laporan sertijab
+              untuk memberikan role Wingman (5 fase) atau Pin Latpur (5 fase) secara otomatis di Discord.
             </p>
           </div>
           <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
@@ -493,7 +502,7 @@ export default function PengambilanPinPage() {
 
                   {/* SOP Phases list */}
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {SOP_PHASES.map((sopPhase) => {
+                    {(SOP_PHASES_MAP[activeSession.pinType] || []).map((sopPhase) => {
                       const phaseReport = selectedMemberReport.phases.find((p) => p.phase === sopPhase.phase) || {
                         passed: null,
                         catatan: "",
