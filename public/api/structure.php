@@ -215,7 +215,7 @@ function structure_unit_slug(string $value): string
         return 'sentinel';
     }
     if (strpos($source, 'sierra') !== false || strpos($source, 'serigala') !== false) {
-        return 'serigala';
+        return 'sierra';
     }
     if (strpos($source, 'komodo') !== false || strpos($source, 'reguler') !== false || strpos($source, 'regular') !== false) {
         return 'komodo';

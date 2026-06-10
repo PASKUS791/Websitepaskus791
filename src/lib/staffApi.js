@@ -597,4 +597,12 @@ export async function getVoiceRoster() {
   return payload ?? null;
 }
 
+export async function deletePinSession(sessionId) {
+  const payload = await staffApiFetch(`/pelatih/pin-sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+  return payload ?? null;
+}
+
+
 

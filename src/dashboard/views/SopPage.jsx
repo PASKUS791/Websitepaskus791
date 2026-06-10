@@ -116,7 +116,7 @@ const SOP_LIBRARY = [
         index: "06",
         title: "Phase 6: Penjelasan Unit-Unit",
         description:
-          "Jelaskan unit-unit yang ada di PASKUS-791: GATAM (stealth/infiltrasi), BRINGAS (infanteri berat), SERIGALA (serbu cepat), SENTINEL (medis/support), TORUK MAKTO (udara), dan PATHFINDER (recon/sniper). Jika kandidat sudah punya preferensi, catat. Penempatan akhir berdasarkan evaluasi komando.",
+          "Jelaskan unit-unit yang ada di PASKUS-791: GATAM (stealth/infiltrasi), BRINGAS (infanteri berat), SIERRA (infiltrasi & sabotase taktis), SENTINEL (medis/support), TORUK MAKTO (udara), dan PATHFINDER (recon/sniper). Jika kandidat sudah punya preferensi, catat. Penempatan akhir berdasarkan evaluasi komando.",
         bullets: [
           "Jelaskan tiap unit dan perannya",
           "Tanyakan preferensi unit kandidat",
@@ -224,7 +224,7 @@ const SOP_LIBRARY = [
         fields: [
           "GATAM: infiltrasi senyap, stealth, dan penghancuran target vital secara presisi.",
           "BRINGAS: infanteri berat dan raider untuk garis depan dan kendaraan berat.",
-          "SERIGALA: serbu cepat ke objektif prioritas seperti mortar dan anti-air.",
+          "SIERRA: infiltrasi & sabotase taktis, bergerak senyap untuk menghancurkan sasaran penting dan membuka celah operasi.",
           "SENTINEL: medis dan support untuk revive, healing, dan stabilitas tim.",
           "TORUK MAKTO: unit udara untuk transportasi, infiltrasi, dan dukungan aviation.",
           "PATHFINDER: recon dan sniper support untuk observasi dan intel jarak jauh.",
@@ -267,9 +267,9 @@ const SOP_LIBRARY = [
           "Infanteri berat atau raider yang mengutamakan daya tekan, kendaraan berat, dan operasi garis depan.",
       },
       {
-        name: "SERIGALA",
+        name: "SIERRA",
         detail:
-          "Unit serbu cepat menuju objektif prioritas seperti mortar, anti-air, dan sasaran vital lain.",
+          "Unit infiltrasi dan sabotase taktis yang bergerak senyap, terukur, dan terarah untuk menghancurkan sasaran penting serta membuka celah operasi bagi pasukan utama.",
       },
       {
         name: "SENTINEL",

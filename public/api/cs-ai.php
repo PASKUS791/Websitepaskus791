@@ -358,9 +358,9 @@ function cs_unit_catalog(): array
             'priorities' => ['Disiplin tinggi', 'Presisi piloting dan tembakan', 'Adaptasi kuat', 'Tidak toleran terhadap kesalahan operasi'],
             'route' => 'Wawancara, uji kemampuan udara, uji karakter, lalu masa pra-dinas.',
         ],
-        'serigala' => [
+        'sierra' => [
             'title' => 'SIERRA',
-            'aliases' => ['serigala', 'sierra'],
+            'aliases' => ['sierra', 'serigala'],
             'category' => 'Saboteur and Swift Attack Unit',
             'summary' => 'SIERRA adalah unit infiltrasi dan sabotase taktis yang bergerak senyap untuk menghancurkan sasaran penting, memutus ritme lawan, dan membuka ruang operasi bagi pasukan utama.',
             'doctrine' => 'Keberhasilan SIERRA bertumpu pada fokus, taktik, intelijen operasi, koordinasi tim kecil, dan komunikasi tajam. Unit ini bergerak cepat di area musuh untuk melemahkan target penting tanpa kehilangan disiplin komando.',
@@ -778,7 +778,7 @@ function cs_site_context(): string
 
 function cs_is_paskus_related(string $question): bool
 {
-    return (bool) preg_match('/paskus|so-?791|resimen|pendaftaran|daftar|enlist|gabung|join|ikut|masuk|discord|sinkron|sync|golongan|unit|tempur|combat|dinas|support|non tempur|anggota|member|prajurit|personel|pmc|sipil|civilian|event|pve|pvp|scenario|skenario|pangkat|struktural|struktur|perwira|bintara|tamtama|gatam|bringas|beringas|toruk|serigala|pathfinder|sentinel|komodo|staff|seksi|pengurus besar|dpdm|polisi militer|pusdiklat|propaganda|zeni|pelatih|map/u', cs_lower($question));
+    return (bool) preg_match('/paskus|so-?791|resimen|pendaftaran|daftar|enlist|gabung|join|ikut|masuk|discord|sinkron|sync|golongan|unit|tempur|combat|dinas|support|non tempur|anggota|member|prajurit|personel|pmc|sipil|civilian|event|pve|pvp|scenario|skenario|pangkat|struktural|struktur|perwira|bintara|tamtama|gatam|bringas|beringas|toruk|serigala|sierra|pathfinder|sentinel|komodo|staff|seksi|pengurus besar|dpdm|polisi militer|pusdiklat|propaganda|zeni|pelatih|map/u', cs_lower($question));
 }
 
 function cs_knowledge_answer(string $question, array $check): string

@@ -36,7 +36,7 @@ export const RECRUITMENT_REPORT_NOTES_TEMPLATE = [
   "",
   "[KEPANGKATAN DAN UNIT]",
   "Pemahaman sistem kepangkatan PASKUS 791: ",
-  "Unit yang diminati (GATAM/BRINGAS/SERIGALA/SENTINEL/TORUK/PATHFINDER): ",
+  "Unit yang diminati (GATAM/BRINGAS/SIERRA/SENTINEL/TORUK/PATHFINDER): ",
   "Pemahaman peran perwira dan penugasan unit: ",
   "",
   "[PERATURAN DAN SOP]",

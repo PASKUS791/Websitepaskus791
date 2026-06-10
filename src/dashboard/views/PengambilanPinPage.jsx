@@ -18,7 +18,9 @@ import {
   addPinReport,
   dispatchPinSession,
   getVoiceRoster,
+  deletePinSession,
 } from "../../lib/staffApi";
+
 
 const PIN_TYPE_LABELS = {
   wingman: "Pin Wingman",
@@ -258,6 +260,36 @@ export default function PengambilanPinPage() {
       setActionLoading(false);
     }
   };
+
+  // Delete a pin session from history
+  const handleDeleteSession = async (sessionId, e) => {
+    if (e) e.stopPropagation();
+    
+    if (!confirm("Apakah Anda yakin ingin menghapus sesi riwayat ini? Tindakan ini tidak dapat dibatalkan.")) {
+      return;
+    }
+    
+    setActionLoading(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const res = await deletePinSession(sessionId);
+      if (res && res.success) {
+        setSuccessMsg(res.message || "Sesi berhasil dihapus dari riwayat.");
+        if (activeSession && activeSession._id === sessionId) {
+          setActiveSession(null);
+        }
+        await loadSessions();
+      } else {
+        setError(res?.message || "Gagal menghapus sesi.");
+      }
+    } catch (err) {
+      setError(err.message || "Gagal menghapus sesi.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
 
   // Compile real-time preview of Uji Mutu
   const ujiMutuPreview = useMemo(() => {
@@ -821,17 +853,41 @@ export default function PengambilanPinPage() {
                           className="rounded-xl border border-white/5 bg-[#151515] p-4 flex flex-col gap-2"
                         >
                           <div className="flex items-center justify-between">
-                            <span className={[
-                              "font-public text-[8px] uppercase tracking-wider px-2 py-0.5 rounded border",
-                              isSubmitted
-                                ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-                                : "border-rose-400/20 bg-rose-500/10 text-rose-300",
-                            ].join(" ")}>
-                              {isSubmitted ? "SUKSES" : "GAGAL"}
-                            </span>
-                            <span className="text-[10px] text-stone-600">
-                              {new Date(session.updatedAt || session.createdAt).toLocaleDateString("id-ID")}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={[
+                                "font-public text-[8px] uppercase tracking-wider px-2 py-0.5 rounded border",
+                                isSubmitted
+                                  ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                                  : "border-rose-400/20 bg-rose-500/10 text-rose-300",
+                              ].join(" ")}>
+                                {isSubmitted ? "SUKSES" : "GAGAL"}
+                              </span>
+                              <span className="text-[10px] text-stone-600">
+                                {new Date(session.updatedAt || session.createdAt).toLocaleDateString("id-ID")}
+                              </span>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => handleDeleteSession(session._id, e)}
+                              disabled={actionLoading}
+                              className="p-1 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/25 hover:text-rose-300 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Hapus Sesi"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                                stroke="currentColor"
+                                className="w-3.5 h-3.5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                />
+                              </svg>
+                            </button>
                           </div>
                           <div>
                             <h4 className="font-sans text-sm font-bold text-stone-300 leading-snug">
@@ -849,6 +905,7 @@ export default function PengambilanPinPage() {
                         </div>
                       );
                     })}
+
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-white/8 bg-[#151515] p-6 text-center text-sm text-stone-500">

@@ -38,7 +38,7 @@
       mp4: "/assets/toruk-highlight-v1.mp4",
       poster: "/assets/toruk-highlight-poster-v1.jpg",
     },
-    serigala: {
+    sierra: {
       title: "SIERRA TACTICAL HIGHLIGHT",
       label: "Silent disruption field reel",
       mp4: "/assets/sierra-highlight-v1.mp4",
@@ -132,7 +132,7 @@
     SIERRA_LOGO_URL,
     "/assets/toruk-DYGp5xKc.webp",
     UNIT_HIGHLIGHT_VIDEOS["toruk-makto"].poster,
-    UNIT_HIGHLIGHT_VIDEOS.serigala.poster,
+    UNIT_HIGHLIGHT_VIDEOS.sierra.poster,
     UNIT_HIGHLIGHT_VIDEOS.sentinel.poster,
     INDONESIA_MEMBER_MAP_URL,
   ];
@@ -1349,7 +1349,7 @@
     #combat .flip-card.paskus-unit-gatam { order: 1; }
     #combat .flip-card.paskus-unit-bringas { order: 2; }
     #combat .flip-card.paskus-unit-toruk { order: 3; }
-    #combat .flip-card.paskus-unit-serigala { order: 4; }
+    #combat .flip-card.paskus-unit-sierra { order: 4; }
     #combat .flip-card.paskus-unit-pathfinder { order: 5; }
     #combat .flip-card.paskus-unit-sentinel { order: 6; }
     #combat .flip-card.paskus-unit-komodo { order: 7; }
@@ -1392,12 +1392,12 @@
       contain-intrinsic-size: auto 330px;
       isolation: isolate;
     }
-    #combat .flip-card.paskus-unit-serigala,
+    #combat .flip-card.paskus-unit-sierra,
     #combat .flip-card.paskus-unit-pathfinder,
     #combat .flip-card.paskus-unit-sentinel {
       min-height: clamp(302px, 25vw, 350px);
     }
-    #combat .flip-card.paskus-unit-serigala {
+    #combat .flip-card.paskus-unit-sierra {
       min-height: clamp(348px, 28vw, 392px);
       contain-intrinsic-size: auto 392px;
     }
@@ -1742,8 +1742,8 @@
         drop-shadow(0 16px 24px rgba(0, 0, 0, 0.56))
         drop-shadow(0 0 20px rgba(218, 173, 82, 0.34));
     }
-    #combat .flip-card.paskus-unit-serigala .flip-card-front,
-    #combat .flip-card.paskus-unit-serigala .flip-card-back {
+    #combat .flip-card.paskus-unit-sierra .flip-card-front,
+    #combat .flip-card.paskus-unit-sierra .flip-card-back {
       border-color: rgba(146, 146, 136, 0.42) !important;
       background:
         linear-gradient(180deg, rgba(4, 6, 6, 0.5), rgba(3, 4, 4, 0.76)),
@@ -1755,21 +1755,21 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
         inset 0 -1px 0 rgba(146, 146, 136, 0.18);
     }
-    #combat .flip-card.paskus-unit-serigala .flip-card-front {
+    #combat .flip-card.paskus-unit-sierra .flip-card-front {
       justify-content: center;
       gap: clamp(12px, 1.3vw, 18px);
       padding-top: clamp(24px, 2.2vw, 32px) !important;
       padding-bottom: clamp(34px, 3vw, 46px) !important;
     }
-    #combat .flip-card.paskus-unit-serigala .flip-card-front::after,
-    #combat .flip-card.paskus-unit-serigala .flip-card-back::after {
+    #combat .flip-card.paskus-unit-sierra .flip-card-front::after,
+    #combat .flip-card.paskus-unit-sierra .flip-card-back::after {
       background:
         linear-gradient(180deg, rgba(2, 3, 3, 0.14), rgba(2, 3, 3, 0.7)),
         radial-gradient(circle at 50% 36%, rgba(146, 146, 136, 0.1), transparent 46%),
         linear-gradient(115deg, rgba(255, 255, 255, 0.12), transparent 28%);
       opacity: 0.64;
     }
-    #combat .flip-card.paskus-unit-serigala .unit-logo {
+    #combat .flip-card.paskus-unit-sierra .unit-logo {
       width: clamp(96px, 7.6vw, 128px) !important;
       height: clamp(96px, 7.6vw, 128px) !important;
       object-fit: contain;
@@ -1780,7 +1780,7 @@
         drop-shadow(0 0 22px rgba(245, 203, 96, 0.28))
         drop-shadow(0 0 34px rgba(255, 255, 255, 0.08));
     }
-    #combat .flip-card.paskus-unit-serigala a[href^="/unit/"] {
+    #combat .flip-card.paskus-unit-sierra a[href^="/unit/"] {
       min-height: 38px;
       margin-top: 2px;
       transform: translateZ(42px) translateY(-2px);
@@ -1937,7 +1937,7 @@
       --unit-accent: #66be48;
       --unit-text: #eaffdf;
     }
-    #combat .flip-card a.card-serigala {
+    #combat .flip-card a.card-sierra {
       --unit-accent-rgb: 196, 158, 74;
       --unit-accent: #c49e4a;
       --unit-text: #fff0bd;
@@ -2014,7 +2014,7 @@
       }
     }
     html.paskus-unit-detail-toruk .body-nav,
-    html.paskus-unit-detail-serigala .body-nav,
+    html.paskus-unit-detail-sierra .body-nav,
     html.paskus-unit-detail-pathfinder .body-nav,
     html.paskus-unit-detail-sentinel .body-nav,
     html.paskus-unit-detail-gatam .body-nav {
@@ -2025,7 +2025,7 @@
         #050505 !important;
     }
     html.paskus-unit-detail-toruk .body-nav::before,
-    html.paskus-unit-detail-serigala .body-nav::before,
+    html.paskus-unit-detail-sierra .body-nav::before,
     html.paskus-unit-detail-pathfinder .body-nav::before,
     html.paskus-unit-detail-sentinel .body-nav::before,
     html.paskus-unit-detail-gatam .body-nav::before {
@@ -2043,7 +2043,7 @@
       opacity: 0.9;
     }
     html.paskus-unit-detail-toruk .body-nav::after,
-    html.paskus-unit-detail-serigala .body-nav::after,
+    html.paskus-unit-detail-sierra .body-nav::after,
     html.paskus-unit-detail-pathfinder .body-nav::after,
     html.paskus-unit-detail-sentinel .body-nav::after,
     html.paskus-unit-detail-gatam .body-nav::after {
@@ -2060,7 +2060,7 @@
       opacity: 0.68;
     }
     html.paskus-unit-detail-toruk .body-nav > *,
-    html.paskus-unit-detail-serigala .body-nav > *,
+    html.paskus-unit-detail-sierra .body-nav > *,
     html.paskus-unit-detail-pathfinder .body-nav > *,
     html.paskus-unit-detail-sentinel .body-nav > *,
     html.paskus-unit-detail-gatam .body-nav > * {
@@ -2068,7 +2068,7 @@
       z-index: 1;
     }
     html.paskus-unit-detail-toruk .hero-section,
-    html.paskus-unit-detail-serigala .hero-section,
+    html.paskus-unit-detail-sierra .hero-section,
     html.paskus-unit-detail-pathfinder .hero-section,
     html.paskus-unit-detail-sentinel .hero-section,
     html.paskus-unit-detail-gatam .hero-section {
@@ -2076,7 +2076,7 @@
         linear-gradient(180deg, rgba(5, 5, 5, 0.1), rgba(5, 5, 5, 0.48) 62%, rgba(5, 5, 5, 0.86)) !important;
     }
     html.paskus-unit-detail-toruk .hero-section::before,
-    html.paskus-unit-detail-serigala .hero-section::before,
+    html.paskus-unit-detail-sierra .hero-section::before,
     html.paskus-unit-detail-pathfinder .hero-section::before,
     html.paskus-unit-detail-sentinel .hero-section::before,
     html.paskus-unit-detail-gatam .hero-section::before {
@@ -2099,7 +2099,7 @@
       --paskus-detail-accent-rgb: 255, 36, 36;
       --paskus-detail-wallpaper: url("/assets/toruk-card-bg-v1.webp");
     }
-    html.paskus-unit-detail-serigala {
+    html.paskus-unit-detail-sierra {
       --paskus-detail-accent-rgb: 146, 146, 136;
       --paskus-detail-wallpaper: url("/assets/sierra-card-bg-v1.webp");
     }
@@ -2117,7 +2117,7 @@
     }
     @media (max-width: 720px) {
       html.paskus-unit-detail-toruk .body-nav::before,
-      html.paskus-unit-detail-serigala .body-nav::before,
+      html.paskus-unit-detail-sierra .body-nav::before,
       html.paskus-unit-detail-pathfinder .body-nav::before,
       html.paskus-unit-detail-sentinel .body-nav::before,
       html.paskus-unit-detail-gatam .body-nav::before {
@@ -2125,7 +2125,7 @@
         opacity: 0.84;
       }
       html.paskus-unit-detail-toruk .hero-section::before,
-      html.paskus-unit-detail-serigala .hero-section::before,
+      html.paskus-unit-detail-sierra .hero-section::before,
       html.paskus-unit-detail-pathfinder .hero-section::before,
       html.paskus-unit-detail-sentinel .hero-section::before,
       html.paskus-unit-detail-gatam .hero-section::before {
@@ -8660,13 +8660,13 @@
         box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
         contain-intrinsic-size: auto 186px;
       }
-      #combat .flip-card.paskus-unit-serigala,
+      #combat .flip-card.paskus-unit-sierra,
       #combat .flip-card.paskus-unit-pathfinder,
       #combat .flip-card.paskus-unit-sentinel {
         min-height: 206px;
         contain-intrinsic-size: auto 206px;
       }
-      #combat .flip-card.paskus-unit-serigala {
+      #combat .flip-card.paskus-unit-sierra {
         min-height: 236px;
         contain-intrinsic-size: auto 236px;
       }
@@ -8702,13 +8702,13 @@
         justify-content: center;
         gap: 9px;
       }
-      #combat .flip-card.paskus-unit-serigala .flip-card-front,
+      #combat .flip-card.paskus-unit-sierra .flip-card-front,
       #combat .flip-card.paskus-unit-pathfinder .flip-card-front,
       #combat .flip-card.paskus-unit-sentinel .flip-card-front {
         gap: 7px;
         padding: 11px !important;
       }
-      #combat .flip-card.paskus-unit-serigala .flip-card-front {
+      #combat .flip-card.paskus-unit-sierra .flip-card-front {
         gap: 8px;
         padding: 13px 11px 17px !important;
       }
@@ -8725,7 +8725,7 @@
         margin-bottom: 0 !important;
         filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.34));
       }
-      #combat .flip-card.paskus-unit-serigala .unit-logo {
+      #combat .flip-card.paskus-unit-sierra .unit-logo {
         width: 58px !important;
         height: 58px !important;
         border-radius: 0;
@@ -8745,13 +8745,13 @@
         line-height: 1.18 !important;
         letter-spacing: 0.02em !important;
       }
-      #combat .flip-card.paskus-unit-serigala h4,
+      #combat .flip-card.paskus-unit-sierra h4,
       #combat .flip-card.paskus-unit-pathfinder h4,
       #combat .flip-card.paskus-unit-sentinel h4 {
         font-size: 10.5px !important;
         line-height: 1.14 !important;
       }
-      #combat .flip-card.paskus-unit-serigala .paskus-unit-role,
+      #combat .flip-card.paskus-unit-sierra .paskus-unit-role,
       #combat .flip-card.paskus-unit-pathfinder .paskus-unit-role,
       #combat .flip-card.paskus-unit-sentinel .paskus-unit-role {
         max-width: 100%;
@@ -8794,13 +8794,13 @@
         font-size: 8.5px;
         letter-spacing: 0.02em;
       }
-      #combat .flip-card.paskus-unit-serigala a[href^="/unit/"],
+      #combat .flip-card.paskus-unit-sierra a[href^="/unit/"],
       #combat .flip-card.paskus-unit-pathfinder a[href^="/unit/"],
       #combat .flip-card.paskus-unit-sentinel a[href^="/unit/"] {
         min-height: 32px;
         font-size: 8px;
       }
-      #combat .flip-card.paskus-unit-serigala a[href^="/unit/"] {
+      #combat .flip-card.paskus-unit-sierra a[href^="/unit/"] {
         width: calc(100% - 8px);
         min-height: 30px;
         margin-top: 0;
@@ -9042,13 +9042,13 @@
         min-height: 330px;
         contain-intrinsic-size: auto 330px;
       }
-      #combat .flip-card.paskus-unit-serigala,
+      #combat .flip-card.paskus-unit-sierra,
       #combat .flip-card.paskus-unit-pathfinder,
       #combat .flip-card.paskus-unit-sentinel {
         min-height: 178px;
         contain-intrinsic-size: auto 178px;
       }
-      #combat .flip-card.paskus-unit-serigala {
+      #combat .flip-card.paskus-unit-sierra {
         min-height: 212px;
         contain-intrinsic-size: auto 212px;
       }
@@ -9057,7 +9057,7 @@
         gap: 7px;
         padding: 10px !important;
       }
-      #combat .flip-card.paskus-unit-serigala .flip-card-front {
+      #combat .flip-card.paskus-unit-sierra .flip-card-front {
         gap: 7px;
         padding: 12px 9px 15px !important;
       }
@@ -9065,7 +9065,7 @@
         width: 40px !important;
         height: 40px !important;
       }
-      #combat .flip-card.paskus-unit-serigala .unit-logo {
+      #combat .flip-card.paskus-unit-sierra .unit-logo {
         width: 50px !important;
         height: 50px !important;
       }
@@ -9079,7 +9079,7 @@
         font-size: 9.7px !important;
         line-height: 1.15 !important;
       }
-      #combat .flip-card.paskus-unit-serigala h4,
+      #combat .flip-card.paskus-unit-sierra h4,
       #combat .flip-card.paskus-unit-pathfinder h4,
       #combat .flip-card.paskus-unit-sentinel h4 {
         font-size: 9.1px !important;
@@ -9142,7 +9142,7 @@
         font-size: 7.6px;
         padding: 0 6px;
       }
-      #combat .flip-card.paskus-unit-serigala a[href^="/unit/"] {
+      #combat .flip-card.paskus-unit-sierra a[href^="/unit/"] {
         width: calc(100% - 10px);
         min-height: 27px;
         font-size: 7.4px;
@@ -9503,7 +9503,7 @@
         route: "Wawancara, uji kemampuan pengintaian, uji karakter, lalu masa pra-dinas.",
         footer: "SIAP MEMBUKA JALAN OPERASI?",
       },
-      "serigala": {
+      "sierra": {
         title: "SIERRA",
         category: "Infiltration and Tactical Sabotage Unit",
         color: "#d9c37a",
@@ -9922,7 +9922,7 @@
         gatam: "Prioritas Operasi Khusus",
         bringas: "Darat / Infanteri Mekanis",
         toruk: "Sky Lord / Unit Udara",
-        serigala: "Infiltrasi & Sabotase Taktis",
+        sierra: "Infiltrasi & Sabotase Taktis",
         pathfinder: "Recon & Infiltrasi",
         sentinel: "Pertahanan & Combat Medic",
         komodo: "Pasukan Reguler",
@@ -9958,7 +9958,7 @@
         SENTINEL: "SENTINEL (Combat Medic)",
         PATHFINDER: "PATHFINDER (Ranger & Scout)",
         BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)",
-        SERIGALA: "SIERRA (Infiltrasi & Sabotase Taktis)",
+        SIERRA: "SIERRA (Infiltrasi & Sabotase Taktis)",
         "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)",
       },
     },
@@ -9987,7 +9987,7 @@
       structure: { title: "PASKUS Gi1 Structure | So-791", kicker: "So-791 Structure / Chain Of Command", heading: "Structure", headingSpan: "Command And Rank", overviewFallback: "So-791 command structure is shown in a compact format so ranks and personnel can be monitored clearly.", overviewDocument: "This page shows command structure, rank layers, insignia, roles, and personnel in a clean and readable view.", categories: "Categories", ranks: "Ranks", personnel: "Personnel", registeredPersonnel: "Registered Personnel", commandRoot: "Command Root", countLine: "{ranks} ranks / {members} personnel", errorTitle: "Data Not Available", errorBody: "Structural data could not be loaded. Please refresh the page.", loadingTitle: "Loading Structure", loadingBody: "The website is loading the latest command structure and personnel list." },
       form: { privacy: "We only collect Discord ID for regiment records and automation.", locationPrivacy: "Location permission is required for administration so you can continue Discord sync and the registration stage.", locationConfirm: "The website will ask your browser for location permission for administration and registration validation. If location is not allowed, Discord sync cannot continue.", requestingLocation: "Requesting location permission...", savingLocation: "Validating administration...", locationSaved: "Validation complete. Opening Discord...", locationRequired: "Location permission is required to continue Discord sync and registration.", checking: "Checking Discord sync status. Please wait before submitting.", notConfigured: "Discord sync must be active before registration. Admin needs to confirm Discord OAuth configuration.", unauthenticated: "Sync your Discord account to collect the ID automatically before submitting.", noRole: "Discord synced as {display}. This account does not yet have an allowed role for combat unit registration.", synced: "Discord synced as {display}. The ID will be sent automatically for trainer tagging.", syncTitle: "Discord Sync", resetSync: "Reset Sync", syncDiscord: "Sync Discord", openingDiscord: "Opening Discord...", discordIdPlaceholder: "Sync Discord to collect ID", autoTitle: "Filled automatically from the synced Discord account.", waitingInline: "Checking Discord sync status. Registration opens after the status is read.", configInline: "Discord sync must be active before registration. Contact admin if the sync button is unavailable.", authInline: "A Discord account must be synced before registration.", syncNow: "Sync now", roleInline: "Discord is synced, but this account does not have combat unit access role.", syncedInline: "Discord synced: <strong>{display}</strong>. ID will be sent automatically.", alertChecking: "The system is checking Discord status. Try again shortly.", alertConfig: "Discord sync is not active on the server. Data is not sent to the recruiter app or Discord.", alertAuth: "Registration requires Discord sync first. Data is not sent to the recruiter app or Discord before sync.", alertRole: "Your Discord account does not have access role for combat unit registration.", golonganOne: "Group 1", golonganOneBody: "Morning to early afternoon.", golonganTwo: "Group 2", golonganTwoBody: "Afternoon to night." },
       cs: { subtitle: "Regiment Information Center", panelSubtitle: "QnA and registration", closeLabel: "Close PASKUS AI SERVICE", placeholder: "Ask about registration, units, groups...", send: "Send", wait: "Wait", typing: "PASKUS AI SERVICE is typing", unavailable: "Sorry, PASKUS AI SERVICE cannot answer right now. Try again shortly or contact admin through Discord.", empty: "Information is not available yet.", idle: "No follow-up chat for more than 10 minutes. Chat will refresh for feature stability.", note: "PASKUS AI SERVICE prioritizes PASKUS website content as the answer source. Chat is stored temporarily for 10 minutes by session/IP so it does not disappear on reload; member data, bypass requests, and unofficial promotion paths remain blocked for regiment safety.", greeting: "Hello, I am PASKUS AI SERVICE. I answer from PASKUS website information: registration, Discord sync, training groups, combat units, non-combat services, PMC/civilian context, and structure." },
-      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", serigala: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
+      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", sierra: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
       komodo: {
         eyebrow: "Status: regular force / initial barracks",
         subtitle: "Regular Corps So-791",
@@ -10009,7 +10009,7 @@
           footer: "PASKUS Gi1 / KOMODO CORPS / INITIAL TRAINING BARRACKS",
         },
       },
-      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SERIGALA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
+      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     fil: {
       nav: { home: "HOME", combat: "COMBAT", support: "SUPORTA", streamer: "STREAMER", brm5: "BRM5", structure: "ISTRUKTURA", about: "ABOUT US", discord: "DISCORD", brandSub: "So-791" },
@@ -10036,7 +10036,7 @@
       structure: { title: "Istruktura PASKUS Gi1 | So-791", kicker: "Istruktura So-791 / Chain Of Command", heading: "Istruktura", headingSpan: "Command At Rank", overviewFallback: "Ipinapakita ang command structure ng So-791 sa compact format para madaling bantayan ang rank at personnel.", overviewDocument: "Ipinapakita ng page na ito ang command structure, ranks, insignia, roles, at personnel sa malinaw na layout.", categories: "Kategoriya", ranks: "Rank", personnel: "Personnel", registeredPersonnel: "Registered Personnel", commandRoot: "Command Root", countLine: "{ranks} rank / {members} personnel", errorTitle: "Hindi Mabasa Ang Data", errorBody: "Hindi ma-load ang structural data. Paki-refresh ang page.", loadingTitle: "Nilo-load Ang Structure", loadingBody: "Kinukuha ng website ang pinakabagong command structure at personnel list." },
       form: { privacy: "Discord ID lang ang kinukuha namin para sa regiment records at automation.", checking: "Tinitingnan ang Discord sync status. Maghintay bago magsubmit.", notConfigured: "Kailangan aktibo ang Discord sync bago registration.", unauthenticated: "I-sync muna ang Discord para awtomatikong makuha ang ID bago magsubmit.", noRole: "Naka-sync bilang {display}. Wala pang allowed role ang account na ito para sa combat unit registration.", synced: "Naka-sync bilang {display}. Awtomatikong ipapadala ang ID para sa trainer tag.", syncTitle: "Discord Sync", resetSync: "Reset Sync", syncDiscord: "Sync Discord", openingDiscord: "Binubuksan ang Discord...", discordIdPlaceholder: "Sync Discord para kunin ang ID", autoTitle: "Awtomatikong napunan mula sa synced Discord account.", waitingInline: "Tinitingnan ang Discord sync status. Magbubukas ang registration pagkatapos mabasa ang status.", configInline: "Kailangan aktibo ang Discord sync bago registration. Kontakin admin kung walang sync button.", authInline: "Kailangang naka-sync ang Discord bago registration.", syncNow: "Sync ngayon", roleInline: "Naka-sync ang Discord, pero wala pang combat unit access role.", syncedInline: "Discord synced: <strong>{display}</strong>. Awtomatikong ipapadala ang ID.", alertChecking: "Tinitingnan pa ng system ang Discord status. Subukan ulit mamaya.", alertConfig: "Hindi aktibo ang Discord sync sa server. Hindi ipapadala ang data sa recruiter app o Discord.", alertAuth: "Kailangan muna ang Discord sync bago registration.", alertRole: "Wala pang access role ang Discord account mo para mag-register sa combat unit.", golonganOne: "Group 1", golonganOneBody: "Umaga hanggang early afternoon.", golonganTwo: "Group 2", golonganTwoBody: "Hapon hanggang gabi." },
       cs: { subtitle: "Regiment Information Center", panelSubtitle: "QnA at registration", closeLabel: "Isara PASKUS AI SERVICE", placeholder: "Magtanong tungkol sa registration, unit, group...", send: "Send", wait: "Wait", typing: "Nagta-type ang PASKUS AI SERVICE", unavailable: "Paumanhin, hindi pa makasagot ang PASKUS AI SERVICE ngayon. Subukan ulit o kontakin admin sa Discord.", empty: "Wala pang available na impormasyon.", idle: "Walang follow-up chat nang mahigit 10 minuto. Ire-refresh ang chat para sa stability.", note: "PASKUS AI SERVICE ay inuuna ang content ng PASKUS website bilang source ng sagot. Temporary lang ang chat sa loob ng 10 minuto base sa session/IP; member data, bypass, at unofficial promotion path ay tinatanggihan para sa seguridad.", greeting: "Hello, ako ang PASKUS AI SERVICE. Sumasagot ako base sa impormasyon ng website: registration, Discord sync, training group, combat units, non-combat services, PMC/sibil, at structure." },
-      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", serigala: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
+      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", sierra: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
       komodo: {
         eyebrow: "Status: regular force / initial barracks",
         subtitle: "Regular Corps So-791",
@@ -10058,7 +10058,7 @@
           footer: "PASKUS Gi1 / KOMODO CORPS / INITIAL TRAINING BARRACKS",
         },
       },
-      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SERIGALA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
+      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     hi: {
       nav: { home: "होम", combat: "कॉम्बैट", support: "सपोर्ट", streamer: "स्ट्रीमर", brm5: "BRM5", structure: "स्ट्रक्चर", about: "अबाउट", discord: "DISCORD", brandSub: "So-791" },
@@ -10085,7 +10085,7 @@
       structure: { title: "PASKUS Gi1 Structure | So-791", kicker: "So-791 Structure / Chain Of Command", heading: "Structure", headingSpan: "Command और Rank", overviewFallback: "So-791 command structure compact format में दिखाया गया है ताकि rank और personnel आसानी से monitor हों.", overviewDocument: "यह page command structure, rank layers, insignia, roles, और personnel को साफ layout में दिखाता है.", categories: "Categories", ranks: "Ranks", personnel: "Personnel", registeredPersonnel: "Registered Personnel", commandRoot: "Command Root", countLine: "{ranks} ranks / {members} personnel", errorTitle: "Data उपलब्ध नहीं", errorBody: "Structural data load नहीं हो सका. Page refresh करें.", loadingTitle: "Structure Loading", loadingBody: "Website latest command structure और personnel list load कर रही है." },
       form: { privacy: "हम regiment records और automation के लिए केवल Discord ID लेते हैं.", checking: "Discord sync status check हो रहा है. Submit करने से पहले प्रतीक्षा करें.", notConfigured: "Registration से पहले Discord sync active होना जरूरी है.", unauthenticated: "Submit से पहले ID लेने के लिए Discord account sync करें.", noRole: "{display} के रूप में Discord synced है. Combat unit registration के लिए allowed role अभी नहीं है.", synced: "{display} के रूप में Discord synced है. ID trainer tagging के लिए automatic भेजी जाएगी.", syncTitle: "Discord Sync", resetSync: "Reset Sync", syncDiscord: "Sync Discord", openingDiscord: "Discord खुल रहा है...", discordIdPlaceholder: "ID लेने के लिए Discord sync करें", autoTitle: "Synced Discord account से automatic भरा गया.", waitingInline: "Discord sync status check हो रहा है. Status पढ़ने के बाद registration खुलेगी.", configInline: "Registration से पहले Discord sync active होना चाहिए. Sync button न हो तो admin से संपर्क करें.", authInline: "Registration से पहले Discord account sync जरूरी है.", syncNow: "अब sync करें", roleInline: "Discord synced है, लेकिन combat unit access role नहीं है.", syncedInline: "Discord synced: <strong>{display}</strong>. ID automatic भेजी जाएगी.", alertChecking: "System Discord status check कर रहा है. थोड़ी देर बाद फिर कोशिश करें.", alertConfig: "Server पर Discord sync active नहीं है. Data recruiter app या Discord को नहीं भेजा जाएगा.", alertAuth: "Registration से पहले Discord sync जरूरी है.", alertRole: "आपके Discord account में combat unit registration access role नहीं है.", golonganOne: "Group 1", golonganOneBody: "सुबह से दोपहर/शाम से पहले.", golonganTwo: "Group 2", golonganTwoBody: "शाम से रात तक." },
       cs: { subtitle: "Regiment Information Center", panelSubtitle: "QnA और registration", closeLabel: "PASKUS AI SERVICE बंद करें", placeholder: "Registration, unit, group के बारे में पूछें...", send: "Send", wait: "Wait", typing: "PASKUS AI SERVICE typing कर रहा है", unavailable: "माफ करें, PASKUS AI SERVICE अभी जवाब नहीं दे सकता. थोड़ी देर बाद कोशिश करें या Discord admin से संपर्क करें.", empty: "Information अभी उपलब्ध नहीं है.", idle: "10 मिनट से follow-up chat नहीं है. Stability के लिए chat refresh होगी.", note: "PASKUS AI SERVICE जवाब के लिए PASKUS website content को प्राथमिकता देता है. Chat session/IP के आधार पर 10 मिनट temporarily stored रहती है; member data, bypass, और unofficial promotion requests सुरक्षा के लिए block रहती हैं.", greeting: "Hello, मैं PASKUS AI SERVICE हूँ. मैं website information से जवाब देता हूँ: registration, Discord sync, training groups, combat units, non-combat services, PMC/civilian context, और structure." },
-      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", serigala: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
+      unitRoles: { gatam: "Special Operations Priority", bringas: "Ground / Mechanized Infantry", toruk: "Sky Lord / Air Unit", sierra: "Infiltration & Tactical Sabotage", pathfinder: "Recon & Infiltration", sentinel: "Defense & Combat Medic", komodo: "Regular Force" },
       komodo: {
         eyebrow: "Status: regular force / initial barracks",
         subtitle: "Regular Corps So-791",
@@ -10107,7 +10107,7 @@
           footer: "PASKUS Gi1 / KOMODO CORPS / INITIAL TRAINING BARRACKS",
         },
       },
-      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SERIGALA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
+      unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Infiltration & Tactical Sabotage)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     jv: {
       nav: { home: "HOME", combat: "TEMPUR", support: "DINAS", streamer: "STREAMER", brm5: "BRM5", structure: "STRUKTURAL", about: "BABAGAN", discord: "DISCORD", brandSub: "So-791" },
@@ -10134,7 +10134,7 @@
       structure: { title: "Struktural PASKUS Gi1 | So-791", kicker: "Struktural So-791 / Chain Of Command", heading: "Struktural", headingSpan: "Komando Lan Pangkat", overviewFallback: "Struktur komando So-791 ditampilake ringkes supaya pangkat lan personel gampang dipantau.", overviewDocument: "Kaca iki ngemot struktur komando, jenjang pangkat, insignia, role, lan daftar personel kanthi tampilan sing rapi.", categories: "Kategori", ranks: "Pangkat", personnel: "Personel", registeredPersonnel: "Personel Terdaftar", commandRoot: "Command Root", countLine: "{ranks} pangkat / {members} personel", errorTitle: "Data Durung Kebaca", errorBody: "Data struktural durung bisa dimuat. Coba refresh kaca.", loadingTitle: "Muat Struktur", loadingBody: "Website lagi ngemot struktur komando lan daftar personel paling anyar." },
       form: { privacy: "Aku mung njupuk ID Discord kanggo pendataan resimen lan otomatisasi.", checking: "Mriksa status Discord sync. Enteni sedhela sadurunge ngirim pendaftaran.", notConfigured: "Discord sync wajib aktif sadurunge pendaftaran.", unauthenticated: "Sinkronake akun Discord kanggo njupuk ID otomatis sadurunge ngirim.", noRole: "Discord tersinkron minangka {display}. Akun iki durung duwe role sing diijini kanggo pendaftaran unit tempur.", synced: "Discord tersinkron minangka {display}. ID bakal dikirim otomatis kanggo tag ing aplikasi pelatih.", syncTitle: "Discord Sync", resetSync: "Reset Sync", syncDiscord: "Sinkron Discord", openingDiscord: "Mbukak Discord...", discordIdPlaceholder: "Sinkron Discord kanggo njupuk ID", autoTitle: "Diisi otomatis saka akun Discord sing wis tersinkron.", waitingInline: "Mriksa status Discord sync. Pendaftaran dibukak sawise status kebaca.", configInline: "Discord sync wajib aktif sadurunge pendaftaran. Hubungi admin yen tombol sinkron ora ana.", authInline: "Akun Discord wajib disinkronake sadurunge pendaftaran.", syncNow: "Sinkron saiki", roleInline: "Discord wis tersinkron, nanging durung duwe role akses unit tempur.", syncedInline: "Discord tersinkron: <strong>{display}</strong>. ID bakal dikirim otomatis.", alertChecking: "Sistem lagi mriksa status Discord. Coba maneh sedhela.", alertConfig: "Discord sync durung aktif ing server. Data ora dikirim menyang aplikasi perekrut utawa Discord.", alertAuth: "Pendaftaran wajib sinkron Discord dhisik.", alertRole: "Akun Discord kowe durung duwe role akses kanggo ndaftar unit tempur.", golonganOne: "Golongan 1", golonganOneBody: "Esuk nganti awan menjelang sore.", golonganTwo: "Golongan 2", golonganTwoBody: "Sore nganti bengi." },
       cs: { subtitle: "Pusat Informasi Resimen", panelSubtitle: "QnA lan pendaftaran", closeLabel: "Tutup PASKUS AI SERVICE", placeholder: "Takon soal pendaftaran, unit, golongan...", send: "Kirim", wait: "Enteni", typing: "PASKUS AI SERVICE lagi ngetik", unavailable: "Nyuwun sewu, PASKUS AI SERVICE durung bisa njawab saiki. Coba maneh sedhela utawa hubungi admin liwat Discord.", empty: "Informasi durung kasedhiya.", idle: "Ora ana chat lanjutan luwih saka 10 menit. Chat bakal di-refresh kanggo kestabilan fitur.", note: "PASKUS AI SERVICE ngutamakake konten website PASKUS minangka sumber jawaban. Chat disimpen sementara 10 menit adhedhasar sesi/IP; data anggota, bypass, lan jalur pangkat ora resmi tetep ditolak kanggo keamanan resimen.", greeting: "Halo, aku PASKUS AI SERVICE. Aku njawab saka informasi website PASKUS: pendaftaran, Discord sync, golongan latihan, unit tempur, dinas non-tempur, PMC/sipil, lan struktural." },
-      unitRoles: { gatam: "Prioritas Operasi Khusus", bringas: "Darat / Infanteri Mekanis", toruk: "Sky Lord / Unit Udara", serigala: "Infiltrasi & Sabotase Taktis", pathfinder: "Recon & Infiltrasi", sentinel: "Pertahanan & Combat Medic", komodo: "Pasukan Reguler" },
+      unitRoles: { gatam: "Prioritas Operasi Khusus", bringas: "Darat / Infanteri Mekanis", toruk: "Sky Lord / Unit Udara", sierra: "Infiltrasi & Sabotase Taktis", pathfinder: "Recon & Infiltrasi", sentinel: "Pertahanan & Combat Medic", komodo: "Pasukan Reguler" },
       komodo: {
         eyebrow: "Status: pasukan reguler / barak awal",
         subtitle: "Reguler Corps So-791",
@@ -10156,7 +10156,7 @@
           footer: "PASKUS Gi1 / KOMODO CORPS / INITIAL TRAINING BARRACKS",
         },
       },
-      unitSelectLabels: { GATAM: "GATAM (Operasi Rahasia)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)", SERIGALA: "SIERRA (Infiltrasi & Sabotase Taktis)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)" },
+      unitSelectLabels: { GATAM: "GATAM (Operasi Rahasia)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)", SIERRA: "SIERRA (Infiltrasi & Sabotase Taktis)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)" },
     },
   };
 
@@ -10244,7 +10244,7 @@
       bringas: { category: "Ground / Heavy Duty Unit", hero: "BRINGAS is the mechanized infantry strike unit specializing in light cavalry platforms such as APC, AV, and IFV. It brings heavy firepower, infantry protection, and rapid mobility in emergency combat conditions.", doctrineTitle: "Heavy Firepower And Mechanized Mobility", doctrine: "BRINGAS destroys hostile pressure points with heavy weapons and combat vehicles while protecting infantry during fast movement. Members must adapt to harsh, dynamic, and high-pressure environments.", cards: [["APC / AV / IFV", "Operate armored platforms to move personnel, absorb pressure, and open movement space."], ["Fire Support", "Deliver heavy firepower to break enemy resistance and reduce risk for ground forces."], ["Rapid Protection", "Provide protection and fast mobility when infantry needs to leave dangerous conditions."]], priorities: ["High-pressure adaptation", "Mobility discipline", "Endurance in harsh terrain", "Reliable dynamic character"], route: "Interview, vehicle capability test, character review, then pre-service period.", footer: "READY TO BECOME THE MECHANIZED STRIKE FORCE?" },
       "toruk-makto": { category: "Sky Lord / Air Specialization Unit", hero: "Lord of the Sky. TORUK MAKTO focuses on fast aerial insertion, extraction, CAS, CASEVAC, airborne path, and the best pilots So-791 can field.", doctrineTitle: "Air Precision With No Room For Error", doctrine: "Air operations are vital and unforgiving. TORUK MAKTO personnel must be disciplined, precise, adaptive, and able to combine piloting, marksmanship, and rapid decision-making.", cards: [["Fast Insertion", "Insert personnel quickly into operational points with efficient timing."], ["CAS / CASEVAC", "Support ground forces with close air support and casualty evacuation."], ["Airborne Path", "Open parachute and airborne opportunities for personnel ready for air operations."]], priorities: ["High discipline", "Piloting and firing precision", "Strong adaptation", "No tolerance for operational error"], route: "Interview, air capability test, character review, then pre-service period.", footer: "READY TO BECOME LORD OF THE SKY?" },
       pathfinder: { category: "Ranger And Scout Unit", hero: "PATHFINDER is the ranger and scout infantry element focused on reconnaissance, surveillance, marksmanship, and sharp communication to improve So-791 operational effectiveness.", doctrineTitle: "Surveillance, Patience, And Precision Fire", doctrine: "PATHFINDER provides surveillance and intelligence that determine the success of an operation. Members need discipline, precision, patience, shooting skill, and clear communication.", cards: [["Recon Watch", "Observe terrain, read movement, and provide useful reconnaissance to command."], ["Marksmanship", "Use accurate fire to control distance, accuracy, and operational area."], ["Tactical Signal", "Keep scout communication clear, fast, and usable for the main unit."]], priorities: ["High patience", "Observation precision", "Marksmanship", "Sharp communication"], route: "Interview, reconnaissance capability test, character review, then pre-service period.", footer: "READY TO OPEN THE WAY FOR OPERATIONS?" },
-      serigala: { category: "Infiltration And Tactical Sabotage Unit", hero: "SIERRA is a silent infantry cell built for controlled infiltration, close observation, and precise disruption. It opens operational gaps, breaks hostile rhythm, and resolves high-value objectives without losing command discipline.", doctrineTitle: "Silent Movement With Decisive Execution", doctrine: "SIERRA represents the renewed sabotage identity inside PASKUS Gi1. Its personnel move through low-noise entry, small-cell coordination, sharp communication, and fast execution that supports the main operation without unnecessary exposure.", cards: [["Silent Entry", "Enter target areas quietly, read openings, and prepare action space for the main force."], ["Tactical Disruption", "Disrupt facilities, rhythm, and hostile concentration through direct and measured sabotage."], ["Precision Cell", "Move as a small cell with short communication, mature decisions, and disciplined execution."]], priorities: ["Silent movement", "Emotional control", "Precision decision-making", "Small-cell coordination"], route: "Interview, tactical infiltration test, small-team communication test, character review, then pre-service period.", footer: "SIERRA / SILENT DISRUPTION CELL So-791" },
+      sierra: { category: "Infiltration And Tactical Sabotage Unit", hero: "SIERRA is a silent infantry cell built for controlled infiltration, close observation, and precise disruption. It opens operational gaps, breaks hostile rhythm, and resolves high-value objectives without losing command discipline.", doctrineTitle: "Silent Movement With Decisive Execution", doctrine: "SIERRA represents the renewed sabotage identity inside PASKUS Gi1. Its personnel move through low-noise entry, small-cell coordination, sharp communication, and fast execution that supports the main operation without unnecessary exposure.", cards: [["Silent Entry", "Enter target areas quietly, read openings, and prepare action space for the main force."], ["Tactical Disruption", "Disrupt facilities, rhythm, and hostile concentration through direct and measured sabotage."], ["Precision Cell", "Move as a small cell with short communication, mature decisions, and disciplined execution."]], priorities: ["Silent movement", "Emotional control", "Precision decision-making", "Small-cell coordination"], route: "Interview, tactical infiltration test, small-team communication test, character review, then pre-service period.", footer: "SIERRA / SILENT DISRUPTION CELL So-791" },
       sentinel: { category: "Combat Medic Unit", hero: "SENTINEL is the combat medic element specializing in first response during active battle, supporting the regiment with medical equipment, logistics, and armored medical vehicles.", doctrineTitle: "Morale, Medicine, And Logistics On The Lifeline", doctrine: "SENTINEL keeps operations alive through first aid, coordination, communication, and logistics. Members need focus, discipline, high morale, and motivation to support teammates.", cards: [["First Response", "Provide first aid in active combat so personnel can be stabilized or evacuated."], ["Armored Medical", "Support evacuation and medical mobility through armored medical vehicles."], ["Logistic Care", "Keep medical and logistic supplies efficient so operations do not lose support."]], priorities: ["Strong focus", "Coordination and communication", "Motivation to help teammates", "Morale and discipline"], route: "Interview, medical capability test, character review, then pre-service period.", footer: "READY TO BECOME THE LIFELINE OF OPERATIONS?" },
       gatam: { category: "Infiltration And Stealth Unit", hero: "GATAM, Garuda Hitam, is a special operations unit focused on covert work. It operates independently to secure strategic positions, eliminate targets, or liberate compounds.", doctrineTitle: "Covert Operations With No Gaps In Precision", doctrine: "GATAM demands strong focus, coordination, communication, completion drive, and adaptation under pressure. One mistake can compromise the entire operation.", cards: [["Stealth Entry", "Enter operational areas quietly to create room for strategic control."], ["Strategic Control", "Secure key points and maintain command movement space during covert missions."], ["Target Resolution", "Eliminate targets or liberate compounds with discipline and high precision."]], priorities: ["Strong focus", "Coordination and communication", "Pressure adaptation", "No tolerance for error"], route: "Interview, infiltration capability test, character review, then pre-service period.", footer: "READY TO MOVE IN COVERT OPERATIONS?" },
     },
@@ -10433,7 +10433,7 @@
       note: "PASKUS AI SERVICE ngutamakeun konten website PASKUS minangka sumber jawaban. Chat disimpen sementara 10 menit dumasar sesi/IP; data anggota, bypass, jeung jalur pangkat teu resmi tetep ditolak pikeun kaamanan resimen.",
       greeting: "Halo, abdi PASKUS AI SERVICE. Abdi ngajawab dumasar informasi website PASKUS: pendaftaran, Discord sync, golongan latihan, unit tempur, dinas non-tempur, PMC/sipil, jeung struktural.",
     },
-    unitRoles: { gatam: "Prioritas Operasi Khusus", bringas: "Darat / Infanteri Mekanis", toruk: "Sky Lord / Unit Udara", serigala: "Infiltrasi & Sabotase Taktis", pathfinder: "Recon & Infiltrasi", sentinel: "Pertahanan & Combat Medic", komodo: "Pasukan Reguler" },
+    unitRoles: { gatam: "Prioritas Operasi Khusus", bringas: "Darat / Infanteri Mekanis", toruk: "Sky Lord / Unit Udara", sierra: "Infiltrasi & Sabotase Taktis", pathfinder: "Recon & Infiltrasi", sentinel: "Pertahanan & Combat Medic", komodo: "Pasukan Reguler" },
     komodo: {
       ...GLOBAL_COPY.id.komodo,
       eyebrow: "Status: pasukan reguler / barak awal",
@@ -10459,7 +10459,7 @@
       SENTINEL: "SENTINEL (Combat Medic)",
       PATHFINDER: "PATHFINDER (Ranger & Scout)",
       BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)",
-      SERIGALA: "SIERRA (Infiltrasi & Sabotase Taktis)",
+      SIERRA: "SIERRA (Infiltrasi & Sabotase Taktis)",
       "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)",
     },
   };
@@ -10488,7 +10488,7 @@
     bringas: { category: "Darat / Heavy Duty Unit", hero: "BRINGAS nyaéta pasukan tempur utama infanteri mekanis anu spesialis dina kavaleri ringan jeung platform APC, AV, sarta IFV. Unit ieu mawa daya tembak berat, perlindungan infanteri, jeung mobilisasi gancang.", doctrineTitle: "Daya Tembak Berat Jeung Mobilitas Mekanis", doctrine: "BRINGAS dilatih pikeun ngancurkeun tekanan musuh ku senjata berat jeung kendaraan tempur, bari ngajaga infanteri nalika kondisi ngabutuhkeun perpindahan gancang.", cards: [["APC / AV / IFV", "Ngawasaan kendaraan lapis baja pikeun mawa personel, nahan tekanan, jeung muka ruang gerak."], ["Fire Support", "Méré daya tembak kuat pikeun ngancurkeun titik tahan musuh."], ["Rapid Protection", "Méré perlindungan jeung mobilisasi gancang nalika infanteri kudu kaluar tina kondisi darurat."]], priorities: ["Adaptasi dina tekanan", "Disiplin mobilisasi", "Daya tahan di medan keras", "Bisa dipercaya"], route: "Wawancara, uji kamampuan kendaraan, uji karakter, tuluy masa pra-dinas.", footer: "SIAP JADI DAYA PUKUL MEKANIS?" },
     "toruk-makto": { category: "Sky Lord / Unit Udara", hero: "TORUK MAKTO nyaéta unit udara anu fokus kana penyisipan udara gancang, eksfiltrasi, CAS, CASEVAC, pasukan parasut, lintas udara, jeung pilot pangalusna So-791.", doctrineTitle: "Presisi Udara Tanpa Ruang Kasalahan", doctrine: "Operasi udara penting pisan jeung teu masihan ruang pikeun kasalahan. Personel TORUK MAKTO kudu disiplin, presisi, adaptif, jeung sanggup nyokot kaputusan gancang.", cards: [["Fast Insertion", "Ngalakukeun penyisipan udara gancang pikeun nempatkeun personel kana titik operasi."], ["CAS / CASEVAC", "Ngadukung pasukan darat ku dukungan udara jarak dekat jeung evakuasi korban."], ["Airborne Path", "Muka jalur parasut jeung lintas udara pikeun personel anu siap."]], priorities: ["Disiplin luhur", "Presisi piloting", "Adaptasi kuat", "Teu toleran kana kasalahan operasi"], route: "Wawancara, uji kamampuan udara, uji karakter, tuluy masa pra-dinas.", footer: "SIAP JADI LORD OF THE SKY?" },
     pathfinder: { category: "Ranger And Scout Unit", hero: "PATHFINDER nyaéta infanteri pengintai anu fokus kana reconnaissance, pengawasan, marksmanship, jeung komunikasi tajam pikeun ningkatkeun efektivitas operasi So-791.", doctrineTitle: "Pengawasan, Kasabaran, Jeung Tembakan Presisi", doctrine: "PATHFINDER nyadiakeun pengawasan jeung intelijen anu nangtukeun kalancaran operasi. Personelna kudu disiplin, presisi, sabar, jeung komunikatif.", cards: [["Recon Watch", "Ngawas medan, maca pergerakan, jeung méré hasil pengintaian ka komando."], ["Marksmanship", "Ngandelkeun tembakan presisi pikeun ngajaga jarak jeung kontrol area."], ["Tactical Signal", "Ngajaga komunikasi pengintai tetep jelas, gancang, jeung bisa dipaké unit utama."]], priorities: ["Sabar", "Presisi observasi", "Kamampuan menembak", "Komunikasi tajam"], route: "Wawancara, uji pengintaian, uji karakter, tuluy masa pra-dinas.", footer: "SIAP MUKA JALAN OPERASI?" },
-    serigala: { category: "Infiltration And Tactical Sabotage Unit", hero: "SIERRA nyaéta sél infanteri khusus anu bergerak senyap, taliti, jeung terukur pikeun muka celah operasi, ngaganggu ritme lawan, sarta ngarengsekeun sasaran penting tanpa leupas tina disiplin komando.", doctrineTitle: "Gerak Senyap Kalayan Eksekusi Tegas", doctrine: "SIERRA jadi identitas anyar unit sabotase taktis PASKUS Gi1. Fokusna aya dina infiltrasi, observasi jarak deukeut, koordinasi tim leutik, komunikasi pondok, jeung eksekusi gancang anu tetep rapi.", cards: [["Silent Entry", "Asup ka area sasaran sacara senyap, maca celah, jeung nyiapkeun ruang aksi keur unit utama."], ["Tactical Disruption", "Ngaganggu fasilitas, ritme, jeung konsentrasi lawan ku sabotase anu gancang jeung terarah."], ["Precision Cell", "Bergerak salaku sél leutik kalayan komunikasi singket, kaputusan matang, jeung disiplin eksekusi."]], priorities: ["Gerak senyap", "Kontrol emosi", "Kaputusan presisi", "Koordinasi sél leutik"], route: "Wawancara, uji infiltrasi taktis, uji komunikasi tim leutik, uji karakter, tuluy masa pra-dinas.", footer: "SIERRA / SILENT DISRUPTION CELL So-791" },
+    sierra: { category: "Infiltration And Tactical Sabotage Unit", hero: "SIERRA nyaéta sél infanteri khusus anu bergerak senyap, taliti, jeung terukur pikeun muka celah operasi, ngaganggu ritme lawan, sarta ngarengsekeun sasaran penting tanpa leupas tina disiplin komando.", doctrineTitle: "Gerak Senyap Kalayan Eksekusi Tegas", doctrine: "SIERRA jadi identitas anyar unit sabotase taktis PASKUS Gi1. Fokusna aya dina infiltrasi, observasi jarak deukeut, koordinasi tim leutik, komunikasi pondok, jeung eksekusi gancang anu tetep rapi.", cards: [["Silent Entry", "Asup ka area sasaran sacara senyap, maca celah, jeung nyiapkeun ruang aksi keur unit utama."], ["Tactical Disruption", "Ngaganggu fasilitas, ritme, jeung konsentrasi lawan ku sabotase anu gancang jeung terarah."], ["Precision Cell", "Bergerak salaku sél leutik kalayan komunikasi singket, kaputusan matang, jeung disiplin eksekusi."]], priorities: ["Gerak senyap", "Kontrol emosi", "Kaputusan presisi", "Koordinasi sél leutik"], route: "Wawancara, uji infiltrasi taktis, uji komunikasi tim leutik, uji karakter, tuluy masa pra-dinas.", footer: "SIERRA / SILENT DISRUPTION CELL So-791" },
     sentinel: { category: "Combat Medic Unit", hero: "SENTINEL nyaéta tenaga medis tempur anu spesialis dina pertolongan pertama di medan aktif, ngadukung resimen ku perlengkapan medis, logistik, jeung kendaraan lapis baja medis.", doctrineTitle: "Moral, Medis, Jeung Logistik Dina Garis Hirup", doctrine: "SENTINEL ngajaga operasi tetep jalan liwat pertolongan pertama, koordinasi, komunikasi, jeung dukungan logistik. Personelna kudu fokus, disiplin, bermoral, jeung siap ngabantu rekan.", cards: [["First Response", "Méré pertolongan pertama di medan aktif supaya personel bisa distabilkeun atawa dievakuasi."], ["Armored Medical", "Ngadukung evakuasi jeung mobilitas medis ku kendaraan lapis baja medis."], ["Logistic Care", "Ngatur perlengkapan medis jeung logistik supaya operasi teu leungit dukungan."]], priorities: ["Fokus kuat", "Koordinasi jeung komunikasi", "Motivasi ngabantu rekan", "Moral jeung disiplin"], route: "Wawancara, uji kamampuan medis, uji karakter, tuluy masa pra-dinas.", footer: "SIAP JADI GARIS HIRUP OPERASI?" },
     gatam: { category: "Infiltration And Stealth Unit", hero: "GATAM atawa Garuda Hitam nyaéta unit pasukan khusus anu spesialis dina operasi rahasia, bergerak mandiri pikeun ngamankeun posisi strategis, ngeliminasi target, atawa ngabébaskeun kompleks.", doctrineTitle: "Operasi Rahasia Kalayan Presisi", doctrine: "GATAM merlukeun fokus kuat, koordinasi, komunikasi, motivasi penyelesaian, jeung adaptasi dina tekanan. Hiji kasalahan bisa ngagagalkeun sakabéh operasi.", cards: [["Stealth Entry", "Asup ka area operasi sacara senyap pikeun muka peluang pengamanan posisi strategis."], ["Strategic Control", "Ngamankeun titik penting jeung ngajaga ruang gerak komando dina operasi rahasia."], ["Target Resolution", "Ngeliminasi target atawa ngabébaskeun kompleks kalayan disiplin jeung presisi."]], priorities: ["Fokus kuat", "Koordinasi jeung komunikasi", "Adaptasi dina tekanan", "Teu toleran kana kasalahan"], route: "Wawancara, uji infiltrasi, uji karakter, tuluy masa pra-dinas.", footer: "SIAP GERAK DINA OPERASI RAHASIA?" },
   };
@@ -10596,7 +10596,7 @@
     "SENTINEL": "SENTINEL (Combat Medic)",
     "PATHFINDER": "PATHFINDER (Ranger & Scout)",
     "BRINGAS": "BRINGAS (Darat / Infanteri Mekanis)",
-    "SERIGALA": "SIERRA (Infiltrasi & Sabotase Taktis)",
+    "SIERRA": "SIERRA (Infiltrasi & Sabotase Taktis)",
     "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)",
   };
 
@@ -11607,7 +11607,7 @@
       return "sentinel";
     }
     if (source.includes("sierra") || source.includes("serigala")) {
-      return "serigala";
+      return "sierra";
     }
     if (source.includes("komodo") || source.includes("reguler") || source.includes("regular")) {
       return "komodo";
@@ -13501,7 +13501,7 @@
       setText(combat.querySelector(".mb-20 h2"), ui.module.combatKicker);
       setHtml(combat.querySelector(".mb-20 h3"), ui.module.combatTitle);
       Object.entries(copy.units).forEach(([slug, unit]) => {
-        const selector = slug === "bringas" ? "a.card-beringas, a[href='/unit/bringas']" : slug === "serigala" ? "a.card-serigala, a[href='/unit/serigala'], a[href='/unit/sierra']" : `a[href='/unit/${slug}']`;
+        const selector = slug === "bringas" ? "a.card-beringas, a[href='/unit/bringas']" : slug === "sierra" ? "a.card-sierra, a[href='/unit/sierra'], a[href='/unit/sierra']" : `a[href='/unit/${slug}']`;
         const link = combat.querySelector(selector);
         const card = link?.closest(".flip-card");
         if (!card) {
@@ -13614,7 +13614,7 @@
   function currentUnitSlug() {
     const match = window.location.pathname.toLowerCase().match(/^\/unit\/([^/?#]+)/);
     const slug = match ? decodeURIComponent(match[1]) : "";
-    return slug === "sierra" ? "serigala" : slug;
+    return slug === "sierra" ? "sierra" : slug;
   }
 
   function removeUnitGalleryButtons(body) {
@@ -13833,7 +13833,7 @@
       grid.appendChild(komodoCard);
     }
 
-    const unitOrder = ["gatam", "bringas", "toruk", "serigala", "pathfinder", "sentinel", "komodo"];
+    const unitOrder = ["gatam", "bringas", "toruk", "sierra", "pathfinder", "sentinel", "komodo"];
     const unitMeta = {
 	      gatam: {
 	        copyKey: "gatam",
@@ -13854,11 +13854,11 @@
 	        role: ui.unitRoles.toruk,
 	        selector: "a.card-toruk, a[href='/unit/toruk-makto']",
 	      },
-		      serigala: {
-		        copyKey: "serigala",
-		        className: "paskus-unit-serigala",
-		        role: ui.unitRoles.serigala,
-		        selector: "a.card-serigala, a[href='/unit/serigala'], a[href='/unit/sierra']",
+		      sierra: {
+		        copyKey: "sierra",
+		        className: "paskus-unit-sierra",
+		        role: ui.unitRoles.sierra,
+		        selector: "a.card-sierra, a[href='/unit/sierra'], a[href='/unit/sierra']",
 		        logo: SIERRA_CARD_LOGO_URL,
 		        href: "/unit/sierra",
 		      },
@@ -13944,7 +13944,7 @@
     const root = document.documentElement;
     const path = window.location.pathname.toLowerCase();
     root.classList.toggle("paskus-unit-detail-toruk", path === "/unit/toruk-makto");
-    root.classList.toggle("paskus-unit-detail-serigala", path === "/unit/serigala" || path === "/unit/sierra");
+    root.classList.toggle("paskus-unit-detail-sierra", path === "/unit/serigala" || path === "/unit/sierra");
     root.classList.toggle("paskus-unit-detail-pathfinder", path === "/unit/pathfinder");
     root.classList.toggle("paskus-unit-detail-sentinel", path === "/unit/sentinel");
     root.classList.toggle("paskus-unit-detail-gatam", path === "/unit/gatam");
