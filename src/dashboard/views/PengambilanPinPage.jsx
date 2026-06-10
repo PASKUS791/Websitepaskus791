@@ -701,11 +701,11 @@ export default function PengambilanPinPage() {
                       Menampilkan anggota di VC: <strong className="text-stone-300">{voiceData.channel?.name}</strong>
                     </p>
                     {voiceData.members.map((member) => {
-                      const isSelected = selectedVoiceMembers.includes(member.id);
+                      const isSelected = selectedVoiceMembers.includes(member.discordUserId);
                       return (
                         <button
-                          key={member.id}
-                          onClick={() => toggleVoiceMember(member.id)}
+                          key={member.discordUserId}
+                          onClick={() => toggleVoiceMember(member.discordUserId)}
                           className={[
                             "w-full text-left rounded-xl p-3 border transition-all text-xs flex items-center justify-between",
                             isSelected
@@ -718,7 +718,7 @@ export default function PengambilanPinPage() {
                               {member.displayName || member.username}
                             </p>
                             <p className="text-[10px] text-stone-500 truncate">
-                              @{member.username} • ID: {member.id}
+                              @{member.username} • ID: {member.discordUserId}
                             </p>
                           </div>
                           <div
