@@ -257,13 +257,13 @@ function SelectableCandidateRow({
   return (
     <div
       className={[
-        "grid min-h-[132px] grid-cols-[1.38fr_1.2fr_0.5fr_0.75fr_0.7fr] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
+        "grid min-h-[132px] grid-cols-[1.5fr_1.7fr_60px_80px_100px] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
         selected
           ? "border-emerald-300/50 bg-[linear-gradient(90deg,rgba(174,209,143,0.95)_0%,rgba(205,223,165,0.88)_100%)] text-black shadow-[0_18px_40px_rgba(174,209,143,0.14)]"
           : "border-white/6 bg-[#131313] text-stone-100 hover:border-white/12 hover:bg-[#1a1a1a]",
         focused ? "ring-2 ring-amber-300/55" : "",
-      ].join(" ")}
-    >
+        ].join(" ")}
+      >
       <div className="min-w-0">
         <p className="truncate font-sans text-base font-bold md:text-lg">
           {candidate.roblox}
@@ -728,8 +728,8 @@ export default function DashboardHomePage() {
           ) : null}
 
           <div className="overflow-x-auto">
-            <div className="min-w-[1120px]">
-              <div className="mb-3 grid grid-cols-[1.38fr_1.2fr_0.5fr_0.75fr_0.7fr] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
+            <div className="min-w-[900px]">
+              <div className="mb-3 grid grid-cols-[1.5fr_1.7fr_60px_80px_100px] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
                 <div>Identitas / Discord ID / Masuk</div>
                 <div>Kategori / Intel</div>
                 <div className="text-center">Usia</div>
