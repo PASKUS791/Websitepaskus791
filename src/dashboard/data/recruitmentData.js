@@ -13,6 +13,145 @@
 export const EMPTY_DASHBOARD_DATA = [];
 export const TRAINING_GOLONGAN_OPTIONS = ["Golongan 1", "Golongan 2"];
 export const RECRUITMENT_REPORT_STATUS_OPTIONS = ["PROSES", "LULUS", "GAGAL"];
+export const MIN_RECRUITMENT_REPORT_TEXT_LENGTH = 6;
+// Template indikator wawancara SOP perekrutan PASKUS 791.
+// Setiap baris adalah pertanyaan/indikator; perekrut mengisi jawaban setelah tanda titik dua.
+export const RECRUITMENT_REPORT_NOTES_TEMPLATE = [
+  "[IDENTITAS]",
+  "Nama Roblox: ",
+  "Nama Discord: ",
+  "Usia kandidat: ",
+  "Status asal (Sipil / PMC / Eks-Resimen): ",
+  "Alasan bergabung ke PASKUS 791: ",
+  "",
+  "[KESEDIAAN MENGABDI]",
+  "Kesiapan mengikuti aturan dan disiplin resimen: ",
+  "Komitmen waktu aktif dan kehadiran sesi: ",
+  "Kesediaan menjaga nama baik satuan: ",
+  "",
+  "[ETIKA DAN KOMUNIKASI]",
+  "Sikap dan bahasa selama sesi wawancara: ",
+  "Respons terhadap instruksi dan arahan perekrut: ",
+  "Pemahaman IC/OOC dan aturan komunitas: ",
+  "",
+  "[KEPANGKATAN DAN UNIT]",
+  "Pemahaman sistem kepangkatan PASKUS 791: ",
+  "Unit yang diminati (GATAM/BRINGAS/SERIGALA/SENTINEL/TORUK/PATHFINDER): ",
+  "Pemahaman peran perwira dan penugasan unit: ",
+  "",
+  "[PERATURAN DAN SOP]",
+  "Pemahaman aturan umum dan larangan komunitas: ",
+  "Pemahaman aturan roleplay (IC/OOC, no powergaming, no metagaming): ",
+  "",
+  "[PELATIHAN DAN TINDAK LANJUT]",
+  "Penjelasan alur pelatihan yang diterima kandidat: ",
+  "Catatan risiko atau hal yang perlu dibina: ",
+  "Rekomendasi pelatih (LULUS / GAGAL / PROBATION): ",
+].join("\n");
+
+const LEGACY_RECRUITMENT_REPORT_QUESTIONS = [
+  "Belum ada pertanyaan strategis untuk kandidat ini.",
+  "Belum ada fokus tambahan.",
+];
+const LEGACY_RECRUITMENT_REPORT_NOTES = [
+  "Belum ada keterangan analis untuk kandidat ini.",
+  "Belum ada catatan tambahan.",
+  "Isi hasil observasi pelatih, progres rekrutmen, dan rekomendasi berikutnya di sini.",
+];
+
+function normalizeComparableReportText(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+export function buildRecruitmentReportQuestionTemplate(report = {}) {
+  const candidateName = String(report.name || report.roblox || "kandidat").trim();
+  const group = String(report.group || report.golongan || "Golongan 1").trim();
+
+  return [
+    `Sesi wawancara perekrutan ${candidateName} untuk ${group} — SOP PASKUS 791.`,
+    `Pertanyaan wajib: identitas, kesediaan mengabdi, pemahaman etika komunikasi,`,
+    `penjelasan kepangkatan dan unit, aturan komunitas, serta pelatihan dan pengambilan pin.`,
+    `Isi kolom Keterangan Analis dengan hasil jawaban per indikator wawancara.`,
+  ].join(" ");
+}
+
+export function buildRecruitmentReportNotesTemplate() {
+  return RECRUITMENT_REPORT_NOTES_TEMPLATE;
+}
+
+export function hasMinimumRecruitmentReportText(value) {
+  return (
+    String(value || "").trim().length >= MIN_RECRUITMENT_REPORT_TEXT_LENGTH
+  );
+}
+
+function isReportQuestionPlaceholder(value) {
+  const normalizedValue = normalizeComparableReportText(value);
+
+  return LEGACY_RECRUITMENT_REPORT_QUESTIONS.some(
+    (placeholder) => normalizeComparableReportText(placeholder) === normalizedValue,
+  );
+}
+
+function isReportNotesPlaceholder(value) {
+  const normalizedValue = normalizeComparableReportText(value);
+
+  return LEGACY_RECRUITMENT_REPORT_NOTES.some(
+    (placeholder) => normalizeComparableReportText(placeholder) === normalizedValue,
+  );
+}
+
+export function getRecruitmentReportValidationMessage(
+  report = {},
+  { requireFinalStatus = false } = {},
+) {
+  const question = String(report.question || "").trim();
+  const notes = String(report.notes || "").trim();
+
+  if (
+    !hasMinimumRecruitmentReportText(question) ||
+    isReportQuestionPlaceholder(question)
+  ) {
+    return `Pertanyaan strategis wajib diisi minimal ${MIN_RECRUITMENT_REPORT_TEXT_LENGTH} karakter.`;
+  }
+
+  if (!hasMinimumRecruitmentReportText(notes) || isReportNotesPlaceholder(notes)) {
+    return `Keterangan analis wajib diisi minimal ${MIN_RECRUITMENT_REPORT_TEXT_LENGTH} karakter dan tidak boleh masih berupa template kosong.`;
+  }
+
+  if (requireFinalStatus && String(report.status || "").trim() === "PROSES") {
+    return "Status laporan masih PROSES. Pilih LULUS atau GAGAL sebelum laporan dikirim.";
+  }
+
+  const additionalReports = Array.isArray(report.additionalReports)
+    ? report.additionalReports
+    : [];
+
+  for (let index = 0; index < additionalReports.length; index += 1) {
+    const entry = additionalReports[index];
+    const supplementQuestion = String(entry?.question || "").trim();
+    const supplementNotes = String(entry?.notes || "").trim();
+
+    if (
+      !hasMinimumRecruitmentReportText(supplementQuestion) ||
+      isReportQuestionPlaceholder(supplementQuestion)
+    ) {
+      return `Laporan tambahan ${index + 1} wajib memiliki pertanyaan minimal ${MIN_RECRUITMENT_REPORT_TEXT_LENGTH} karakter.`;
+    }
+
+    if (
+      !hasMinimumRecruitmentReportText(supplementNotes) ||
+      isReportNotesPlaceholder(supplementNotes)
+    ) {
+      return `Laporan tambahan ${index + 1} wajib memiliki keterangan minimal ${MIN_RECRUITMENT_REPORT_TEXT_LENGTH} karakter.`;
+    }
+  }
+
+  return "";
+}
 export const TRAINING_SESSION_STATUS_OPTIONS = ["AKTIF", "TERKIRIM"];
 
 function normalizeTrainingDispatchRecord(record) {
@@ -32,7 +171,9 @@ function normalizeTrainingDispatchRecord(record) {
   const attachmentFileNames = [
     ...new Set(
       [
-        ...(Array.isArray(record.attachmentFileNames) ? record.attachmentFileNames : []),
+        ...(Array.isArray(record.attachmentFileNames)
+          ? record.attachmentFileNames
+          : []),
         record.attachmentFileName,
       ]
         .map((fileName) => String(fileName || "").trim())
@@ -42,13 +183,88 @@ function normalizeTrainingDispatchRecord(record) {
   const attachmentPreviewUrls = [
     ...new Set(
       [
-        ...(Array.isArray(record.attachmentPreviewUrls) ? record.attachmentPreviewUrls : []),
+        ...(Array.isArray(record.attachmentPreviewUrls)
+          ? record.attachmentPreviewUrls
+          : []),
         record.attachmentPreviewUrl,
       ]
         .map((previewUrl) => String(previewUrl || "").trim())
         .filter((previewUrl) => previewUrl.startsWith("data:image/")),
     ),
   ];
+  const messageIds = [
+    ...new Set(
+      [
+        ...(Array.isArray(record.messageIds) ? record.messageIds : []),
+        record.messageId,
+        ...(Array.isArray(record.extraMessageIds)
+          ? record.extraMessageIds
+          : []),
+      ]
+        .map((messageId) => String(messageId || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const rawSertijab =
+    record.sertijab && typeof record.sertijab === "object"
+      ? record.sertijab
+      : null;
+  const sertijabMembers = Array.isArray(rawSertijab?.members)
+    ? rawSertijab.members.map((member) => {
+        const roleResults = Array.isArray(member.roleResults)
+          ? member.roleResults
+          : [];
+        const failedRoleCount = roleResults.filter(
+          (result) => result && result.ok === false,
+        ).length;
+        const grantedRoleCount = roleResults.filter(
+          (result) => result && result.ok === true,
+        ).length;
+        const nicknameResult =
+          member.nicknameResult && typeof member.nicknameResult === "object"
+            ? member.nicknameResult
+            : null;
+        const nicknameFailed = nicknameResult?.ok === false;
+
+        return {
+          discordUserId: normalizeDiscordUserId(member.discordUserId),
+          username: String(member.username || "").trim(),
+          displayName: String(
+            member.displayName || member.username || member.discordUserId || "",
+          ).trim(),
+          optionalRoleIds: Array.isArray(member.optionalRoleIds)
+            ? member.optionalRoleIds.map(normalizeDiscordUserId).filter(Boolean)
+            : [],
+          roleResults,
+          nicknameResult,
+          grantedRoleCount,
+          failedRoleCount,
+          failedNicknameCount: nicknameFailed ? 1 : 0,
+          status: failedRoleCount > 0 || nicknameFailed ? "PARTIAL" : "SENT",
+        };
+      })
+    : [];
+  const sertijabFailedRoleCount =
+    Number(rawSertijab?.failedRoleCount) ||
+    sertijabMembers.reduce(
+      (total, member) => total + member.failedRoleCount,
+      0,
+    );
+  const sertijabFailedNicknameCount =
+    Number(rawSertijab?.failedNicknameCount) ||
+    sertijabMembers.reduce(
+      (total, member) => total + member.failedNicknameCount,
+      0,
+    );
+  const sertijabGrantedRoleCount = sertijabMembers.reduce(
+    (total, member) => total + member.grantedRoleCount,
+    0,
+  );
+  const sertijabStatus = rawSertijab
+    ? String(
+        rawSertijab.status || (rawSertijab.success ? "SENT" : "PARTIAL"),
+      ).trim()
+    : "";
 
   return {
     sentAt,
@@ -65,6 +281,29 @@ function normalizeTrainingDispatchRecord(record) {
     mentionedOperatorCount: Number(record.mentionedOperatorCount) || 0,
     mentionedRegistrantCount: Number(record.mentionedRegistrantCount) || 0,
     requestedByLabel: String(record.requestedByLabel || "").trim(),
+    messageId: messageIds[0] || "",
+    messageIds,
+    extraMessageIds: messageIds.slice(1),
+    embedCount: Number(record.embedCount) || 0,
+    messageCount: Number(record.messageCount) || messageIds.length || 0,
+    sertijab: rawSertijab
+      ? {
+          success:
+            (rawSertijab.success === true || sertijabStatus === "SENT") &&
+            sertijabFailedRoleCount === 0 &&
+            sertijabFailedNicknameCount === 0,
+          status: sertijabStatus,
+          message: String(rawSertijab.message || "").trim(),
+          reference: String(rawSertijab.reference || "").trim(),
+          reportMessageId: String(rawSertijab.reportMessageId || "").trim(),
+          reportChannelId: String(rawSertijab.reportChannelId || "").trim(),
+          logId: String(rawSertijab.logId || "").trim(),
+          failedRoleCount: sertijabFailedRoleCount,
+          failedNicknameCount: sertijabFailedNicknameCount,
+          grantedRoleCount: sertijabGrantedRoleCount,
+          members: sertijabMembers,
+        }
+      : null,
   };
 }
 
@@ -111,7 +350,9 @@ function resolveStableReportDateKey(report = {}) {
 function resolveHistoricalSessionDateKey(session = {}) {
   return (
     toDateKeyFromTimestamp(session.dispatchedAt) ||
-    (typeof session.scheduledDate === "string" ? session.scheduledDate.trim() : "") ||
+    (typeof session.scheduledDate === "string"
+      ? session.scheduledDate.trim()
+      : "") ||
     toDateKeyFromTimestamp(session.createdAt) ||
     formatDateKey(new Date())
   );
@@ -119,8 +360,7 @@ function resolveHistoricalSessionDateKey(session = {}) {
 
 function resolveHistoricalReportDateKey(report = {}) {
   return (
-    toDateKeyFromTimestamp(report.sentAt) ||
-    resolveStableReportDateKey(report)
+    toDateKeyFromTimestamp(report.sentAt) || resolveStableReportDateKey(report)
   );
 }
 
@@ -266,6 +506,33 @@ export function resolveCandidateCategory(source = {}) {
   );
 }
 
+export function normalizeDiscordUserId(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function resolveCandidateDiscordDisplay(source = {}) {
+  return String(
+    source.discord_name ??
+      source.discordName ??
+      source.discord ??
+      source.discordTag ??
+      source.discord_tag ??
+      "",
+  )
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function resolveCandidateDiscordUserId(source = {}) {
+  return normalizeDiscordUserId(
+    source.discordUserId ??
+      source.discord_user_id ??
+      source.discordId ??
+      source.discord_id ??
+      source.discordMentionId,
+  );
+}
+
 export function formatCandidateCategory(category) {
   return category === "pmc" ? "PMC" : "Sipil";
 }
@@ -278,13 +545,15 @@ export function normalizeDashboardCandidate(candidate, index = 0) {
     id: candidate.id ?? `candidate-${index}`,
     identity: createCandidateIdentity(candidate, index),
     roblox: candidate.roblox?.trim() || candidate.name?.trim() || "Unknown",
-    discord: candidate.discord?.trim() || "unknown#0000",
+    discord: resolveCandidateDiscordDisplay(candidate) || "unknown#0000",
+    discordUserId: resolveCandidateDiscordUserId(candidate),
     age: Number(candidate.age) || 0,
     gender: candidate.gender?.trim() || "Tidak Diketahui",
     category,
     categoryLabel: formatCandidateCategory(category),
     createdAt: candidate.createdAt || new Date().toISOString(),
-    updatedAt: candidate.updatedAt || candidate.createdAt || new Date().toISOString(),
+    updatedAt:
+      candidate.updatedAt || candidate.createdAt || new Date().toISOString(),
   };
 }
 
@@ -293,14 +562,12 @@ export function loadDashboardCandidates(value = EMPTY_DASHBOARD_DATA) {
     return [];
   }
 
-  return value.map((candidate, index) => normalizeDashboardCandidate(candidate, index));
+  return value.map((candidate, index) =>
+    normalizeDashboardCandidate(candidate, index),
+  );
 }
 
 // Section: operator normalization.
-export function normalizeDiscordUserId(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
 export function normalizeOperatorEntry(operator, index = 0) {
   const discordUserId = normalizeDiscordUserId(
     operator.discordUserId ??
@@ -312,7 +579,9 @@ export function normalizeOperatorEntry(operator, index = 0) {
 
   return {
     id: String(operator.id ?? `operator-${index}`),
-    username: String(operator.username || "").trim().toLowerCase(),
+    username: String(operator.username || "")
+      .trim()
+      .toLowerCase(),
     label: String(operator.label || operator.username || "Petugas")
       .trim()
       .replace(/\s+/g, " "),
@@ -353,7 +622,9 @@ export function normalizeTrainingSession(session, index = 0) {
     typeof session.dispatchedAt === "string" && session.dispatchedAt
       ? session.dispatchedAt
       : null;
-  const normalizedStatus = TRAINING_SESSION_STATUS_OPTIONS.includes(session.status?.trim())
+  const normalizedStatus = TRAINING_SESSION_STATUS_OPTIONS.includes(
+    session.status?.trim(),
+  )
     ? session.status.trim()
     : dispatchedAt
       ? "TERKIRIM"
@@ -386,7 +657,8 @@ export function loadTrainingSessions(value = EMPTY_DASHBOARD_DATA) {
     .map((session, index) => normalizeTrainingSession(session, index))
     .sort(
       (left, right) =>
-        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
     );
 }
 
@@ -395,7 +667,8 @@ export function isCandidateAssignedToTraining(candidate, trainingSessions) {
 
   return trainingSessions.some((session) =>
     session.candidates.some(
-      (sessionCandidate) => createCandidateIdentity(sessionCandidate) === identity,
+      (sessionCandidate) =>
+        createCandidateIdentity(sessionCandidate) === identity,
     ),
   );
 }
@@ -437,6 +710,8 @@ export function normalizeArchiveSupplement(entry, index = 0) {
 export function normalizeRecruitmentReport(report, index = 0) {
   const candidateIdentity = createCandidateIdentity(report, index);
   const sessionId = report.sessionId?.trim() || "";
+  const name = report.name?.trim() || report.roblox?.trim() || "Unnamed Candidate";
+  const group = report.group?.trim() || "Golongan 1";
 
   return {
     id:
@@ -448,19 +723,17 @@ export function normalizeRecruitmentReport(report, index = 0) {
     sessionDate: resolveStableReportDateKey(report),
     candidateIdentity,
     category: resolveCandidateCategory(report),
-    name: report.name?.trim() || report.roblox?.trim() || "Unnamed Candidate",
-    discord: report.discord?.trim() || "unknown_ops#0000",
-    group: report.group?.trim() || "Golongan 1",
+    name,
+    discord: resolveCandidateDiscordDisplay(report) || "unknown_ops#0000",
+    discordUserId: resolveCandidateDiscordUserId(report),
+    group,
     status: RECRUITMENT_REPORT_STATUS_OPTIONS.includes(report.status?.trim())
       ? report.status.trim()
       : "PROSES",
     age: report.age?.trim() || `${Number(report.age) || 0} Tahun`,
     gender: report.gender?.trim() || "Tidak Diketahui",
-    question:
-      report.question?.trim() ||
-      "Belum ada pertanyaan strategis untuk kandidat ini.",
-    notes:
-      report.notes?.trim() || "Belum ada keterangan analis untuk kandidat ini.",
+    question: report.question?.trim() || buildRecruitmentReportQuestionTemplate({ name, group }),
+    notes: report.notes?.trim() || buildRecruitmentReportNotesTemplate(),
     operators: Array.isArray(report.operators)
       ? report.operators.map((operator, operatorIndex) =>
           normalizeOperatorEntry(operator, operatorIndex),
@@ -468,7 +741,9 @@ export function normalizeRecruitmentReport(report, index = 0) {
       : [],
     additionalReports: Array.isArray(report.additionalReports)
       ? report.additionalReports
-          .map((entry, entryIndex) => normalizeArchiveSupplement(entry, entryIndex))
+          .map((entry, entryIndex) =>
+            normalizeArchiveSupplement(entry, entryIndex),
+          )
           .sort(
             (left, right) =>
               new Date(right.updatedAt).getTime() -
@@ -486,7 +761,9 @@ export function loadRecruitmentReports(value = EMPTY_DASHBOARD_DATA) {
     return [];
   }
 
-  return value.map((report, index) => normalizeRecruitmentReport(report, index));
+  return value.map((report, index) =>
+    normalizeRecruitmentReport(report, index),
+  );
 }
 
 export function createReportsForTrainingSession(session) {
@@ -499,13 +776,16 @@ export function createReportsForTrainingSession(session) {
       category: candidate.category,
       name: candidate.roblox,
       discord: candidate.discord,
+      discordUserId: candidate.discordUserId,
       group: session.golongan,
       status: "PROSES",
       age: `${candidate.age} Tahun`,
       gender: candidate.gender,
-      question: `Evaluasi awal untuk ${candidate.roblox} pada ${session.golongan}?`,
-      notes:
-        "Isi hasil observasi pelatih, progres rekrutmen, dan rekomendasi berikutnya di sini.",
+      question: buildRecruitmentReportQuestionTemplate({
+        name: candidate.roblox,
+        group: session.golongan,
+      }),
+      notes: buildRecruitmentReportNotesTemplate(),
       operators: session.operators,
       additionalReports: [],
       sentAt: null,
@@ -527,15 +807,16 @@ export function isArchivePendingDispatch(report) {
     return true;
   }
 
-  return getLatestArchiveActivityTimestamp(report) > new Date(report.sentAt).getTime();
+  return (
+    getLatestArchiveActivityTimestamp(report) >
+    new Date(report.sentAt).getTime()
+  );
 }
 
 export function isRecruitmentReportComplete(report) {
-  return (
-    Boolean(String(report.question || "").trim()) &&
-    Boolean(String(report.notes || "").trim()) &&
-    report.status !== "PROSES"
-  );
+  return !getRecruitmentReportValidationMessage(report, {
+    requireFinalStatus: true,
+  });
 }
 
 export function isTrainingSessionDispatched(session, reports = []) {
@@ -544,7 +825,8 @@ export function isTrainingSessionDispatched(session, reports = []) {
   }
 
   return reports.some(
-    (report) => report.sessionId === session?.id && typeof report.sentAt === "string",
+    (report) =>
+      report.sessionId === session?.id && typeof report.sentAt === "string",
   );
 }
 
@@ -556,9 +838,13 @@ export function buildSessionDateSummaries(
 ) {
   const summaryMap = new Map();
   const sourceSessions = historicalOnly
-    ? trainingSessions.filter((session) => isTrainingSessionDispatched(session, reports))
+    ? trainingSessions.filter((session) =>
+        isTrainingSessionDispatched(session, reports),
+      )
     : trainingSessions;
-  const includedSessionIds = new Set(sourceSessions.map((session) => session.id));
+  const includedSessionIds = new Set(
+    sourceSessions.map((session) => session.id),
+  );
 
   sourceSessions.forEach((session) => {
     const sessionDateKey = historicalOnly

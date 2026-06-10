@@ -12,7 +12,13 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { RECRUITMENT_REPORT_STATUS_OPTIONS } from "../data/recruitmentData";
+import {
+  buildRecruitmentReportNotesTemplate,
+  buildRecruitmentReportQuestionTemplate,
+  getRecruitmentReportValidationMessage,
+  MIN_RECRUITMENT_REPORT_TEXT_LENGTH,
+  RECRUITMENT_REPORT_STATUS_OPTIONS,
+} from "../data/recruitmentData";
 
 const STATUS_HELP_COPY = {
   PROSES:
@@ -26,7 +32,8 @@ const STATUS_HELP_COPY = {
 function getStatusAppearance(status) {
   if (status === "LULUS") {
     return {
-      badgeClassName: "border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
+      badgeClassName:
+        "border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
       optionBaseClassName:
         "border-emerald-400/15 bg-emerald-400/5 text-emerald-100 hover:bg-emerald-400/10",
       optionActiveClassName:
@@ -73,18 +80,23 @@ function withModalEscape(onClose) {
 function buildFormState(report) {
   return {
     status: report.status,
-    question: report.question,
-    notes: report.notes,
+    question: report.question || buildRecruitmentReportQuestionTemplate(report),
+    notes: report.notes || buildRecruitmentReportNotesTemplate(),
     additionalReports: Array.isArray(report.additionalReports)
       ? report.additionalReports.map((entry, index) => ({
           id: entry.id || `training-supplement-${index + 1}`,
           question:
             entry.question || `Update lanjutan untuk kandidat ${report.name}?`,
           notes: entry.notes || "",
-          updatedAt: entry.updatedAt || report.updatedAt || new Date().toISOString(),
+          updatedAt:
+            entry.updatedAt || report.updatedAt || new Date().toISOString(),
         }))
       : [],
   };
+}
+
+function getReportTextLength(value) {
+  return String(value || "").trim().length;
 }
 
 function createSupplementDraft(report, index) {
@@ -109,6 +121,8 @@ export default function TrainingSessionReportModal({
   const [hoveredStatus, setHoveredStatus] = useState("");
   const [submitError, setSubmitError] = useState("");
   const statusAppearance = getStatusAppearance(formState.status);
+  const questionLength = getReportTextLength(formState.question);
+  const notesLength = getReportTextLength(formState.notes);
 
   useEffect(() => withModalEscape(onClose), [onClose]);
   useEffect(() => {
@@ -134,6 +148,15 @@ export default function TrainingSessionReportModal({
     setSubmitError("");
   };
 
+  const handleApplySopTemplate = () => {
+    setFormState((currentState) => ({
+      ...currentState,
+      question: buildRecruitmentReportQuestionTemplate(report),
+      notes: buildRecruitmentReportNotesTemplate(),
+    }));
+    setSubmitError("");
+  };
+
   const handleSupplementChange = (supplementId, field) => (event) => {
     setFormState((currentState) => ({
       ...currentState,
@@ -147,6 +170,7 @@ export default function TrainingSessionReportModal({
           : entry,
       ),
     }));
+    setSubmitError("");
   };
 
   const handleAddSupplement = () => {
@@ -157,6 +181,7 @@ export default function TrainingSessionReportModal({
         createSupplementDraft(report, currentState.additionalReports.length),
       ],
     }));
+    setSubmitError("");
   };
 
   const handleRemoveSupplement = (supplementId) => {
@@ -166,6 +191,7 @@ export default function TrainingSessionReportModal({
         (entry) => entry.id !== supplementId,
       ),
     }));
+    setSubmitError("");
   };
 
   const handleSubmit = async () => {
@@ -174,19 +200,28 @@ export default function TrainingSessionReportModal({
     }
 
     setSubmitError("");
+    const validationMessage = getRecruitmentReportValidationMessage({
+      ...report,
+      ...formState,
+    });
+
+    if (validationMessage) {
+      setSubmitError(validationMessage);
+      return;
+    }
+
     setActiveAction("save");
 
     try {
-      await onSave(
-        {
-          ...report,
-          ...formState,
-          updatedAt: new Date().toISOString(),
-        },
-      );
+      await onSave({
+        ...report,
+        ...formState,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       setSubmitError(
-        error?.message || "Laporan gagal diproses. Periksa koneksi backend lalu coba lagi.",
+        error?.message ||
+          "Laporan gagal diproses. Periksa koneksi backend lalu coba lagi.",
       );
     } finally {
       setActiveAction("");
@@ -205,7 +240,8 @@ export default function TrainingSessionReportModal({
       await onEliminate(report);
     } catch (error) {
       setSubmitError(
-        error?.message || "Eliminasi kandidat gagal diproses. Coba ulang beberapa saat lagi.",
+        error?.message ||
+          "Eliminasi kandidat gagal diproses. Coba ulang beberapa saat lagi.",
       );
     } finally {
       setActiveAction("");
@@ -237,7 +273,9 @@ export default function TrainingSessionReportModal({
               Laporan Rekrutmen
             </h3>
             <p className="mt-1.5 max-w-xl text-[11px] leading-6 text-stone-400">
-              Lengkapi evaluasi kandidat dan simpan laporan per sipil. Pengiriman sesi ke halaman review dilakukan dari tombol utama di halaman pelatihan.
+              Lengkapi evaluasi kandidat dan simpan laporan per sipil.
+              Pengiriman sesi ke halaman review dilakukan dari tombol utama di
+              halaman pelatihan.
             </p>
           </div>
 
@@ -268,6 +306,11 @@ export default function TrainingSessionReportModal({
               <p className="mt-1.5 font-sans text-lg font-bold text-stone-100">
                 {report.discord}
               </p>
+              {report.discordUserId ? (
+                <p className="mt-1 truncate font-public text-[9px] uppercase tracking-[0.14em] text-emerald-200">
+                  {`<@${report.discordUserId}> • Discord Synced`}
+                </p>
+              ) : null}
             </div>
             <div className="self-start rounded-2xl border border-white/8 bg-[#1a1a1a] p-3.5">
               <div className="flex items-start justify-between gap-3">
@@ -276,7 +319,8 @@ export default function TrainingSessionReportModal({
                     Status Operasi
                   </p>
                   <p className="mt-1 text-[12px] leading-5 text-stone-400">
-                    Pilih status final dengan cepat. Arahkan kursor ke status untuk melihat arti tiap pilihan.
+                    Pilih status final dengan cepat. Arahkan kursor ke status
+                    untuk melihat arti tiap pilihan.
                   </p>
                 </div>
                 <span
@@ -306,7 +350,9 @@ export default function TrainingSessionReportModal({
                         className={[
                           "rounded-xl border px-3 py-2.5 font-public text-[10px] font-bold uppercase tracking-[0.18em] transition",
                           optionAppearance.optionBaseClassName,
-                          isActive ? optionAppearance.optionActiveClassName : "",
+                          isActive
+                            ? optionAppearance.optionActiveClassName
+                            : "",
                         ].join(" ")}
                       >
                         {option}
@@ -333,13 +379,34 @@ export default function TrainingSessionReportModal({
             </div>
           </div>
 
+          <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] p-3.5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-public text-[8px] uppercase tracking-[0.22em] text-amber-200">
+                  Template SOP Perekrutan
+                </p>
+                <p className="mt-1 text-[12px] leading-5 text-stone-300">
+                  Pertanyaan dibuat seragam sesuai SOP. Isi bagian keterangan
+                  dengan hasil observasi nyata sebelum laporan disimpan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplySopTemplate}
+                className="self-start rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-300/15 md:self-center"
+              >
+                Gunakan Template SOP
+              </button>
+            </div>
+          </div>
+
           <label className="mt-4 block">
             <div className="mb-2 flex items-center justify-between gap-4">
               <span className="font-public text-[8px] uppercase tracking-[0.22em] text-[#a8d07c]">
                 Pertanyaan
               </span>
               <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
-                Mandatory Input
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {questionLength} karakter
               </span>
             </div>
             <textarea
@@ -356,7 +423,7 @@ export default function TrainingSessionReportModal({
                 Keterangan
               </span>
               <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
-                Operational Observations
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {notesLength} karakter
               </span>
             </div>
             <textarea
@@ -365,6 +432,10 @@ export default function TrainingSessionReportModal({
               onChange={handleChange("notes")}
               className="w-full resize-none border border-white/8 bg-black/25 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
             />
+            <p className="mt-2 text-[11px] leading-5 text-stone-500">
+              Template kosong tidak dihitung sebagai laporan final. Isi hasil
+              pada tiap baris setelah tanda titik dua.
+            </p>
           </label>
 
           <section className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3.5">
@@ -374,7 +445,8 @@ export default function TrainingSessionReportModal({
                   Laporan Tambahan
                 </p>
                 <p className="mt-1 text-[12px] leading-5 text-stone-400">
-                  Tambahkan update lanjutan per kandidat agar histori observasi tetap lengkap.
+                  Tambahkan update lanjutan per kandidat agar histori observasi
+                  tetap lengkap.
                 </p>
               </div>
 
@@ -419,9 +491,14 @@ export default function TrainingSessionReportModal({
                     </div>
 
                     <label className="mt-3 block">
-                      <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
-                        Fokus Tambahan
-                      </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
+                          Fokus Tambahan
+                        </span>
+                        <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-600">
+                          {getReportTextLength(entry.question)} karakter
+                        </span>
+                      </div>
                       <textarea
                         rows={2}
                         value={entry.question}
@@ -431,9 +508,14 @@ export default function TrainingSessionReportModal({
                     </label>
 
                     <label className="mt-3 block">
-                      <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
-                        Catatan Tambahan
-                      </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-public text-[8px] uppercase tracking-[0.16em] text-stone-500">
+                          Catatan Tambahan
+                        </span>
+                        <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-600">
+                          {getReportTextLength(entry.notes)} karakter
+                        </span>
+                      </div>
                       <textarea
                         rows={3}
                         value={entry.notes}
@@ -445,7 +527,9 @@ export default function TrainingSessionReportModal({
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-white/8 bg-black/20 px-4 py-6 text-center text-[12px] leading-6 text-stone-400">
-                  Belum ada laporan tambahan. Gunakan tombol <strong>Tambah Laporan Tambahan</strong> untuk menambahkan update observasi kandidat.
+                  Belum ada laporan tambahan. Gunakan tombol{" "}
+                  <strong>Tambah Laporan Tambahan</strong> untuk menambahkan
+                  update observasi kandidat.
                 </div>
               )}
             </div>
@@ -458,7 +542,10 @@ export default function TrainingSessionReportModal({
           ) : null}
 
           <div className="mt-4 rounded-xl border border-white/8 bg-black/20 px-3 py-2.5 text-[12px] leading-6 text-stone-400">
-            Tombol laporan di modal ini hanya menyimpan data kandidat. Setelah semua kandidat sudah memiliki laporan, gunakan tombol <strong>Kirim Laporan</strong> di halaman pelatihan untuk menutup sesi dan masuk ke halaman review.
+            Tombol laporan di modal ini hanya menyimpan data kandidat. Setelah
+            semua kandidat sudah memiliki laporan, gunakan tombol{" "}
+            <strong>Kirim Laporan</strong> di halaman pelatihan untuk menutup
+            sesi dan masuk ke halaman review.
           </div>
 
           <div className="mt-4 flex flex-col gap-2.5 border-t border-white/6 pt-4 md:flex-row md:items-center md:justify-between">
@@ -470,7 +557,9 @@ export default function TrainingSessionReportModal({
                   disabled={Boolean(activeAction)}
                   className="border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 font-public text-[10px] font-bold uppercase tracking-[0.16em] text-rose-200 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {activeAction === "eliminate" ? "Mengeliminasi..." : "Eliminasi Kandidat"}
+                  {activeAction === "eliminate"
+                    ? "Mengeliminasi..."
+                    : "Eliminasi Kandidat"}
                 </button>
               ) : null}
               <button

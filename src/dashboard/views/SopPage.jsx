@@ -18,67 +18,303 @@ const SOP_LIBRARY = [
     id: "sop-perekrut-brm5",
     layout: "framework",
     accent: "lime",
-    cardEyebrow: "SOP In-Game BRM5",
+    cardEyebrow: "SOP Perekrutan Wawancara",
     cardSummary:
-      "Panduan perekrutan kandidat sipil atau PMC langsung di BRM5, mulai dari pembukaan interaksi, screening awal, sampai keputusan lanjut ke sesi pelatihan.",
-    badge: "BRM5",
-    documentTag: "SOP-REKRUT-BRM5-791",
-    serial: "REV. APRIL 2026",
-    title: "SOP PEREKRUTAN IN-GAME BRM5",
+      "Panduan lengkap proses perekrutan PASKUS-791 berbasis wawancara penuh: validasi identitas, kesediaan mengabdi, etika komunikasi, penjelasan kepangkatan dan unit, peraturan komunitas, serta tindak lanjut pin dan Sertijab manual.",
+    badge: "INTERVIEW",
+    documentTag: "SOP-REKRUT-WAWANCARA-791",
+    serial: "REV. WAWANCARA JUN 2026",
+    title: "SOP PEREKRUTAN PASKUS 791 — WAWANCARA",
     description:
-      "Dokumen ini mengatur tata cara perekrutan kandidat di area operasi BRM5 secara tertib, sopan, dan efisien. Fokus utama SOP ini adalah membuka komunikasi dengan benar, menilai kesiapan dasar kandidat, dan memastikan recruiter tidak melewati tahapan screening sebelum kandidat dibawa ke sesi pelatihan.",
-    referenceLabel: "Channel Aktif",
-    referenceValue: "IN-GAME SCREENING",
-    overviewTitle: "Garis Besar Operasi",
+      "Dokumen ini menjadi acuan perekrut saat menjalankan sesi seleksi berbasis wawancara penuh. Tidak ada sesi latihan fisik atau in-game; perekrut cukup membawa kandidat melalui validasi data, pertanyaan kesediaan, orientasi etika dan disiplin, penjelasan sistem kepangkatan, unit, serta peraturan komunitas. Setiap jawaban dicatat langsung di laporan aplikasi. Pengambilan pin dan Sertijab dilakukan manual setelah laporan dikirim ke resimen.",
+    referenceLabel: "Mode Seleksi",
+    referenceValue: "WAWANCARA + DISCORD",
+    overviewTitle: "Alur Wawancara Perekrutan",
     overviewDescription:
-      "Perekrutan in-game harus dilakukan dengan alur yang jelas: identifikasi kandidat, pembukaan roleplay, cek kesiapan komunikasi, cek loyalitas dan attitude, lalu arahkan kandidat yang lolos menuju sesi pelatihan web. Hindari perekrutan terburu-buru, spam chat, atau keputusan tanpa catatan singkat.",
+      "Urutan sesi dimulai dari pembukaan dan perkenalan, validasi identitas Roblox dan Discord, pertanyaan kesediaan mengabdi, orientasi etika komunikasi, penjelasan kepangkatan dan struktur komando, penjelasan unit-unit terkait, pembacaan peraturan komunitas dan roleplay, penjelasan alur pelatihan dan pengambilan pin, lalu penutup dan rekomendasi. Semua jawaban dicatat di laporan dan dikirim ke resimen.",
     directives: [
       {
         label: "PRINSIP 01",
-        text: '"Recruiter wajib memulai percakapan dengan sopan, singkat, dan tidak menekan kandidat."',
+        text: '"Perekrut wajib mengikuti urutan pertanyaan dan tidak melewati topik inti sebelum jawaban kandidat dicatat dengan jelas."',
       },
       {
         label: "PRINSIP 02",
-        text: '"Keputusan lanjut atau tidak lanjut harus berdasarkan attitude, respons, dan kesiapan kandidat, bukan sekadar cepat membalas chat."',
+        text: '"Penilaian berdasarkan kejujuran identitas, kesediaan mengikuti disiplin, sikap komunikasi, dan pemahaman dasar terhadap sistem PASKUS 791."',
+      },
+      {
+        label: "PRINSIP 03",
+        text: '"Setiap hasil wawancara harus dicatat di aplikasi agar laporan, histori, dan tindak lanjut Pin & Sertijab manual tetap sinkron."',
       },
     ],
     fieldSpecs: [
-      { label: "Area Operasi", value: "BRM5 Public / Private Server" },
-      { label: "Target Kandidat", value: "Sipil dan PMC" },
-      { label: "Hasil Awal", value: "Lanjut Pelatihan / Ditunda / Ditolak" },
-      { label: "Catatan Minimum", value: "Nama, Discord, hasil screening" },
+      { label: "Target Kandidat", value: "Sipil, PMC, atau eks-resimen" },
+      { label: "Minimal Usia", value: "16 tahun untuk jalur reguler" },
+      { label: "Jalur Khusus", value: "Probation untuk kandidat di bawah batas usia" },
+      { label: "Mode Seleksi", value: "Wawancara lisan dan validasi data" },
+      { label: "Data Wajib", value: "Roblox, Discord, usia, alasan gabung, status asal" },
+      { label: "Materi Inti", value: "Identitas, kesediaan, etika, kepangkatan, unit, peraturan" },
+      { label: "Materi Penutup", value: "Penjelasan alur pelatihan, pin, dan Sertijab" },
+      { label: "Output", value: "Laporan wawancara, status kelulusan, tindak lanjut manual" },
     ],
     phases: [
       {
         index: "01",
-        title: "Phase 1: Kontak Awal",
+        title: "Phase 1: Pembukaan dan Perkenalan",
         description:
-          "Pastikan kandidat tidak sedang dalam kondisi tempur berat atau roleplay aktif lain. Buka percakapan dengan salam dan maksud yang jelas, lalu arahkan kandidat untuk fokus sebentar ke proses screening.",
-        bullets: ["Perkenalkan diri singkat", "Pastikan kandidat siap diwawancara"],
+          "Sambut kandidat dengan bahasa profesional. Perkenalkan diri sebagai perekrut PASKUS-791 dan jelaskan bahwa sesi ini adalah seleksi wawancara, bukan latihan fisik. Minta kandidat untuk menjawab dengan jelas dan jujur.",
+        bullets: [
+          "Gunakan sapaan Sir atau Madam",
+          "Jelaskan tujuan sesi wawancara",
+          "Minta kejujuran dan kejelasan jawaban",
+        ],
       },
       {
         index: "02",
-        title: "Phase 2: Screening Dasar",
+        title: "Phase 2: Validasi Identitas",
         description:
-          "Nilai respon kandidat saat ditanya tujuan bergabung, pengalaman bermain, dan kesiapan mengikuti aturan. Catat sikap, kerapian jawaban, dan cara kandidat merespon recruiter.",
-        bullets: ["Nilai komunikasi", "Nilai kesiapan mengikuti arahan"],
+          "Tanyakan nama Roblox, nama Discord, dan Discord ID jika tersedia. Konfirmasi usia kandidat dan status asal (sipil, PMC, atau eks-resimen). Tanyakan alasan bergabung ke PASKUS-791 secara singkat dan jelas.",
+        bullets: [
+          "Nama Roblox dan Discord",
+          "Usia dan status asal kandidat",
+          "Alasan bergabung ke PASKUS 791",
+        ],
       },
       {
         index: "03",
-        title: "Phase 3: Keputusan Operasional",
+        title: "Phase 3: Kesediaan Mengabdi",
         description:
-          "Jika kandidat layak, arahkan ke sesi pelatihan web. Jika belum siap, tutup percakapan dengan sopan dan beri alasan singkat. Jangan menghilang tanpa penutup.",
-        bullets: ["Arahkan ke pelatihan", "Berikan penutup yang sopan"],
+          "Tanyakan kesiapan kandidat mengikuti aturan dan disiplin resimen, komitmen waktu aktif dan kehadiran sesi, serta kesediaan menjaga nama baik satuan. Jawaban yang ragu-ragu atau tidak konsisten dicatat sebagai risiko.",
+        bullets: [
+          "Kesiapan mengikuti disiplin",
+          "Komitmen waktu dan kehadiran",
+          "Kesediaan menjaga nama satuan",
+        ],
+      },
+      {
+        index: "04",
+        title: "Phase 4: Etika Komunikasi",
+        description:
+          "Nilai sikap dan bahasa kandidat selama wawancara berlangsung. Jelaskan standar komunikasi yang diharapkan: sapaan formal, tidak spam, tidak menggunakan huruf kapital berlebihan, dan selalu menutup percakapan dengan jelas. Catat respons terhadap instruksi.",
+        bullets: [
+          "Nilai sikap dan bahasa",
+          "Jelaskan standar sapaan formal",
+          "Catat respons terhadap instruksi",
+        ],
+      },
+      {
+        index: "05",
+        title: "Phase 5: Kepangkatan dan Struktur Komando",
+        description:
+          "Jelaskan sistem kepangkatan PASKUS-791 mulai dari Prada, Pratu, hingga perwira. Tekankan siapa yang dimaksud perwira, apa peran dan penugasannya, serta bagaimana hierarki komando bekerja dalam operasi. Tanyakan apakah kandidat sudah paham.",
+        bullets: [
+          "Jelaskan jenjang kepangkatan",
+          "Terangkan peran perwira",
+          "Tanyakan pemahaman kandidat",
+        ],
+      },
+      {
+        index: "06",
+        title: "Phase 6: Penjelasan Unit-Unit",
+        description:
+          "Jelaskan unit-unit yang ada di PASKUS-791: GATAM (stealth/infiltrasi), BRINGAS (infanteri berat), SERIGALA (serbu cepat), SENTINEL (medis/support), TORUK MAKTO (udara), dan PATHFINDER (recon/sniper). Jika kandidat sudah punya preferensi, catat. Penempatan akhir berdasarkan evaluasi komando.",
+        bullets: [
+          "Jelaskan tiap unit dan perannya",
+          "Tanyakan preferensi unit kandidat",
+          "Catat untuk tindak lanjut penempatan",
+        ],
+      },
+      {
+        index: "07",
+        title: "Phase 7: Peraturan Komunitas dan Roleplay",
+        description:
+          "Bacakan larangan utama: spam, SARA, politik, pornografi, ujaran kebencian, bullying, doxing, powergaming, metagaming, mixing IC/OOC, dan gangguan terhadap operasi. Pastikan kandidat mengerti bahwa pelanggaran akan diproses bertahap hingga ban permanen.",
+        bullets: [
+          "Bacakan larangan aturan umum",
+          "Jelaskan aturan IC/OOC roleplay",
+          "Terangkan sanksi bertahap",
+        ],
+      },
+      {
+        index: "08",
+        title: "Phase 8: Penjelasan Alur Pelatihan",
+        description:
+          "Jelaskan bahwa setelah lulus seleksi wawancara, kandidat akan mengikuti pelatihan fisik dan teknis di BRM5. Setelah pelatihan selesai dan laporan dikirim ke resimen, pengambilan pin Komodo dan Sertijab dilakukan manual oleh admin. Kandidat yang gagal atau masuk probation akan dicatat untuk evaluasi lanjutan.",
+        bullets: [
+          "Jelaskan jadwal pelatihan berikutnya",
+          "Terangkan proses pin dan Sertijab manual",
+          "Jelaskan jalur probation jika berlaku",
+        ],
+      },
+      {
+        index: "09",
+        title: "Phase 9: Penutup dan Rekomendasi",
+        description:
+          "Tutup sesi wawancara dengan mengucapkan terima kasih atas waktu kandidat. Beri tahu bahwa hasil akan dicatat dan keputusan akhir ditentukan oleh komando. Catat rekomendasi perekrut: LULUS, GAGAL, atau PROBATION beserta alasan singkat di laporan.",
+        bullets: [
+          "Tutup dengan kalimat formal",
+          "Informasikan waktu tunggu keputusan",
+          "Catat rekomendasi di laporan",
+        ],
       },
     ],
+    visualGuides: [],
+    inputGuides: [
+      {
+        title: "Pertanyaan Validasi Identitas",
+        required: "Wajib",
+        description:
+          "Validasi identitas harus singkat, jelas, dan mencakup data yang diperlukan agar laporan perekrutan akurat dan tidak mengandung data palsu.",
+        fields: [
+          "Nama Roblox dan nama Discord kandidat.",
+          "Discord ID jika tersedia untuk keperluan tag laporan.",
+          "Usia kandidat dan status asal: sipil, PMC, atau eks-resimen.",
+          "Alasan bergabung ke PASKUS-791 secara singkat.",
+        ],
+      },
+      {
+        title: "Indikator Kesediaan Mengabdi",
+        required: "Wajib",
+        description:
+          "Pertanyaan kesediaan menentukan apakah kandidat siap secara mental mengikuti sistem dan disiplin resimen.",
+        fields: [
+          "Apakah bersedia mengikuti aturan dan disiplin resimen tanpa pengecualian?",
+          "Seberapa konsisten bisa hadir dalam sesi pelatihan dan operasi?",
+          "Apakah bersedia menjaga nama baik satuan di dalam dan di luar game?",
+        ],
+      },
+      {
+        title: "Indikator Etika Komunikasi",
+        required: "Wajib",
+        description:
+          "Standar komunikasi diamati langsung selama sesi wawancara. Jawaban tidak perlu panjang, tetapi harus sopan, jelas, dan tidak memancing konflik.",
+        fields: [
+          "Kandidat menggunakan bahasa yang sopan dan tidak spam selama wawancara.",
+          "Kandidat merespons instruksi perekrut dengan cepat dan jelas.",
+          "Kandidat memahami perbedaan IC (in-character) dan OOC (out-of-character).",
+        ],
+      },
+      {
+        title: "Penjelasan Kepangkatan",
+        required: "Wajib Dijelaskan",
+        description:
+          "Perekrut wajib memberi orientasi singkat tentang jenjang kepangkatan agar kandidat punya gambaran tentang posisi awal dan jalur karir di PASKUS-791.",
+        fields: [
+          "Prada adalah pangkat awal semua anggota baru yang lulus seleksi.",
+          "Pratu dan Praka didapat setelah memenuhi syarat masa pengabdian dan penilaian komando.",
+          "Perwira memimpin unit, koordinasi operasi, dan mengambil keputusan strategis.",
+          "Penempatan unit ditentukan berdasarkan evaluasi, kebutuhan resimen, dan arahan komando.",
+        ],
+      },
+      {
+        title: "Penjelasan Unit dan Fungsi",
+        required: "Wajib Dijelaskan",
+        description:
+          "Kandidat perlu memahami perbedaan unit agar bisa menentukan minat dan komando bisa menempatkan dengan tepat.",
+        fields: [
+          "GATAM: infiltrasi senyap, stealth, dan penghancuran target vital secara presisi.",
+          "BRINGAS: infanteri berat dan raider untuk garis depan dan kendaraan berat.",
+          "SERIGALA: serbu cepat ke objektif prioritas seperti mortar dan anti-air.",
+          "SENTINEL: medis dan support untuk revive, healing, dan stabilitas tim.",
+          "TORUK MAKTO: unit udara untuk transportasi, infiltrasi, dan dukungan aviation.",
+          "PATHFINDER: recon dan sniper support untuk observasi dan intel jarak jauh.",
+        ],
+      },
+      {
+        title: "Peraturan dan Sanksi",
+        required: "Wajib Dibacakan",
+        description:
+          "Peraturan dibacakan agar kandidat memahami konsekuensi pelanggaran sebelum resmi bergabung.",
+        fields: [
+          "Dilarang spam, flood, SARA, politik, pornografi, ujaran kebencian, atau bullying.",
+          "Dilarang doxing atau menyebarkan data pribadi anggota lain.",
+          "Dilarang powergaming, metagaming, atau mixing IC/OOC.",
+          "Sanksi bertahap: teguran, peringatan tertulis, pembinaan, demotion, hingga ban permanen.",
+        ],
+      },
+      {
+        title: "Alur Tindak Lanjut",
+        required: "Informasi Wajib",
+        description:
+          "Kandidat perlu tahu apa yang terjadi setelah wawancara selesai agar tidak bingung menunggu tanpa kepastian.",
+        fields: [
+          "Hasil wawancara dicatat di aplikasi dan dikirim ke channel resimen.",
+          "Kandidat lulus akan mendapat jadwal pelatihan fisik lanjutan.",
+          "Pin Komodo dan Sertijab diberikan setelah laporan terkirim dan disetujui komando.",
+          "Kandidat gagal atau probation diberi tahu alasan dan jalur pembinaan jika ada.",
+        ],
+      },
+    ],
+    featureGuides: [
+      {
+        name: "GATAM",
+        detail:
+          "Unit elite yang berfokus pada infiltrasi senyap, operasi stealth, dan penghancuran compound atau target vital secara presisi.",
+      },
+      {
+        name: "BRINGAS",
+        detail:
+          "Infanteri berat atau raider yang mengutamakan daya tekan, kendaraan berat, dan operasi garis depan.",
+      },
+      {
+        name: "SERIGALA",
+        detail:
+          "Unit serbu cepat menuju objektif prioritas seperti mortar, anti-air, dan sasaran vital lain.",
+      },
+      {
+        name: "SENTINEL",
+        detail:
+          "Unit medis dan support yang bertanggung jawab pada revive, healing, dan stabilitas tim saat operasi.",
+      },
+      {
+        name: "TORUK MAKTO",
+        detail:
+          "Unit udara untuk transportasi, infiltrasi, dan dukungan aviation sesuai instruksi operasi.",
+      },
+      {
+        name: "PATHFINDER",
+        detail:
+          "Unit recon dan sniper support untuk observasi, intel, dan dukungan tembakan jarak jauh.",
+      },
+      {
+        name: "PROBATION",
+        detail:
+          "Jalur evaluasi untuk kandidat di bawah batas usia, eks-resimen, atau kandidat yang perlu dipantau mental, disiplin, dan kedewasaannya.",
+      },
+      {
+        name: "PIN KOMODO",
+        detail:
+          "Pin yang diberikan kepada anggota baru setelah lulus seleksi dan pelatihan. Prosesnya manual oleh admin Discord setelah laporan terkirim ke resimen.",
+      },
+      {
+        name: "SERTIJAB",
+        detail:
+          "Serah terima jabatan yang dilakukan manual setelah laporan perekrutan dikirim dan disetujui komando. Tidak dijalankan secara otomatis oleh sistem.",
+      },
+      {
+        name: "ROLEPLAY LANJUTAN",
+        detail:
+          "Anggota yang diberi role RP wajib memahami IC/OOC, disiplin komunikasi, dan batasan event. Materi RP ketat diprioritaskan untuk anggota yang cukup umur dan siap mengikuti alur.",
+      },
+    ],
+    completionChecklist: [
+      "Data kandidat: Roblox, Discord, usia, status asal, dan alasan bergabung sudah dicatat.",
+      "Jawaban kesediaan mengabdi sudah dievaluasi dan dicatat di laporan.",
+      "Etika komunikasi kandidat selama wawancara sudah diobservasi dan dicatat.",
+      "Penjelasan kepangkatan dan unit sudah disampaikan dengan jelas.",
+      "Peraturan umum dan roleplay sudah dibacakan.",
+      "Alur pelatihan, pin, dan Sertijab sudah dijelaskan kepada kandidat.",
+      "Status kandidat sudah ditentukan: LULUS, GAGAL, atau PROBATION.",
+      "Laporan wawancara sudah dikirim ke resimen melalui aplikasi.",
+      "Kandidat lulus sudah masuk antrian tindak lanjut Pin & Sertijab manual.",
+    ],
     emergency: {
-      title: "Protokol Situasi Gangguan",
+      title: "Protokol Kandidat Bermasalah",
       description:
-        "Jika kandidat toxic, memancing konflik, atau sengaja mengacaukan proses roleplay, hentikan screening. Jangan lanjutkan perekrutan. Simpan catatan singkat dan arahkan recruiter lain agar kandidat tidak diproses ulang tanpa review.",
-      code: "REKRUT-LOCK-01",
+        "Jika kandidat toxic, memancing konflik, memberikan data palsu, tidak kooperatif, atau tidak mampu mengikuti instruksi dasar wawancara, hentikan sesi dengan tenang. Catat alasan di laporan, laporkan ke atasan, dan jangan berikan rekomendasi LULUS sebelum ada klarifikasi komando.",
+      code: "INTERVIEW-HOLD-01",
     },
     footer: [
-      "Revisi Operasional April 2026",
+      "Revisi SOP Wawancara Juni 2026",
       "Divisi Rekrutmen Paskus 791",
     ],
   },
@@ -86,86 +322,133 @@ const SOP_LIBRARY = [
     id: "sop-roleplay-bahasa",
     layout: "sectioned",
     accent: "amber",
-    cardEyebrow: "Etika Roleplay",
+    cardEyebrow: "Aturan Umum dan Roleplay",
     cardSummary:
-      "Standar bahasa recruiter saat roleplay: penggunaan Sir dan Madam, tata krama, serta cara menjaga wibawa recruiter tanpa terdengar kasar atau berlebihan.",
+      "Standar komunikasi, disiplin komunitas, aturan IC/OOC, larangan powergaming dan metagaming, serta batasan perilaku selama perekrutan dan event roleplay.",
     badge: "ROLEPLAY",
     documentTag: "SOP-RP-COMMS-791",
-    serial: "UPDATE BAHASA APRIL 2026",
-    title: "SOP BAHASA DAN SOPAN SANTUN ROLEPLAY",
-    description: "Standar pemanggilan, nada bicara, dan etika recruiter.",
-    pills: ["SIR UNTUK PRIA", "MADAM UNTUK WANITA", "TETAP SOPAN"],
+    serial: "UPDATE ROLEPLAY MEI 2026",
+    title: "SOP ATURAN UMUM DAN ROLEPLAY",
+    description: "Standar bahasa, etika komunitas, dan disiplin IC/OOC.",
+    pills: ["SOPAN", "IC/OOC JELAS", "NO POWERGAMING"],
     sections: [
       {
         index: "01.",
         title: "ATURAN PEMANGGILAN",
         intro:
-          "Gunakan sapaan formal yang konsisten selama proses roleplay agar interaksi recruiter terlihat rapi dan berwibawa.",
+          "Gunakan sapaan formal yang konsisten selama proses rekrutmen dan roleplay agar interaksi terlihat rapi, dewasa, dan berwibawa.",
         bullets: [
           "Gunakan Sir untuk kandidat laki-laki.",
           "Gunakan Madam untuk kandidat perempuan.",
           "Jika gender belum jelas, gunakan panggilan netral seperti Recruit atau Candidate sampai kandidat mengoreksi sendiri.",
+          "Hindari bercanda berlebihan saat briefing, pembacaan SOP, dan penilaian akhir.",
         ],
       },
       {
         index: "02.",
-        title: "CONTOH BAHASA YANG BENAR",
+        title: "CONTOH BAHASA OPERASIONAL",
         intro: "",
         cards: [
           {
             title: "PEMBUKAAN",
-            text:
-              '"Good evening, Sir. Saya dari recruiter Paskus 791. Apakah Anda bersedia meluangkan waktu untuk screening singkat?"',
+            text: '"Good evening, Sir. Saya dari tim rekrutmen PASKUS-791. Apakah Anda siap mengikuti screening singkat sebelum sesi pelatihan?"',
           },
           {
             title: "ARAHAN",
-            text:
-              '"Madam, mohon jawab dengan singkat dan jelas. Saya akan lanjutkan ke pertanyaan berikutnya setelah jawaban diterima."',
+            text: '"Madam, mohon jawab dengan singkat dan jelas. Setelah jawaban diterima, saya akan lanjutkan ke instruksi berikutnya."',
           },
           {
             title: "PENUTUP",
-            text:
-              '"Terima kasih atas waktunya, Sir. Hasil screening Anda akan kami lanjutkan ke tahap berikutnya."',
+            text: '"Terima kasih atas waktunya, Sir. Hasil penilaian Anda akan kami catat dan dilanjutkan sesuai keputusan pelatih."',
           },
         ],
       },
       {
         index: "03.",
-        title: "ETIKA WAJIB",
+        title: "ETIKA UMUM KOMUNITAS",
         intro: "",
         protocols: [
           {
-            tag: "ETIKA 3.1",
-            text:
-              "Hindari mengetik dengan nada merendahkan, mengejek, atau memerintah tanpa sopan santun.",
+            tag: "UMUM 3.1",
+            text: "Dilarang spam, flood chat, atau menggunakan huruf kapital berlebihan untuk menekan anggota lain.",
           },
           {
-            tag: "ETIKA 3.2",
-            text:
-              "Gunakan kalimat singkat, jelas, dan profesional. Jangan spam chat berturut-turut tanpa jeda.",
+            tag: "UMUM 3.2",
+            text: "Dilarang membawa SARA, politik, pornografi, ujaran kebencian, atau konten yang memancing konflik.",
           },
           {
-            tag: "ETIKA 3.3",
-            text:
-              "Jika kandidat gagal, sampaikan dengan tenang dan tetap hormat tanpa memancing debat.",
+            tag: "UMUM 3.3",
+            text: "Dilarang bullying, perpeloncoan berlebihan, ancaman personal, atau membagikan data pribadi anggota lain.",
+          },
+          {
+            tag: "UMUM 3.4",
+            text: "Hormati struktur komando. Kritik boleh disampaikan melalui jalur yang benar, bukan dengan mempermalukan orang di ruang publik.",
           },
         ],
       },
       {
         index: "04.",
+        title: "ATURAN ROLEPLAY",
+        intro:
+          "Roleplay harus menjaga lore, struktur militer, dan suasana operasi. Pemain wajib membedakan percakapan karakter dengan percakapan luar karakter.",
+        protocols: [
+          {
+            tag: "RP 4.1",
+            text: "Gunakan IC untuk ucapan, keputusan, dan tindakan karakter di dalam skenario operasi.",
+          },
+          {
+            tag: "RP 4.2",
+            text: "Gunakan OOC untuk pembahasan teknis, klarifikasi, atau hal yang tidak terjadi di dunia roleplay.",
+          },
+          {
+            tag: "RP 4.3",
+            text: "Dilarang metagaming, yaitu memakai informasi OOC untuk keuntungan karakter IC.",
+          },
+          {
+            tag: "RP 4.4",
+            text: "Dilarang powergaming, yaitu memaksakan tindakan yang tidak memberi kesempatan respons wajar kepada pemain lain.",
+          },
+          {
+            tag: "RP 4.5",
+            text: "Dilarang mixing, yaitu mencampur informasi IC dan OOC sampai merusak alur roleplay.",
+          },
+          {
+            tag: "RP 4.6",
+            text: "Jangan mengganggu misi, briefing, atau event hanya untuk bercanda di luar konteks roleplay.",
+          },
+        ],
+      },
+      {
+        index: "05.",
         title: "LARANGAN DAN STANDAR",
         intro: "",
         mandatoryTitle: "WAJIB DILAKUKAN",
         mandatoryItems: [
-          "Sapa dengan formal",
-          "Jaga nada tetap tenang",
-          "Tutup percakapan dengan jelas",
+          "Sapa dengan formal.",
+          "Jaga nada tetap tenang.",
+          "Pisahkan IC dan OOC.",
+          "Ikuti callsign dan hierarki.",
+          "Tutup percakapan dengan jelas.",
         ],
         failureTitle: "TIDAK BOLEH",
         failureItems: [
           "Memanggil kandidat dengan kata kasar atau bercanda berlebihan.",
           "Menggunakan huruf kapital penuh untuk menekan kandidat.",
           "Meninggalkan percakapan tanpa keputusan atau penutup.",
+          "Membocorkan data pribadi, memancing drama, atau menyebar konflik lintas channel.",
+          "Mengambil keputusan roleplay besar tanpa izin struktur komando.",
+        ],
+      },
+      {
+        index: "06.",
+        title: "SANKSI DAN PEMBINAAN",
+        intro:
+          "Pelanggaran ditangani bertahap sesuai tingkat kesalahan. Pelatih tetap wajib mencatat kejadian agar komando dapat mengambil keputusan yang adil.",
+        bullets: [
+          "Pelanggaran ringan dapat diberi teguran lisan atau peringatan tertulis.",
+          "Pelanggaran berulang dapat berujung pembinaan, demotion, pembatasan akses, atau probation.",
+          "Pelanggaran berat seperti doxing, ujaran kebencian, atau sabotase operasi dapat diproses ke ban permanen.",
+          "Materi roleplay lanjutan dapat dibatasi untuk anggota yang sudah cukup umur, memahami IC/OOC, dan siap mengikuti disiplin event.",
         ],
       },
     ],
@@ -174,66 +457,230 @@ const SOP_LIBRARY = [
     id: "sop-penggunaan-web",
     layout: "framework",
     accent: "rose",
-    cardEyebrow: "SOP Sistem Web",
+    cardEyebrow: "SOP Penggunaan Aplikasi",
     cardSummary:
-      "Panduan penggunaan dashboard pelatih pada web: pilih kandidat, buka sesi, kirim laporan, cancel sesi, dan eliminasi kandidat sesuai fungsi sistem.",
+      "Panduan lengkap penggunaan aplikasi staff: login, membaca data kandidat, membuka sesi, mengisi laporan, dispatch ke resimen, Pin & Sertijab manual, dan monitoring Perlu Tindakan.",
     badge: "WEB",
-    documentTag: "SOP-WEB-REKRUT-791",
-    serial: "SYNC REVISION APRIL 2026",
-    title: "SOP PENGGUNAAN WEB PEREKRUTAN",
+    documentTag: "SOP-APP-REKRUT-791",
+    serial: "APP FLOW REVISION MEI 2026",
+    title: "SOP PENGGUNAAN APLIKASI PEREKRUTAN",
     description:
-      "Dokumen ini menjelaskan alur penggunaan dashboard pelatih mulai dari pemilihan kandidat sampai hasil laporan. SOP ini juga menetapkan perbedaan fungsi antara cancel sesi dan eliminasi kandidat agar data tetap rapi dan tidak salah diproses.",
+      "Dokumen ini menjelaskan cara memakai aplikasi dari awal sampai akhir. Mulai dari login staff, memahami dashboard, memilih kandidat, membuka sesi pelatihan, mengisi laporan peserta, mengirim laporan ke resimen, lalu menindaklanjuti pin dan Sertijab melalui menu manual terpisah.",
     referenceLabel: "Mode Sistem",
-    referenceValue: "DASHBOARD PELATIH",
-    overviewTitle: "Alur Sistem Utama",
+    referenceValue: "STAFF PORTAL",
+    overviewTitle: "Alur Utama Aplikasi",
     overviewDescription:
-      "Gunakan dashboard untuk memilih kandidat, lalu buka pelatihan dengan petugas terkait. Seluruh laporan dibuat per kandidat di page pelatihan. Setelah lengkap, sesi dikirim ke Hasil Laporan sebagai histori. Jika sesi gagal, gunakan cancel sesi agar kandidat kembali ke dashboard. Jika kandidat harus dihapus permanen, gunakan eliminasi.",
+      "Urutan kerja aplikasi adalah login sebagai staff, cek Dashboard Pelatih, pilih kandidat yang sudah siap, buka sesi pelatihan, isi laporan per peserta, kirim laporan sesi ke resimen, review histori di Hasil Laporan, lalu buka Pin & Sertijab bila peserta lulus perlu tindak lanjut manual. Menu Perlu Tindakan dipakai untuk menangkap data yang belum selesai, belum terkirim, atau butuh follow-up.",
     directives: [
       {
-        label: "FLOW 01",
-        text: '"Pilih kandidat -> Buka Pelatihan -> Laporkan tiap kandidat -> Kirimkan Laporan -> Masuk ke Hasil Laporan."',
+        label: "URUTAN WAJIB",
+        text: '"Login -> Dashboard -> Pilih Kandidat -> Buka Pelatihan -> Isi Laporan -> Kirim Laporan Resimen -> Review Hasil -> Pin & Sertijab Manual bila diperlukan."',
       },
       {
-        label: "FLOW 02",
-        text: '"Jika sesi gagal, Cancel Sesi akan menghapus sesi aktif dan mengembalikan kandidat ke dashboard."',
+        label: "DATA WAJIB",
+        text: '"Setiap peserta harus punya identitas Roblox, Discord name, status laporan, hasil tanya jawab, catatan analis, dan Discord ID jika ingin tag Discord akurat pada laporan."',
+      },
+      {
+        label: "ATURAN DISCORD",
+        text: '"Jika Discord ID tersedia dari API, aplikasi memakai ID tersebut untuk tag laporan. Pin, role, dan Sertijab diproses terpisah sesuai SOP manual."',
       },
     ],
     fieldSpecs: [
+      { label: "Login Staff", value: "Masukkan username dan password portal" },
       { label: "Dashboard", value: "Seleksi kandidat siap pelatihan" },
-      { label: "Pelatihan", value: "Page sesi aktif dan pelaporan" },
-      { label: "Hasil Laporan", value: "Histori sesi terkirim" },
-      { label: "Laporan Perekrutan", value: "Review dan edit detail kandidat" },
+      { label: "Discord Synced", value: "Tanda ID Discord tersedia dari API" },
+      {
+        label: "Buka Pelatihan",
+        value: "Pilih petugas, golongan, dan kandidat",
+      },
+      { label: "Pelatihan", value: "Isi laporan utama per peserta" },
+      {
+        label: "Dispatch",
+        value: "Kirim laporan perekrutan ke resimen",
+      },
+      { label: "Pin & Sertijab", value: "Tindak lanjut manual setelah laporan" },
+      { label: "Perlu Tindakan", value: "Monitoring data belum selesai" },
+      { label: "Hasil Laporan", value: "Histori dan edit arsip laporan" },
     ],
     phases: [
       {
         index: "01",
-        title: "Phase 1: Membuka Sesi",
+        title: "Phase 1: Login dan Cek Akses",
         description:
-          "Di dashboard, pilih kandidat sipil atau PMC yang tersedia. Tekan Buka Pelatihan, pilih satu atau beberapa petugas, lalu tetapkan golongan aktif untuk sesi baru.",
-        bullets: ["Cek kandidat terpilih", "Pilih petugas dan golongan"],
+          "Buka portal staff, masukkan username dan password, lalu tunggu dashboard selesai memulihkan sesi. Jika muncul error 401 atau sesi tidak valid, logout atau refresh setelah token diperbarui.",
+        bullets: ["Masuk sebagai staff", "Pastikan dashboard termuat"],
       },
       {
         index: "02",
-        title: "Phase 2: Input Laporan",
+        title: "Phase 2: Membaca Dashboard",
         description:
-          "Di page pelatihan, buat laporan untuk tiap kandidat. Status kandidat akan berubah sesuai progres. Jika semua sudah lengkap, kirim sesi ke histori hasil laporan.",
-        bullets: ["Laporkan tiap kandidat", "Finalisasi sebelum kirim"],
+          "Dashboard menampilkan kandidat siap pelatihan, jumlah sipil, PMC, data terpilih, dan sesi aktif. Gunakan pencarian untuk mencari Roblox, Discord name, Discord ID, atau kategori.",
+        bullets: ["Cek data kandidat", "Gunakan pencarian"],
       },
       {
         index: "03",
-        title: "Phase 3: Cancel atau Eliminasi",
+        title: "Phase 3: Pilih Kandidat",
         description:
-          "Cancel Sesi dipakai bila operasi gagal atau dibatalkan. Seluruh laporan sesi yang belum dikirim akan dihapus dan kandidat kembali tersedia di dashboard. Eliminasi Kandidat dipakai untuk menghapus kandidat secara permanen dari data.",
-        bullets: ["Cancel = kembali ke dashboard", "Eliminasi = hapus permanen"],
+          "Klik tombol Pilih pada kandidat yang akan diproses. Kandidat dengan Discord ID akan menampilkan indikator Discord Synced dan siap dipakai untuk mention laporan.",
+        bullets: ["Pilih peserta", "Cek Discord Synced"],
+      },
+      {
+        index: "04",
+        title: "Phase 4: Buka Pelatihan",
+        description:
+          "Klik Buka Pelatihan, pilih petugas yang bertugas, tentukan golongan, lalu simpan. Setelah sesi dibuat, aplikasi otomatis membuka halaman pelatihan dan menyiapkan draft laporan untuk tiap peserta.",
+        bullets: ["Pilih petugas", "Tentukan golongan"],
+      },
+      {
+        index: "05",
+        title: "Phase 5: Isi Laporan Peserta",
+        description:
+          "Pada halaman pelatihan, buka setiap peserta lalu isi status, pertanyaan atau uji wawancara, jawaban, catatan analis, dan kesimpulan. Gunakan laporan tambahan jika ada update setelah laporan utama.",
+        bullets: ["Isi status peserta", "Simpan catatan jelas"],
+      },
+      {
+        index: "06",
+        title: "Phase 6: Kirim Laporan",
+        description:
+          "Setelah semua peserta punya laporan, klik Kirim Laporan. Aplikasi membuka modal dispatch untuk deskripsi dan lampiran, lalu mengirim laporan perekrutan ke resimen tanpa auto role atau Sertijab.",
+        bullets: ["Isi deskripsi", "Lampirkan foto bila perlu"],
+      },
+      {
+        index: "07",
+        title: "Phase 7: Pin & Sertijab Manual",
+        description:
+          "Setelah laporan terkirim, buka menu Pin & Sertijab untuk melihat peserta lulus yang siap ditindaklanjuti. Pemberian pin, role, rename, dan Sertijab dilakukan manual sesuai prosedur admin Discord.",
+        bullets: ["Cek peserta lulus", "Proses manual"],
+      },
+      {
+        index: "08",
+        title: "Phase 8: Review Histori",
+        description:
+          "Setelah selesai, buka Hasil Laporan untuk melihat arsip. Dari halaman laporan perekrutan, recruiter dapat edit laporan, tambah laporan tambahan, kirim ulang dispatch, atau eliminasi kandidat jika memang diperlukan.",
+        bullets: ["Cek hasil laporan", "Edit bila perlu"],
       },
     ],
+    inputGuides: [
+      {
+        title: "Login Portal",
+        required: "Username dan password staff",
+        description:
+          "Gunakan kredensial staff yang diberikan admin. Setelah login, aplikasi menyimpan sesi internal agar dashboard tetap terbuka saat refresh.",
+        fields: [
+          "Username: akun staff/pelatih yang terdaftar.",
+          "Password: password portal staff.",
+          "Jika token expired, lakukan refresh atau login ulang.",
+        ],
+      },
+      {
+        title: "Data Kandidat",
+        required: "Roblox, Discord name, kategori, dan Discord ID bila ada",
+        description:
+          "Data kandidat dibaca dari API pendaftaran. Recruiter tidak perlu mengetik Discord ID manual jika field discordUserId, discord_user_id, atau discord_id sudah tersedia.",
+        fields: [
+          "Nama Roblox dipakai sebagai identitas utama peserta.",
+          "Discord name dipakai sebagai fallback jika Discord ID kosong.",
+          "Discord ID dipakai untuk mention laporan dan validasi tindak lanjut manual.",
+        ],
+      },
+      {
+        title: "Modal Buka Pelatihan",
+        required: "Minimal satu kandidat, minimal satu petugas, dan golongan",
+        description:
+          "Modal ini membuat sesi aktif. Pastikan peserta dan petugas sudah benar sebelum menyimpan, karena sesi akan langsung muncul pada halaman pelatihan.",
+        fields: [
+          "Petugas: pilih satu atau beberapa perekrut/pelatih.",
+          "Golongan: pilih golongan sesi yang sesuai.",
+          "Kandidat terpilih: cek lagi nama Roblox dan Discord peserta.",
+        ],
+      },
+      {
+        title: "Laporan Peserta",
+        required: "Status, pertanyaan, jawaban/catatan, dan rekomendasi",
+        description:
+          "Isi laporan dengan format yang jelas agar embed Discord tidak sulit dibaca. Pisahkan pertanyaan dan jawaban, hindari menggabungkan semua informasi dalam satu kalimat panjang.",
+        fields: [
+          "Status: PROSES, LULUS, GAGAL, atau status lain yang tersedia.",
+          "Pertanyaan strategis: pertanyaan atau fokus penilaian.",
+          "Keterangan analis: jawaban, hasil observasi, dan alasan keputusan.",
+          "Laporan tambahan: update lanjutan setelah laporan utama disimpan.",
+        ],
+      },
+      {
+        title: "Dispatch Laporan",
+        required:
+          "Deskripsi dispatch dan lampiran foto bila diperlukan",
+        description:
+          "Saat kirim laporan, aplikasi hanya mengirim laporan perekrutan ke channel resimen. Peserta dan perekrut dengan Discord ID akan ditag pada embed, sedangkan pin, role, dan Sertijab dilakukan dari menu terpisah.",
+        fields: [
+          "Deskripsi: ringkasan singkat konteks laporan.",
+          "Lampiran: tambahkan foto jika dibutuhkan dan ukurannya masih valid.",
+          "Hasil: tunggu sampai laporan terkirim lalu review di Hasil Laporan.",
+        ],
+      },
+    ],
+    featureGuides: [
+      {
+        name: "Dashboard Pelatih",
+        detail:
+          "Tempat melihat kandidat baru, memilih peserta, membuka sesi, dan membuka ulang sesi aktif.",
+      },
+      {
+        name: "Pelatihan",
+        detail:
+          "Tempat mengisi laporan utama setiap peserta, edit laporan sebelum dispatch, cancel sesi, atau eliminasi kandidat.",
+      },
+      {
+        name: "Kirim Laporan",
+        detail:
+          "Mengubah sesi aktif menjadi arsip dan mengirim embed laporan perekrutan ke resimen tanpa auto role atau Sertijab.",
+      },
+      {
+        name: "Pin & Sertijab",
+        detail:
+          "Menu tindak lanjut manual untuk peserta lulus setelah laporan terkirim. Gunakan menu ini sebagai antrian kerja, bukan sebagai auto role.",
+      },
+      {
+        name: "Hasil Laporan",
+        detail:
+          "Tempat membaca histori sesi, membuka laporan perekrutan, menambah laporan tambahan, dan kirim ulang jika ada update.",
+      },
+      {
+        name: "Perlu Tindakan",
+        detail:
+          "Monitoring realtime untuk kandidat tanpa laporan, jadwal terlewat, dan data yang belum terkirim. Klik kartu untuk langsung menuju data yang harus diselesaikan.",
+      },
+      {
+        name: "Tambah Petugas",
+        detail:
+          "Tempat admin/pengelola menambahkan petugas, menyimpan metadata, dan menghubungkan Discord ID petugas untuk tag otomatis.",
+      },
+      {
+        name: "SOP",
+        detail:
+          "Pusat panduan operasional recruiter agar urutan kerja, bahasa roleplay, dan penggunaan aplikasi tetap konsisten.",
+      },
+    ],
+    completionChecklist: [
+      "Semua peserta yang diproses sudah punya laporan utama.",
+      "Pertanyaan dan jawaban ditulis terpisah serta mudah dibaca.",
+      "Peserta dengan Discord ID sudah muncul sebagai Discord Synced.",
+      "Jika ada peserta lulus, buka menu Pin & Sertijab untuk tindak lanjut manual.",
+      "Pin, role, rename, dan Sertijab tidak dijalankan otomatis dari dispatch laporan.",
+      "Laporan perekrutan terkirim ke channel resimen.",
+      "Sesi sudah muncul di Hasil Laporan sebagai arsip.",
+      "Tidak ada item tersisa di Perlu Tindakan untuk sesi tersebut.",
+    ],
     emergency: {
-      title: "Protokol Salah Input",
+      title: "Protokol Salah Input dan Data Bermasalah",
       description:
-        "Jika terjadi kesalahan sesi, jangan kirim laporan setengah jadi ke histori. Gunakan cancel sesi untuk memulihkan daftar kandidat. Gunakan eliminasi hanya bila kandidat memang tidak boleh diproses lagi dan datanya harus dihapus dari sistem.",
-      code: "WEB-FAILSAFE-02",
+        "Jika sesi salah dibuat dan belum dikirim, gunakan Cancel Sesi agar kandidat kembali ke dashboard. Jika hanya satu peserta bermasalah, gunakan Eliminasi Kandidat dengan hati-hati. Jika laporan sudah terkirim tetapi data Discord bermasalah, buka Hasil Laporan dan menu Pin & Sertijab untuk mencatat tindak lanjut manual.",
+      code: "APP-FAILSAFE-03",
     },
-    footer: ["Revisi Dashboard April 2026", "Divisi Rekrutmen Paskus 791"],
+    footer: [
+      "Revisi Penggunaan Aplikasi Mei 2026",
+      "Divisi Rekrutmen Paskus 791",
+    ],
   },
 ];
 
@@ -284,7 +731,9 @@ function SopLibraryCard({ document, isActive, onOpen }) {
       <div className="pl-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className={`font-public text-[9px] uppercase tracking-[0.28em] ${accent.text}`}>
+            <p
+              className={`font-public text-[9px] uppercase tracking-[0.28em] ${accent.text}`}
+            >
               {document.cardEyebrow}
             </p>
             <h3 className="mt-3 font-sans text-2xl font-bold uppercase text-stone-100">
@@ -292,12 +741,16 @@ function SopLibraryCard({ document, isActive, onOpen }) {
             </h3>
           </div>
 
-          <span className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.16em] ${accent.chip}`}>
+          <span
+            className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.16em] ${accent.chip}`}
+          >
             {document.badge}
           </span>
         </div>
 
-        <p className="mt-4 text-sm leading-6 text-stone-400">{document.cardSummary}</p>
+        <p className="mt-4 text-sm leading-6 text-stone-400">
+          {document.cardSummary}
+        </p>
 
         <div className="mt-5 flex items-center justify-between gap-4 border-t border-white/6 pt-4">
           <div>
@@ -309,7 +762,9 @@ function SopLibraryCard({ document, isActive, onOpen }) {
             </p>
           </div>
 
-          <span className={`font-public text-[9px] font-bold uppercase tracking-[0.2em] transition ${isActive ? accent.text : "text-stone-500 group-hover:text-stone-300"}`}>
+          <span
+            className={`font-public text-[9px] font-bold uppercase tracking-[0.2em] transition ${isActive ? accent.text : "text-stone-500 group-hover:text-stone-300"}`}
+          >
             {isActive ? "Opened" : "Open SOP"}
           </span>
         </div>
@@ -327,7 +782,9 @@ function SopFrameworkDetail({ document }) {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.18em] ${accent.chip}`}>
+              <span
+                className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.18em] ${accent.chip}`}
+              >
                 {document.documentTag}
               </span>
               <span className="font-public text-[9px] uppercase tracking-[0.18em] text-stone-500">
@@ -344,7 +801,9 @@ function SopFrameworkDetail({ document }) {
           </div>
 
           <div className="min-w-[180px] border border-white/6 bg-black/20 px-4 py-4 text-left lg:text-right">
-            <p className={`font-public text-[10px] font-bold uppercase tracking-[0.22em] ${accent.text}`}>
+            <p
+              className={`font-public text-[10px] font-bold uppercase tracking-[0.22em] ${accent.text}`}
+            >
               {document.referenceLabel}
             </p>
             <p className="mt-2 font-public text-[10px] uppercase tracking-[0.16em] text-stone-400">
@@ -360,7 +819,11 @@ function SopFrameworkDetail({ document }) {
         <section className="border border-white/6 bg-[#1a1a1a] p-6">
           <div className="flex items-center gap-3">
             <span className={`grid h-10 w-10 place-items-center ${accent.bg}`}>
-              <svg viewBox="0 0 20 20" className={`h-5 w-5 ${accent.text}`} fill="currentColor">
+              <svg
+                viewBox="0 0 20 20"
+                className={`h-5 w-5 ${accent.text}`}
+                fill="currentColor"
+              >
                 <path d="M10 2l7 3.5V10c0 4.1-2.7 6.9-7 8-4.3-1.1-7-3.9-7-8V5.5L10 2zm0 2.2L5 6.6V10c0 2.9 1.7 5 5 6.1 3.3-1.1 5-3.2 5-6.1V6.6l-5-2.4z" />
               </svg>
             </span>
@@ -375,18 +838,27 @@ function SopFrameworkDetail({ document }) {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {document.directives.map((directive) => (
-              <div key={directive.label} className="border border-white/6 bg-black/25 p-4">
-                <p className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}>
+              <div
+                key={directive.label}
+                className="border border-white/6 bg-black/25 p-4"
+              >
+                <p
+                  className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}
+                >
                   {directive.label}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-stone-300">{directive.text}</p>
+                <p className="mt-2 text-sm leading-6 text-stone-300">
+                  {directive.text}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
         <section className="border border-white/6 bg-[#161616] p-6">
-          <p className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}>
+          <p
+            className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}
+          >
             Field Specifications
           </p>
           <div className="mt-6 space-y-5">
@@ -419,11 +891,31 @@ function SopFrameworkDetail({ document }) {
                   : "border-white/6"
             }`}
           >
-            <p className="font-sans text-4xl font-bold text-stone-600">{phase.index}</p>
+            <p className="font-sans text-4xl font-bold text-stone-600">
+              {phase.index}
+            </p>
             <h3 className="mt-5 font-sans text-2xl font-bold uppercase text-stone-100">
               {phase.title}
             </h3>
-            <p className="mt-4 text-sm leading-7 text-stone-400">{phase.description}</p>
+            <p className="mt-4 text-sm leading-7 text-stone-400">
+              {phase.description}
+            </p>
+
+            {phase.image ? (
+              <figure className="mt-5 overflow-hidden border border-white/6 bg-black/25">
+                <img
+                  src={phase.image}
+                  alt={phase.imageAlt ?? phase.title}
+                  className="h-44 w-full object-cover"
+                  loading="lazy"
+                />
+                {phase.imageCaption ? (
+                  <figcaption className="border-t border-white/6 px-3 py-2 text-xs leading-5 text-stone-400">
+                    {phase.imageCaption}
+                  </figcaption>
+                ) : null}
+              </figure>
+            ) : null}
 
             <div className="mt-6 space-y-3">
               {phase.bullets.map((bullet) => (
@@ -439,15 +931,201 @@ function SopFrameworkDetail({ document }) {
         ))}
       </div>
 
+      {document.visualGuides ? (
+        <section className="border border-white/6 bg-[#181818] p-6">
+          <div className="flex flex-col gap-3 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p
+                className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}
+              >
+                Referensi Visual
+              </p>
+              <h3 className="mt-2 font-sans text-3xl font-bold uppercase text-stone-100">
+                Foto Panduan Lapangan
+              </h3>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-stone-400">
+              Foto dari dokumen panduan dipakai sebagai acuan cepat agar
+              pelatih tidak perlu membuka file terpisah saat sesi berjalan.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {document.visualGuides.map((guide) => (
+              <article
+                key={guide.title}
+                className="overflow-hidden border border-white/6 bg-black/20"
+              >
+                <img
+                  src={guide.image}
+                  alt={guide.title}
+                  className="h-40 w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-4">
+                  <p
+                    className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}
+                  >
+                    {guide.title}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-stone-300">
+                    {guide.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {document.inputGuides ? (
+        <section className="border border-white/6 bg-[#161616] p-6">
+          <div className="flex flex-col gap-3 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p
+                className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}
+              >
+                Panduan Pengisian
+              </p>
+              <h3 className="mt-2 font-sans text-3xl font-bold uppercase text-stone-100">
+                Data yang Wajib Diisi
+              </h3>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-stone-400">
+              Gunakan bagian ini sebagai checklist saat mengoperasikan aplikasi
+              supaya data yang masuk ke laporan, dispatch, dan sertijab tetap
+              konsisten.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
+            {document.inputGuides.map((guide) => (
+              <article
+                key={guide.title}
+                className="border border-white/6 bg-black/20 p-5"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="font-sans text-xl font-bold text-stone-100">
+                      {guide.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-stone-400">
+                      {guide.description}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.16em] ${accent.chip}`}
+                  >
+                    {guide.required}
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {guide.fields.map((field) => (
+                    <div key={field} className="flex items-start gap-3">
+                      <span className={`mt-2 h-1.5 w-1.5 ${accent.bar}`} />
+                      <p className="text-sm leading-6 text-stone-300">
+                        {field}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {document.featureGuides ? (
+        <section className="border border-white/6 bg-[#181818] p-6">
+          <p
+            className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}
+          >
+            Pembahasan Fitur
+          </p>
+          <h3 className="mt-2 font-sans text-3xl font-bold uppercase text-stone-100">
+            Fungsi Tiap Menu
+          </h3>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {document.featureGuides.map((feature) => (
+              <article
+                key={feature.name}
+                className="border border-white/6 bg-black/20 p-4"
+              >
+                <p
+                  className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}
+                >
+                  {feature.name}
+                </p>
+                <p className="mt-3 text-sm leading-6 text-stone-300">
+                  {feature.detail}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {document.completionChecklist ? (
+        <section className="border border-white/6 bg-[#1a1a1a] p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p
+                className={`font-public text-[10px] font-bold uppercase tracking-[0.28em] ${accent.text}`}
+              >
+                Checklist Akhir
+              </p>
+              <h3 className="mt-2 font-sans text-3xl font-bold uppercase text-stone-100">
+                Sesi Dianggap Selesai Jika
+              </h3>
+            </div>
+            <span
+              className={`border px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] ${accent.chip}`}
+            >
+              Final Check
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            {document.completionChecklist.map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-3 border border-white/6 bg-black/20 px-4 py-3"
+              >
+                <span
+                  className={`mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full ${accent.bg}`}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    className={`h-3.5 w-3.5 ${accent.text}`}
+                    fill="currentColor"
+                  >
+                    <path d="M6.4 11.2 3.3 8.1l1.1-1.1 2 2 5.2-5.2 1.1 1.1-6.3 6.3z" />
+                  </svg>
+                </span>
+                <p className="text-sm leading-6 text-stone-300">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="grid gap-4 border border-white/6 bg-[#181818] p-5 md:grid-cols-[minmax(0,1fr)_220px]">
         <div className="flex items-start gap-4">
           <div className={`grid h-16 w-16 place-items-center ${accent.bg}`}>
-            <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="currentColor">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-8 w-8 text-white"
+              fill="currentColor"
+            >
               <path d="M12 3l10 18H2L12 3zm0 4.2L5.4 19h13.2L12 7.2zm-1 4.3h2v4h-2v-4zm0 5.5h2v2h-2v-2z" />
             </svg>
           </div>
           <div>
-            <p className={`font-public text-[10px] font-bold uppercase tracking-[0.22em] ${accent.text}`}>
+            <p
+              className={`font-public text-[10px] font-bold uppercase tracking-[0.22em] ${accent.text}`}
+            >
               {document.emergency.title}
             </p>
             <p className="mt-3 text-sm leading-7 text-stone-300">
@@ -460,7 +1138,9 @@ function SopFrameworkDetail({ document }) {
           <p className="font-public text-[8px] uppercase tracking-[0.2em] text-stone-500">
             Protocol Identifier
           </p>
-          <p className={`mt-4 font-sans text-3xl font-bold uppercase ${accent.text}`}>
+          <p
+            className={`mt-4 font-sans text-3xl font-bold uppercase ${accent.text}`}
+          >
             {document.emergency.code}
           </p>
         </div>
@@ -483,7 +1163,9 @@ function SopSectionedDetail({ document }) {
       <section className="border border-white/6 bg-[#171717] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)] md:p-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-4">
-            <p className={`font-public text-[9px] font-bold uppercase tracking-[0.22em] ${accent.text}`}>
+            <p
+              className={`font-public text-[9px] font-bold uppercase tracking-[0.22em] ${accent.text}`}
+            >
               {document.documentTag}
             </p>
             <p className="font-public text-[9px] uppercase tracking-[0.18em] text-stone-500">
@@ -491,7 +1173,9 @@ function SopSectionedDetail({ document }) {
             </p>
           </div>
 
-          <h2 className={`font-sans text-4xl font-bold uppercase leading-none md:text-5xl ${accent.text}`}>
+          <h2
+            className={`font-sans text-4xl font-bold uppercase leading-none md:text-5xl ${accent.text}`}
+          >
             {document.title}
           </h2>
 
@@ -513,19 +1197,32 @@ function SopSectionedDetail({ document }) {
 
       <div className="space-y-5">
         {document.sections.map((section) => (
-          <section key={section.index} className="border border-white/6 bg-[#1c1c1c] p-6">
+          <section
+            key={section.index}
+            className="border border-white/6 bg-[#1c1c1c] p-6"
+          >
             <div className="flex items-center gap-4">
-              <span className={`grid h-10 w-10 place-items-center ${accent.bg}`}>
-                <svg viewBox="0 0 20 20" className={`h-4 w-4 ${accent.text}`} fill="currentColor">
+              <span
+                className={`grid h-10 w-10 place-items-center ${accent.bg}`}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className={`h-4 w-4 ${accent.text}`}
+                  fill="currentColor"
+                >
                   <path d="M10 2l6 3.4v5.2c0 3.7-2.4 6.2-6 7.4-3.6-1.2-6-3.7-6-7.4V5.4L10 2zm0 2.3L6 6.6v4c0 2.5 1.4 4.4 4 5.4 2.6-1 4-2.9 4-5.4v-4l-4-2.3z" />
                 </svg>
               </span>
               <div>
-                <p className={`font-sans text-2xl font-bold uppercase ${accent.text}`}>
+                <p
+                  className={`font-sans text-2xl font-bold uppercase ${accent.text}`}
+                >
                   {section.index} {section.title}
                 </p>
                 {section.intro ? (
-                  <p className="mt-3 text-sm leading-7 text-stone-400">{section.intro}</p>
+                  <p className="mt-3 text-sm leading-7 text-stone-400">
+                    {section.intro}
+                  </p>
                 ) : null}
               </div>
             </div>
@@ -534,7 +1231,9 @@ function SopSectionedDetail({ document }) {
               <div className="mt-6 space-y-4">
                 {section.bullets.map((bullet) => (
                   <div key={bullet} className="flex items-start gap-3">
-                    <span className={`mt-2 h-1.5 w-1.5 rounded-full ${accent.bar}`} />
+                    <span
+                      className={`mt-2 h-1.5 w-1.5 rounded-full ${accent.bar}`}
+                    />
                     <p className="text-sm leading-7 text-stone-300">{bullet}</p>
                   </div>
                 ))}
@@ -544,11 +1243,18 @@ function SopSectionedDetail({ document }) {
             {section.cards ? (
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 {section.cards.map((card) => (
-                  <div key={card.title} className="border border-white/6 bg-black/30 p-4">
-                    <p className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}>
+                  <div
+                    key={card.title}
+                    className="border border-white/6 bg-black/30 p-4"
+                  >
+                    <p
+                      className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}
+                    >
                       {card.title}
                     </p>
-                    <p className="mt-3 text-sm leading-6 text-stone-400">{card.text}</p>
+                    <p className="mt-3 text-sm leading-6 text-stone-400">
+                      {card.text}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -561,10 +1267,14 @@ function SopSectionedDetail({ document }) {
                     key={protocol.tag}
                     className="flex flex-col gap-3 border border-white/6 bg-black/20 px-4 py-3 md:flex-row md:items-center"
                   >
-                    <span className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.14em] ${accent.chip}`}>
+                    <span
+                      className={`border px-2 py-1 font-public text-[8px] font-bold uppercase tracking-[0.14em] ${accent.chip}`}
+                    >
                       {protocol.tag}
                     </span>
-                    <p className="text-sm leading-6 text-stone-300">{protocol.text}</p>
+                    <p className="text-sm leading-6 text-stone-300">
+                      {protocol.text}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -573,7 +1283,9 @@ function SopSectionedDetail({ document }) {
             {section.mandatoryItems ? (
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <div className="border border-white/6 bg-black/20 p-4">
-                  <p className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}>
+                  <p
+                    className={`font-public text-[9px] font-bold uppercase tracking-[0.18em] ${accent.text}`}
+                  >
                     {section.mandatoryTitle}
                   </p>
                   <div className="mt-4 space-y-3">
@@ -596,7 +1308,9 @@ function SopSectionedDetail({ document }) {
                     {section.failureItems.map((item) => (
                       <div key={item} className="flex items-start gap-3">
                         <span className="mt-2 h-2 w-2 rounded-full bg-rose-400" />
-                        <p className="text-sm leading-6 text-stone-300">{item}</p>
+                        <p className="text-sm leading-6 text-stone-300">
+                          {item}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -619,7 +1333,8 @@ function SopDocumentDetail({ document }) {
 }
 
 export default function SopPage() {
-  const [activeDocumentId, setActiveDocumentId] = useState(SOP_LIBRARY[0].id);
+  const [activeDocumentId, setActiveDocumentId] =
+    useState("sop-perekrut-brm5");
 
   const activeDocument = useMemo(
     () =>
@@ -642,9 +1357,9 @@ export default function SopPage() {
               SOP Library
             </h1>
             <p className="max-w-3xl text-sm leading-6 text-stone-400">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+              Pusat panduan operasional untuk recruiter dan staff Paskus 791.
+              Buka dokumen sesuai kebutuhan: pelatihan rekrutmen, penggunaan
+              aplikasi, serta aturan umum dan roleplay.
             </p>
           </div>
 
@@ -692,7 +1407,9 @@ export default function SopPage() {
               </p>
             </div>
 
-            <span className={`border px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] ${getSopAccentClasses(activeDocument.accent).chip}`}>
+            <span
+              className={`border px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] ${getSopAccentClasses(activeDocument.accent).chip}`}
+            >
               {activeDocument.badge}
             </span>
           </div>

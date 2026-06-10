@@ -25,6 +25,7 @@ import {
   fetchSharedStaffOperators,
   createStaffRecruitmentSession,
   deleteStaffOperatorAccount,
+  deleteAllStaffOperatorAccounts,
   fetchStaffCandidates,
   fetchStaffRecruitmentDetail,
   fetchStaffRecruitmentSummaries,
@@ -138,6 +139,12 @@ function mapRemoteCandidate(candidate, index = 0) {
         identity: candidate._id,
         roblox: candidate.nama_roblox,
         discord: candidate.discord_name,
+        discordUserId:
+          candidate.discordUserId ||
+          candidate.discord_user_id ||
+          candidate.discordId ||
+          candidate.discord_id ||
+          "",
         age: candidate.age,
         gender: candidate.gender,
         category: candidate.status,
@@ -213,6 +220,21 @@ function createSessionDispatchRecord({
     Number(dispatchResult?.attachmentCount) ||
     attachmentFileNames.length ||
     attachmentPreviewUrls.length;
+  const messageIds = [
+    ...new Set(
+      [
+        ...(Array.isArray(dispatchResult?.messageIds) ? dispatchResult.messageIds : []),
+        dispatchResult?.messageId,
+        ...(Array.isArray(dispatchResult?.extraMessageIds) ? dispatchResult.extraMessageIds : []),
+      ]
+        .map((messageId) => String(messageId || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const sertijabResult =
+    dispatchResult?.sertijab && typeof dispatchResult.sertijab === "object"
+      ? dispatchResult.sertijab
+      : null;
 
   if (!normalizedDescription && attachmentCount === 0 && !dispatchResult) {
     return null;
@@ -230,6 +252,12 @@ function createSessionDispatchRecord({
     mentionedOperatorCount: Number(dispatchResult?.mentionedOperatorCount) || 0,
     mentionedRegistrantCount: Number(dispatchResult?.mentionedRegistrantCount) || 0,
     requestedByLabel: currentUser?.label || currentUser?.nama || "",
+    messageId: messageIds[0] || "",
+    messageIds,
+    extraMessageIds: messageIds.slice(1),
+    embedCount: Number(dispatchResult?.embedCount) || 0,
+    messageCount: Number(dispatchResult?.messageCount) || (messageIds.length || 0),
+    sertijab: sertijabResult,
   };
 }
 
@@ -502,6 +530,12 @@ function buildSessionDetailPayload(
                 participantSource?.discord_name ||
                 participantSource?.discord ||
                 "unknown#0000",
+              discordUserId:
+                participantSource?.discordUserId ||
+                participantSource?.discord_user_id ||
+                participantSource?.discordId ||
+                participantSource?.discord_id ||
+                "",
               age: participantSource?.age || 0,
               gender: participantSource?.gender || "Tidak Diketahui",
               category:
@@ -580,6 +614,7 @@ function buildReportsFromSession(session, reportMetaMap) {
       category: candidate.category,
       name: candidate.roblox,
       discord: candidate.discord,
+      discordUserId: candidate.discordUserId,
       group: session.golongan,
       status: reportMeta.status || "PROSES",
       age: `${candidate.age} Tahun`,
@@ -987,6 +1022,11 @@ export async function deleteStaffOperator(
     operators: nextDirectory,
     message: "Petugas berhasil dihapus.",
   };
+}
+
+export async function deleteAllStaffOperators(currentUser = null) {
+  const result = await deleteAllStaffOperatorAccounts();
+  return result;
 }
 
 export function createEmptyStaffPortalSnapshot() {

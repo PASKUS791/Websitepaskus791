@@ -11,7 +11,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 20 * 1024 * 1024;
@@ -19,7 +19,7 @@ const MAX_ATTACHMENT_COUNT = 4;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function buildDefaultDispatchDescription(trainingSession) {
-  return `Lampiran hasil perekrutan, pelatihan wingman, dan pengambilan latpur fisik serta mental untuk sesi ${trainingSession?.title || "pelatihan aktif"}.`;
+  return `Laporan hasil seleksi wawancara perekrutan PASKUS-791 untuk sesi ${trainingSession?.title || "pelatihan aktif"}. Peserta yang LULUS akan mendapatkan Sertijab dan pin Komodo.`;
 }
 
 function readFileAsDataUrl(file) {
@@ -61,10 +61,23 @@ export default function RecruitmentDispatchModal({
   );
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState("");
+  const [dispatchPhase, setDispatchPhase] = useState("idle");
+  const closeTimerRef = useRef(null);
 
   useEffect(() => withModalEscape(onClose), [onClose]);
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    },
+    [],
+  );
 
-  const operators = useMemo(() => trainingSession?.operators || [], [trainingSession]);
+  const operators = useMemo(
+    () => trainingSession?.operators || [],
+    [trainingSession],
+  );
   const mentionReadyOperators = useMemo(
     () => operators.filter((operator) => Boolean(operator.discordUserId)),
     [operators],
@@ -74,6 +87,8 @@ export default function RecruitmentDispatchModal({
     [operators],
   );
   const applicantPreview = useMemo(() => reports.slice(0, 6), [reports]);
+  const modalLocked =
+    submitting || dispatchPhase === "sending" || dispatchPhase === "complete";
 
   const totalAttachmentBytes = useMemo(
     () => attachments.reduce((total, attachment) => total + attachment.size, 0),
@@ -89,8 +104,9 @@ export default function RecruitmentDispatchModal({
     }
 
     const existingKeys = new Set(
-      attachments.map((attachment) =>
-        `${attachment.fileName}:${attachment.size}:${attachment.file?.lastModified || 0}`,
+      attachments.map(
+        (attachment) =>
+          `${attachment.fileName}:${attachment.size}:${attachment.file?.lastModified || 0}`,
       ),
     );
     const incomingFiles = selectedFiles.filter((file) => {
@@ -104,22 +120,29 @@ export default function RecruitmentDispatchModal({
       return;
     }
 
-    const invalidFile = incomingFiles.find((file) => !ACCEPTED_IMAGE_TYPES.includes(file.type));
+    const invalidFile = incomingFiles.find(
+      (file) => !ACCEPTED_IMAGE_TYPES.includes(file.type),
+    );
 
     if (invalidFile) {
       setError("Lampiran foto hanya menerima format JPG, PNG, atau WEBP.");
       return;
     }
 
-    const oversizedFile = incomingFiles.find((file) => file.size > MAX_ATTACHMENT_BYTES);
+    const oversizedFile = incomingFiles.find(
+      (file) => file.size > MAX_ATTACHMENT_BYTES,
+    );
 
     if (oversizedFile) {
-      setError("Setiap lampiran maksimal 5MB agar sesuai batas upload backend.");
+      setError(
+        "Setiap lampiran maksimal 5MB agar sesuai batas upload backend.",
+      );
       return;
     }
 
     const nextTotalBytes =
-      totalAttachmentBytes + incomingFiles.reduce((total, file) => total + file.size, 0);
+      totalAttachmentBytes +
+      incomingFiles.reduce((total, file) => total + file.size, 0);
 
     if (nextTotalBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
       setError("Total seluruh lampiran maksimal 20MB per dispatch.");
@@ -137,7 +160,10 @@ export default function RecruitmentDispatchModal({
         })),
       );
 
-      setAttachments((currentAttachments) => [...currentAttachments, ...nextAttachments]);
+      setAttachments((currentAttachments) => [
+        ...currentAttachments,
+        ...nextAttachments,
+      ]);
       setError("");
     } catch (readError) {
       setError(readError.message || "Gagal membaca lampiran foto.");
@@ -160,14 +186,29 @@ export default function RecruitmentDispatchModal({
     event.preventDefault();
 
     if (attachments.length === 0) {
-      setError("Minimal satu lampiran foto wajib diisi sebelum laporan dikirim ke resimen.");
+      setError(
+        "Minimal satu lampiran foto wajib diisi sebelum laporan dikirim ke resimen.",
+      );
       return;
     }
 
-    await onSubmit({
-      description: description.trim(),
-      attachments,
-    });
+    try {
+      setError("");
+      setDispatchPhase("sending");
+      await onSubmit({
+        description: description.trim(),
+        attachments,
+      });
+      setDispatchPhase("complete");
+      closeTimerRef.current = window.setTimeout(() => {
+        onClose();
+      }, 1600);
+    } catch (submitError) {
+      setDispatchPhase("error");
+      setError(
+        submitError?.message || "Gagal mengirim laporan sesi ke resimen.",
+      );
+    }
   };
 
   return (
@@ -195,16 +236,19 @@ export default function RecruitmentDispatchModal({
               Kirim Laporan Ke Resimen
             </h3>
             <p className="mt-1.5 text-[13px] text-stone-400">
-              Sistem akan kirim satu embed Discord, melampirkan beberapa foto, lalu
-              mencantumkan tag instruktur dan pendaftar untuk{" "}
+              Sistem akan kirim satu embed Discord, melampirkan beberapa foto,
+              lalu mencantumkan tag instruktur dan pendaftar untuk{" "}
               {trainingSession?.title || "sesi aktif"}.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={onClose}
-            className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
+            onClick={() => {
+              if (!modalLocked) onClose();
+            }}
+            disabled={modalLocked}
+            className="border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Tutup
           </button>
@@ -222,13 +266,17 @@ export default function RecruitmentDispatchModal({
                     <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
                       Sesi
                     </p>
-                    <p className="mt-1 text-sm text-stone-200">{trainingSession?.title}</p>
+                    <p className="mt-1 text-sm text-stone-200">
+                      {trainingSession?.title}
+                    </p>
                   </div>
                   <div className="rounded-xl border border-white/8 bg-black/20 p-3">
                     <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
                       Kandidat
                     </p>
-                    <p className="mt-1 text-sm text-stone-200">{reports.length} laporan</p>
+                    <p className="mt-1 text-sm text-stone-200">
+                      {reports.length} laporan
+                    </p>
                   </div>
                   <div className="rounded-xl border border-white/8 bg-black/20 p-3">
                     <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
@@ -242,7 +290,9 @@ export default function RecruitmentDispatchModal({
                     <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
                       Golongan
                     </p>
-                    <p className="mt-1 text-sm text-stone-200">{trainingSession?.golongan}</p>
+                    <p className="mt-1 text-sm text-stone-200">
+                      {trainingSession?.golongan}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -271,7 +321,8 @@ export default function RecruitmentDispatchModal({
                   className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-sm text-stone-300 file:mr-3 file:rounded-xl file:border-0 file:bg-amber-300 file:px-3 file:py-2 file:font-public file:text-[10px] file:font-bold file:uppercase file:tracking-[0.16em] file:text-[#3C2F00]"
                 />
                 <p className="font-public text-[9px] uppercase tracking-[0.14em] text-stone-500">
-                  Maksimal {MAX_ATTACHMENT_COUNT} foto, 5MB per foto, total 20MB.
+                  Maksimal {MAX_ATTACHMENT_COUNT} foto, 5MB per foto, total
+                  20MB.
                 </p>
               </label>
 
@@ -288,7 +339,8 @@ export default function RecruitmentDispatchModal({
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-public text-[9px] uppercase tracking-[0.14em] text-stone-500">
-                        {(totalAttachmentBytes / (1024 * 1024)).toFixed(2)} MB total
+                        {(totalAttachmentBytes / (1024 * 1024)).toFixed(2)} MB
+                        total
                       </span>
                       <button
                         type="button"
@@ -330,7 +382,10 @@ export default function RecruitmentDispatchModal({
                         </div>
                         <img
                           src={attachment.dataUrl}
-                          alt={attachment.fileName || `Lampiran recruiter ${index + 1}`}
+                          alt={
+                            attachment.fileName ||
+                            `Lampiran recruiter ${index + 1}`
+                          }
                           className="h-[220px] w-full object-cover"
                         />
                       </div>
@@ -355,7 +410,9 @@ export default function RecruitmentDispatchModal({
                         <p className="font-sans text-sm font-bold text-stone-100">
                           {operator.label}
                         </p>
-                        <p className="mt-1 text-[12px] text-stone-400">@{operator.username}</p>
+                        <p className="mt-1 text-[12px] text-stone-400">
+                          @{operator.username}
+                        </p>
                         <p className="mt-2 font-public text-[9px] uppercase tracking-[0.14em] text-amber-300">
                           {operator.discordUserId
                             ? `Tag Discord: <@${operator.discordUserId}>`
@@ -376,7 +433,8 @@ export default function RecruitmentDispatchModal({
                       Tag Siap Kirim
                     </p>
                     <p className="mt-1 text-sm text-stone-200">
-                      {mentionReadyOperators.length} instruktur punya Discord User ID.
+                      {mentionReadyOperators.length} instruktur punya Discord
+                      User ID.
                     </p>
                   </div>
 
@@ -386,7 +444,9 @@ export default function RecruitmentDispatchModal({
                         Perlu Dilengkapi
                       </p>
                       <p className="mt-1 text-sm text-stone-200">
-                        {missingDiscordOperators.map((operator) => operator.label).join(", ")}
+                        {missingDiscordOperators
+                          .map((operator) => operator.label)
+                          .join(", ")}
                       </p>
                     </div>
                   ) : null}
@@ -407,7 +467,14 @@ export default function RecruitmentDispatchModal({
                         <p className="font-sans text-sm font-bold text-stone-100">
                           {report.name}
                         </p>
-                        <p className="mt-1 text-[12px] text-stone-400">{report.discord}</p>
+                        <p className="mt-1 text-[12px] text-stone-400">
+                          {report.discord}
+                        </p>
+                        {report.discordUserId ? (
+                          <p className="mt-1 text-[12px] text-emerald-300">
+                            &lt;@{report.discordUserId}&gt; • Discord Synced
+                          </p>
+                        ) : null}
                         <p className="mt-2 font-public text-[9px] uppercase tracking-[0.14em] text-stone-500">
                           {report.status} • {report.group}
                         </p>
@@ -422,22 +489,37 @@ export default function RecruitmentDispatchModal({
 
                 {reports.length > applicantPreview.length ? (
                   <p className="mt-3 text-[12px] text-stone-500">
-                    +{reports.length - applicantPreview.length} pendaftar lain tetap ikut masuk ke embed.
+                    +{reports.length - applicantPreview.length} pendaftar lain
+                    tetap ikut masuk ke embed.
                   </p>
                 ) : null}
               </div>
 
               <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
                 <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-                  Output Otomatis
+                  Output Dispatch
                 </p>
                 <div className="mt-3 space-y-2 text-sm leading-6 text-stone-300">
                   <p>1. Kirim satu embed Discord resmi untuk sesi ini.</p>
                   <p>2. Lampirkan satu atau beberapa foto dari modal ini.</p>
                   <p>3. Tag instruktur yang punya Discord User ID.</p>
                   <p>4. Cantumkan data dan tag pendaftar di dalam embed.</p>
+                  <p>5. Peserta LULUS akan mendapatkan <strong className="text-amber-200">Sertijab</strong> dari resimen.</p>
+                  <p>6. Hanya <strong className="text-amber-200">pin Komodo</strong> yang diberikan — pin latpur tidak lagi diberikan.</p>
+                  <p>7. Uji mutu pada Sertijab diambil dari hasil laporan wawancara yang sudah ditulis dan dicocokan dengan SOP yang tertera.</p>
                 </div>
               </div>
+
+              {dispatchPhase === "complete" ? (
+                <div className="rounded-xl border border-emerald-400/24 bg-emerald-400/10 p-3">
+                  <p className="font-public text-[9px] uppercase tracking-[0.16em] text-emerald-300">
+                    Laporan Telah Terkirim
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-stone-200">
+                    Dispatch selesai. Peserta LULUS akan mendapat Sertijab dan pin Komodo dari resimen. Uji mutu pada Sertijab diambil dari hasil laporan wawancara.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -451,17 +533,24 @@ export default function RecruitmentDispatchModal({
         <div className="mt-4 flex flex-col gap-3 border-t border-white/6 pt-3.5 md:flex-row md:items-center md:justify-end">
           <button
             type="button"
-            onClick={onClose}
-            className="border border-white/8 bg-black/20 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100"
+            onClick={() => {
+              if (!modalLocked) onClose();
+            }}
+            disabled={modalLocked}
+            className="border border-white/8 bg-black/20 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-stone-300 transition hover:bg-white/5 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Batal
           </button>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={modalLocked}
             className="bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.18em] text-[#3C2F00] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "Mengirim..." : "Kirim Laporan Ke Resimen"}
+            {dispatchPhase === "complete"
+              ? "Selesai"
+              : submitting || dispatchPhase === "sending"
+                ? "Mengirim Laporan..."
+                : "Kirim Laporan Ke Resimen"}
           </button>
         </div>
       </motion.form>

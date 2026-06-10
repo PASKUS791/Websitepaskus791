@@ -98,7 +98,7 @@ export async function dispatchRecruitmentSessionReport(payload) {
   const response = await staffApiFetch(RECRUITMENT_DISPATCH_PATH, {
     method: "POST",
     body: formData,
-    timeout: 65000,
+    timeout: 120000,
   });
 
   if (!response || (response.success !== true && response.ok !== true)) {

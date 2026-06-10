@@ -12,12 +12,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../lib/auth";
-import { createApiEventSource } from "../../lib/api";
 import {
   cancelStaffTrainingSession,
   createEmptyStaffPortalSnapshot,
   createStaffTrainingSession,
   deleteStaffOperator,
+  deleteAllStaffOperators,
   dispatchStaffTrainingSession,
   eliminateStaffCandidate,
   fetchStaffPortalSnapshot,
@@ -63,28 +63,12 @@ export function useStaffPortalData({ enabled = true } = {}) {
       return undefined;
     }
 
-    const eventSource = createApiEventSource();
-
-    const handleMessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-
-        if (payload?.type === "resource-updated" && payload?.resource === "staffPortal.shared") {
-          reload().catch(() => undefined);
-        }
-      } catch {
-        // Ignore malformed SSE payloads.
-      }
-    };
-
-    eventSource.addEventListener("message", handleMessage);
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
+    const interval = window.setInterval(() => {
+      reload().catch(() => undefined);
+    }, 60000);
 
     return () => {
-      eventSource.removeEventListener("message", handleMessage);
-      eventSource.close();
+      window.clearInterval(interval);
     };
   }, [enabled, reload]);
 
@@ -147,6 +131,11 @@ export function useStaffPortalData({ enabled = true } = {}) {
     deleteOperator: async (payload) => {
       await deleteStaffOperator(payload, user);
       return reload();
+    },
+    deleteAllOperators: async () => {
+      const result = await deleteAllStaffOperators(user);
+      await reload();
+      return result;
     },
   };
 }

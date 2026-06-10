@@ -1,9 +1,10 @@
-# Team DUKUN PASKUS 791
-# Jevier - Frontend
-# Teddy - Backend
-# Lee - Cyber Sector
-# Osiris - Bot Manufactur
-# Internal proprietary source notice.
-
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
+Disallow: /data/
+Disallow: /server/
+Disallow: /staff-site/
+Disallow: /streamer-admin.html
+Disallow: /structure_documentation.md
+
+Sitemap: https://paskus.so791.com/sitemap.xml

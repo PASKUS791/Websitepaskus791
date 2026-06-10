@@ -16,8 +16,11 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import TrainingSessionReportModal from "../components/TrainingSessionReportModal";
 import { finishStaffRecruitmentSession } from "../../lib/staffApi";
 import {
+  buildRecruitmentReportNotesTemplate,
+  buildRecruitmentReportQuestionTemplate,
   formatArchiveTimestamp,
   formatOperationalDateLabel,
+  getRecruitmentReportValidationMessage,
   isRecruitmentReportComplete,
   isTrainingSessionDispatched,
   normalizeRecruitmentReport,
@@ -40,7 +43,9 @@ function SessionMetricCard({ label, value, detail, accent = "stone" }) {
       >
         {label}
       </div>
-      <p className="mt-3 font-sans text-[2rem] font-bold text-stone-100">{value}</p>
+      <p className="mt-3 font-sans text-[2rem] font-bold text-stone-100">
+        {value}
+      </p>
       <p className="mt-1.5 text-[13px] leading-5 text-stone-400">{detail}</p>
     </div>
   );
@@ -49,7 +54,9 @@ function SessionMetricCard({ label, value, detail, accent = "stone" }) {
 function OperatorChip({ operator }) {
   return (
     <div className="rounded-2xl border border-white/8 bg-black/20 px-3.5 py-3.5">
-      <p className="font-sans text-base font-bold text-stone-100 md:text-lg">{operator.label}</p>
+      <p className="font-sans text-base font-bold text-stone-100 md:text-lg">
+        {operator.label}
+      </p>
       <p className="mt-1.5 font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
         {operator.unit} • {operator.username}
       </p>
@@ -106,7 +113,10 @@ function getLatestReportsByCandidate(reports = []) {
     }
 
     const currentReport = reportMap.get(report.candidateIdentity);
-    if (!currentReport || getReportTimestampValue(report) >= getReportTimestampValue(currentReport)) {
+    if (
+      !currentReport ||
+      getReportTimestampValue(report) >= getReportTimestampValue(currentReport)
+    ) {
       reportMap.set(report.candidateIdentity, report);
     }
   });
@@ -169,13 +179,16 @@ function buildDraftReportForCandidate(sessionId, trainingSession, candidate) {
     category: candidate.category,
     name: candidate.roblox,
     discord: candidate.discord,
+    discordUserId: candidate.discordUserId,
     group: trainingSession.golongan,
     status: "PROSES",
     age: `${candidate.age} Tahun`,
     gender: candidate.gender,
-    question: `Evaluasi awal untuk ${candidate.roblox} pada ${trainingSession.golongan}?`,
-    notes:
-      "Isi hasil observasi pelatih, progres rekrutmen, dan rekomendasi berikutnya di sini.",
+    question: buildRecruitmentReportQuestionTemplate({
+      name: candidate.roblox,
+      group: trainingSession.golongan,
+    }),
+    notes: buildRecruitmentReportNotesTemplate(),
     operators: trainingSession.operators,
     additionalReports: [],
     sentAt: null,
@@ -217,7 +230,14 @@ function CandidateReportRow({
           <p className="font-sans text-xl font-bold text-stone-100 md:text-[1.6rem]">
             {candidate.roblox}
           </p>
-          <p className="mt-1.5 text-[13px] text-stone-400">{candidate.discord}</p>
+          <p className="mt-1.5 text-[13px] text-stone-400">
+            {candidate.discord}
+          </p>
+          {candidate.discordUserId ? (
+            <p className="mt-1 font-public text-[9px] uppercase tracking-[0.14em] text-emerald-200">
+              {`<@${candidate.discordUserId}> • Discord Synced`}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -309,7 +329,8 @@ function CandidateReportRow({
           </>
         ) : (
           <p className="text-[12px] leading-6 text-stone-400">
-            Sesi ini sudah ditutup. Review dan perubahan lanjutan dipindahkan ke halaman hasil laporan.
+            Sesi ini sudah ditutup. Review dan perubahan lanjutan dipindahkan ke
+            halaman hasil laporan.
           </p>
         )}
       </div>
@@ -335,7 +356,10 @@ export default function PelatihanPage() {
   const [activeReportId, setActiveReportId] = useState(null);
   const [cancelling, setCancelling] = useState(false);
   const [dispatching, setDispatching] = useState(false);
-  const [reportSubmittingCandidateIdentity, setReportSubmittingCandidateIdentity] = useState("");
+  const [
+    reportSubmittingCandidateIdentity,
+    setReportSubmittingCandidateIdentity,
+  ] = useState("");
   const [reportVisualOverrides, setReportVisualOverrides] = useState({});
   const [sessionNotice, setSessionNotice] = useState(
     "Panel pelatihan aktif. Tambahkan laporan tiap kandidat satu per satu, lalu kirim sesi lewat satu pintu ke Review Laporan setelah semua kandidat memiliki laporan.",
@@ -355,46 +379,49 @@ export default function PelatihanPage() {
   );
 
   const trainingSession = useMemo(
-    () => trainingSessions.find((session) => session.id === sessionId) ?? initialSession,
+    () =>
+      trainingSessions.find((session) => session.id === sessionId) ??
+      initialSession,
     [initialSession, sessionId, trainingSessions],
   );
-  const sourceSessionReports = useMemo(
-    () => {
-      const persistedReports = reports.filter((report) => report.sessionId === sessionId);
+  const sourceSessionReports = useMemo(() => {
+    const persistedReports = reports.filter(
+      (report) => report.sessionId === sessionId,
+    );
 
-      if (persistedReports.length > 0 || initialReports.length === 0) {
-        return persistedReports;
-      }
+    if (persistedReports.length > 0 || initialReports.length === 0) {
+      return persistedReports;
+    }
 
-      return initialReports;
-    },
-    [initialReports, reports, sessionId],
-  );
-  const effectiveSourceSessionReports = useMemo(
-    () => {
-      const sourceReportIds = new Set(sourceSessionReports.map((report) => report.id));
-      const optimisticOnlyReports = Object.values(reportVisualOverrides)
-        .filter(
-          (report) =>
-            report?.sessionId === sessionId && !sourceReportIds.has(report.id),
-        )
-        .map((report, index) => normalizeRecruitmentReport(report, index));
+    return initialReports;
+  }, [initialReports, reports, sessionId]);
+  const effectiveSourceSessionReports = useMemo(() => {
+    const sourceReportIds = new Set(
+      sourceSessionReports.map((report) => report.id),
+    );
+    const optimisticOnlyReports = Object.values(reportVisualOverrides)
+      .filter(
+        (report) =>
+          report?.sessionId === sessionId && !sourceReportIds.has(report.id),
+      )
+      .map((report, index) => normalizeRecruitmentReport(report, index));
 
-      return [
-        ...sourceSessionReports.map((report) =>
-          normalizeRecruitmentReport(reportVisualOverrides[report.id] ?? report),
-        ),
-        ...optimisticOnlyReports,
-      ];
-    },
-    [reportVisualOverrides, sessionId, sourceSessionReports],
-  );
+    return [
+      ...sourceSessionReports.map((report) =>
+        normalizeRecruitmentReport(reportVisualOverrides[report.id] ?? report),
+      ),
+      ...optimisticOnlyReports,
+    ];
+  }, [reportVisualOverrides, sessionId, sourceSessionReports]);
   const sessionReports = useMemo(
     () => getLatestReportsByCandidate(effectiveSourceSessionReports),
     [effectiveSourceSessionReports],
   );
   const reportMap = useMemo(
-    () => new Map(sessionReports.map((report) => [report.candidateIdentity, report])),
+    () =>
+      new Map(
+        sessionReports.map((report) => [report.candidateIdentity, report]),
+      ),
     [sessionReports],
   );
 
@@ -402,7 +429,9 @@ export default function PelatihanPage() {
     setReportVisualOverrides((currentOverrides) => {
       let hasChanges = false;
       const nextOverrides = { ...currentOverrides };
-      const persistedIds = new Set(sourceSessionReports.map((report) => report.id));
+      const persistedIds = new Set(
+        sourceSessionReports.map((report) => report.id),
+      );
 
       Object.keys(nextOverrides).forEach((reportId) => {
         if (!persistedIds.has(reportId)) {
@@ -415,7 +444,10 @@ export default function PelatihanPage() {
         const normalizedReport = normalizeRecruitmentReport(report);
         const override = nextOverrides[normalizedReport.id];
 
-        if (override && isReportVisualizationSynced(normalizedReport, override)) {
+        if (
+          override &&
+          isReportVisualizationSynced(normalizedReport, override)
+        ) {
           delete nextOverrides[normalizedReport.id];
           hasChanges = true;
         }
@@ -501,7 +533,9 @@ export default function PelatihanPage() {
     ? isTrainingSessionDispatched(trainingSession, sessionReports)
     : false;
   const reportedCount = sessionReports.length;
-  const completedCount = sessionReports.filter(isRecruitmentReportComplete).length;
+  const completedCount = sessionReports.filter(
+    isRecruitmentReportComplete,
+  ).length;
   const supplementCount = sessionReports.reduce(
     (total, report) => total + report.additionalReports.length,
     0,
@@ -512,12 +546,26 @@ export default function PelatihanPage() {
   );
   const allCandidatesHaveReports =
     (trainingSession?.candidates.length || 0) > 0 && pendingCount === 0;
+  const incompleteSessionReports = sessionReports
+    .map((report) => ({
+      report,
+      message: getRecruitmentReportValidationMessage(report, {
+        requireFinalStatus: true,
+      }),
+    }))
+    .filter((entry) => entry.message);
+  const allCandidatesReadyForDispatch =
+    allCandidatesHaveReports && incompleteSessionReports.length === 0;
+  const reportReadinessNotice =
+    !dispatched && allCandidatesHaveReports && incompleteSessionReports.length > 0
+      ? `Semua kandidat sudah memiliki laporan, tetapi ${incompleteSessionReports.length} laporan belum siap dikirim. Lengkapi pertanyaan, keterangan analis, dan status final LULUS/GAGAL.`
+      : "";
   const resolvedSessionNotice = portalLoading
     ? "Memuat data sesi pelatihan..."
     : portalError ||
       (dispatched
         ? "Sesi ini sudah ditutup dan dipindahkan ke Review Laporan. Lanjutan pemeriksaan dan pengiriman akhir dilakukan dari halaman review."
-        : sessionNotice);
+        : reportReadinessNotice || sessionNotice);
 
   const handleSaveReport = async (updatedReport) => {
     if (!trainingSession) {
@@ -526,13 +574,16 @@ export default function PelatihanPage() {
 
     const normalizedReport = normalizeRecruitmentReport(updatedReport);
     const previousReport =
-      sessionReports.find((report) => report.id === normalizedReport.id) ?? null;
+      sessionReports.find((report) => report.id === normalizedReport.id) ??
+      null;
     const reportExists = sessionReports.some(
-      (report) => report.candidateIdentity === normalizedReport.candidateIdentity,
+      (report) =>
+        report.candidateIdentity === normalizedReport.candidateIdentity,
     );
     const nextSessionReports = getLatestReportsByCandidate([
       ...sessionReports.filter(
-        (report) => report.candidateIdentity !== normalizedReport.candidateIdentity,
+        (report) =>
+          report.candidateIdentity !== normalizedReport.candidateIdentity,
       ),
       normalizedReport,
     ]);
@@ -541,6 +592,11 @@ export default function PelatihanPage() {
         (report) => report.candidateIdentity === candidate.identity,
       ),
     );
+    const nextIncompleteReportCount = nextSessionReports.filter((report) =>
+      getRecruitmentReportValidationMessage(report, {
+        requireFinalStatus: true,
+      }),
+    ).length;
     const nextPendingCount = Math.max(
       0,
       trainingSession.candidates.length - nextSessionReports.length,
@@ -559,10 +615,14 @@ export default function PelatihanPage() {
       });
       reconcileSavedReport(normalizedReport, nextSnapshot);
       setSessionNotice(
-        allCandidatesCovered
+        allCandidatesCovered && nextIncompleteReportCount === 0
           ? `Laporan ${normalizedReport.name} disimpan pada ${formatArchiveTimestamp(
               normalizedReport.updatedAt,
             )}. Semua kandidat sudah memiliki laporan. Gunakan tombol Kirim Laporan untuk menutup sesi dan masuk ke Review Laporan.`
+          : allCandidatesCovered
+            ? `Laporan ${normalizedReport.name} disimpan pada ${formatArchiveTimestamp(
+                normalizedReport.updatedAt,
+              )}. Semua kandidat sudah memiliki laporan, tetapi ${nextIncompleteReportCount} laporan masih perlu status final dan keterangan analis yang lengkap.`
           : `Laporan ${normalizedReport.name} disimpan pada ${formatArchiveTimestamp(
               normalizedReport.updatedAt,
             )}. Tinggal ${nextPendingCount} kandidat lagi sebelum sesi bisa dikirim ke Review Laporan.`,
@@ -586,13 +646,26 @@ export default function PelatihanPage() {
     }
 
     if (dispatched) {
-      navigate(`/dashboard/laporan-perekrutan/${trainingSession.id}`, { replace: true });
+      navigate(`/dashboard/laporan-perekrutan/${trainingSession.id}`, {
+        replace: true,
+      });
       return;
     }
 
     if (!allCandidatesHaveReports) {
       setSessionNotice(
         `Semua kandidat harus memiliki laporan terlebih dahulu. Saat ini masih ada ${pendingCount} kandidat yang belum dilaporkan.`,
+      );
+      return;
+    }
+
+    if (incompleteSessionReports.length > 0) {
+      const incompleteNames = incompleteSessionReports
+        .slice(0, 3)
+        .map(({ report }) => report.name)
+        .join(", ");
+      setSessionNotice(
+        `Masih ada ${incompleteSessionReports.length} laporan yang belum siap dikirim (${incompleteNames}). Pertanyaan dan keterangan analis wajib minimal 6 karakter, tidak boleh template kosong, dan status harus LULUS atau GAGAL.`,
       );
       return;
     }
@@ -675,7 +748,8 @@ export default function PelatihanPage() {
       );
     } catch (eliminateError) {
       setSessionNotice(
-        eliminateError?.message || "Gagal mengeliminasi kandidat dari sesi aktif.",
+        eliminateError?.message ||
+          "Gagal mengeliminasi kandidat dari sesi aktif.",
       );
     } finally {
       setReportSubmittingCandidateIdentity("");
@@ -757,8 +831,9 @@ export default function PelatihanPage() {
               </h1>
               <p className="mt-2.5 max-w-3xl text-[13px] leading-5 text-stone-400">
                 Halaman ini dipakai untuk mengelola laporan pelatihan aktif.
-                Tambahkan laporan tiap sipil atau PMC, lalu kirim sesi lewat satu pintu
-                ke hasil review setelah semua kandidat memiliki laporan.
+                Tambahkan laporan tiap sipil atau PMC, lalu kirim sesi lewat
+                satu pintu ke hasil review setelah semua kandidat memiliki
+                laporan.
               </p>
             </div>
 
@@ -781,7 +856,11 @@ export default function PelatihanPage() {
                 <button
                   type="button"
                   onClick={handleCancelSession}
-                  disabled={cancelling || dispatching || Boolean(reportSubmittingCandidateIdentity)}
+                  disabled={
+                    cancelling ||
+                    dispatching ||
+                    Boolean(reportSubmittingCandidateIdentity)
+                  }
                   className="inline-flex rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-rose-200 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {cancelling ? "Membatalkan Sesi..." : "Cancel Sesi"}
@@ -795,7 +874,7 @@ export default function PelatihanPage() {
                   portalLoading ||
                   cancelling ||
                   Boolean(reportSubmittingCandidateIdentity) ||
-                  (!dispatched && !allCandidatesHaveReports)
+                  (!dispatched && !allCandidatesReadyForDispatch)
                 }
                 className="inline-flex rounded-xl bg-[linear-gradient(90deg,#E9C349_0%,#BE9B23_100%)] px-4 py-2.5 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-[#3C2F00] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -812,7 +891,9 @@ export default function PelatihanPage() {
             <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
               Channel Operasional
             </p>
-            <p className="mt-2 text-sm leading-6 text-stone-200">{resolvedSessionNotice}</p>
+            <p className="mt-2 text-sm leading-6 text-stone-200">
+              {resolvedSessionNotice}
+            </p>
           </div>
         </div>
 
@@ -838,7 +919,7 @@ export default function PelatihanPage() {
           <SessionMetricCard
             label="Status Final"
             value={completedCount}
-            detail="Kandidat dengan status akhir LULUS atau GAGAL."
+            detail="Kandidat dengan status final dan laporan valid."
             accent="lime"
           />
           <SessionMetricCard
@@ -910,8 +991,14 @@ export default function PelatihanPage() {
                   busy={
                     reportSubmittingCandidateIdentity === candidate.identity
                   }
-                  highlighted={Boolean(reportVisualOverrides[reportMap.get(candidate.identity)?.id])}
-                  onEliminateCandidate={() => handleEliminateCandidate(candidate)}
+                  highlighted={Boolean(
+                    reportVisualOverrides[
+                      reportMap.get(candidate.identity)?.id
+                    ],
+                  )}
+                  onEliminateCandidate={() =>
+                    handleEliminateCandidate(candidate)
+                  }
                   onOpenReport={() =>
                     setActiveReportId(
                       reportMap.get(candidate.identity)?.id ??
@@ -933,7 +1020,8 @@ export default function PelatihanPage() {
             onClose={() => setActiveReportId(null)}
             onEliminate={() => {
               const targetCandidate = trainingSession?.candidates.find(
-                (candidate) => candidate.identity === activeReport.candidateIdentity,
+                (candidate) =>
+                  candidate.identity === activeReport.candidateIdentity,
               );
 
               if (!targetCandidate) {

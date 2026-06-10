@@ -21,6 +21,70 @@ import {
 
 const ACCEPTED_ATTACHMENT_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_DISPATCH_ATTACHMENT_COUNT = 4;
+const MIN_RECRUITMENT_REPORT_TEXT_LENGTH = 6;
+// Template indikator wawancara SOP perekrutan PASKUS 791 (harus sinkron dengan recruitmentData.js).
+const RECRUITMENT_REPORT_NOTES_TEMPLATE = [
+  "[IDENTITAS]",
+  "Nama Roblox: ",
+  "Nama Discord: ",
+  "Usia kandidat: ",
+  "Status asal (Sipil / PMC / Eks-Resimen): ",
+  "Alasan bergabung ke PASKUS 791: ",
+  "",
+  "[KESEDIAAN MENGABDI]",
+  "Kesiapan mengikuti aturan dan disiplin resimen: ",
+  "Komitmen waktu aktif dan kehadiran sesi: ",
+  "Kesediaan menjaga nama baik satuan: ",
+  "",
+  "[ETIKA DAN KOMUNIKASI]",
+  "Sikap dan bahasa selama sesi wawancara: ",
+  "Respons terhadap instruksi dan arahan perekrut: ",
+  "Pemahaman IC/OOC dan aturan komunitas: ",
+  "",
+  "[KEPANGKATAN DAN UNIT]",
+  "Pemahaman sistem kepangkatan PASKUS 791: ",
+  "Unit yang diminati (GATAM/BRINGAS/SERIGALA/SENTINEL/TORUK/PATHFINDER): ",
+  "Pemahaman peran perwira dan penugasan unit: ",
+  "",
+  "[PERATURAN DAN SOP]",
+  "Pemahaman aturan umum dan larangan komunitas: ",
+  "Pemahaman aturan roleplay (IC/OOC, no powergaming, no metagaming): ",
+  "",
+  "[PELATIHAN DAN TINDAK LANJUT]",
+  "Penjelasan alur pelatihan yang diterima kandidat: ",
+  "Catatan risiko atau hal yang perlu dibina: ",
+  "Rekomendasi pelatih (LULUS / GAGAL / PROBATION): ",
+].join("\n");
+const REPORT_TEXT_PLACEHOLDERS = [
+  "Belum ada pertanyaan strategis untuk kandidat ini.",
+  "Belum ada fokus tambahan.",
+  "Belum ada keterangan analis untuk kandidat ini.",
+  "Belum ada catatan tambahan.",
+  "Isi hasil observasi pelatih, progres rekrutmen, dan rekomendasi berikutnya di sini.",
+];
+
+function normalizeComparableReportText(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function assertReportText(value, label, reportName) {
+  const normalizedValue = normalizeComparableReportText(value);
+  const isPlaceholder = REPORT_TEXT_PLACEHOLDERS.some(
+    (placeholder) => normalizeComparableReportText(placeholder) === normalizedValue,
+  );
+
+  if (
+    String(value || "").trim().length < MIN_RECRUITMENT_REPORT_TEXT_LENGTH ||
+    isPlaceholder
+  ) {
+    throw new Error(
+      `${label} untuk ${reportName} wajib diisi minimal ${MIN_RECRUITMENT_REPORT_TEXT_LENGTH} karakter dan tidak boleh masih berupa template kosong.`,
+    );
+  }
+}
 
 function normalizeOperator(operator, index = 0) {
   return {
@@ -33,30 +97,63 @@ function normalizeOperator(operator, index = 0) {
 }
 
 function normalizeReport(report, index = 0) {
+  const reportName = normalizeText(report?.name, `Kandidat ${index + 1}`);
+  const status = normalizeText(report?.status, "PROSES");
+  const question = normalizeMultilineText(
+    report?.question,
+    "Belum ada pertanyaan strategis untuk kandidat ini.",
+  );
+  const notes = normalizeMultilineText(
+    report?.notes,
+    "Belum ada keterangan analis untuk kandidat ini.",
+  );
   const additionalReports = Array.isArray(report?.additionalReports)
-    ? report.additionalReports.map((entry, supplementIndex) => ({
-        id: String(entry?.id || `supplement-${index}-${supplementIndex}`),
-        question: normalizeMultilineText(entry?.question, "Belum ada fokus tambahan."),
-        notes: normalizeMultilineText(entry?.notes, "Belum ada catatan tambahan."),
-      }))
+    ? report.additionalReports.map((entry, supplementIndex) => {
+        const supplementQuestion = normalizeMultilineText(
+          entry?.question,
+          "Belum ada fokus tambahan.",
+        );
+        const supplementNotes = normalizeMultilineText(
+          entry?.notes,
+          "Belum ada catatan tambahan.",
+        );
+
+        assertReportText(
+          supplementQuestion,
+          `Pertanyaan laporan tambahan ${supplementIndex + 1}`,
+          reportName,
+        );
+        assertReportText(
+          supplementNotes,
+          `Keterangan laporan tambahan ${supplementIndex + 1}`,
+          reportName,
+        );
+
+        return {
+          id: String(entry?.id || `supplement-${index}-${supplementIndex}`),
+          question: supplementQuestion,
+          notes: supplementNotes,
+        };
+      })
     : [];
+
+  assertReportText(question, "Pertanyaan strategis", reportName);
+  assertReportText(notes, "Keterangan analis", reportName);
+
+  if (status === "PROSES") {
+    throw new Error(`Status laporan ${reportName} masih PROSES. Pilih LULUS atau GAGAL sebelum dispatch.`);
+  }
 
   return {
     id: String(report?.id || `report-${index}`),
-    name: normalizeText(report?.name, `Kandidat ${index + 1}`),
+    name: reportName,
     discord: normalizeText(report?.discord, "unknown#0000"),
     group: normalizeText(report?.group, "Golongan 1"),
-    status: normalizeText(report?.status, "PROSES"),
+    status,
     age: normalizeText(report?.age, "0 Tahun"),
     gender: normalizeText(report?.gender, "Tidak Diketahui"),
-    question: normalizeMultilineText(
-      report?.question,
-      "Belum ada pertanyaan strategis untuk kandidat ini.",
-    ),
-    notes: normalizeMultilineText(
-      report?.notes,
-      "Belum ada keterangan analis untuk kandidat ini.",
-    ),
+    question,
+    notes,
     additionalReports,
   };
 }

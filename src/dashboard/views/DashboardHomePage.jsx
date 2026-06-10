@@ -12,7 +12,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import TrainingLaunchModal from "../components/TrainingLaunchModal";
 import {
   createCandidateIdentity,
@@ -65,7 +65,9 @@ function DashboardStatCard({ title, value, detail, accent = "emerald" }) {
       >
         {title}
       </div>
-      <p className="mt-3 font-sans text-[2rem] font-bold text-stone-100">{value}</p>
+      <p className="mt-3 font-sans text-[2rem] font-bold text-stone-100">
+        {value}
+      </p>
       <p className="mt-1.5 text-[13px] leading-5 text-stone-400">{detail}</p>
     </div>
   );
@@ -95,7 +97,9 @@ function CandidateMetaPill({ label, value, selected = false, tone = "stone" }) {
         toneClasses[tone] ?? toneClasses.stone,
       ].join(" ")}
     >
-      <span className={selected ? "text-black/45" : "text-stone-500"}>{label}</span>
+      <span className={selected ? "text-black/45" : "text-stone-500"}>
+        {label}
+      </span>
       <span>{value}</span>
     </span>
   );
@@ -129,7 +133,8 @@ function RegistrantIntakeBanner({
             Data Pendaftar Baru Sudah Masuk ke Dashboard
           </h3>
           <p className="mt-2 text-sm leading-6 text-stone-300">
-            {candidates.length} data pendaftar berhasil diterima dari backend. Kandidat terbaru
+            {candidates.length} data pendaftar berhasil diterima dari backend.
+            Kandidat terbaru
             {latestCandidate ? ` ${latestCandidate.roblox}` : ""} tercatat
             {latestCandidate
               ? ` ${formatIngressTimestamp(latestCandidate.createdAt, latestCandidate.updatedAt)}.`
@@ -176,13 +181,21 @@ function RegistrantIntakeBanner({
                 <p className="truncate font-sans text-base font-bold text-stone-100">
                   {candidate.roblox}
                 </p>
-                <p className="mt-1 truncate text-[13px] text-stone-400">{candidate.discord}</p>
+                <p className="mt-1 truncate text-[13px] text-stone-400">
+                  {candidate.discord}
+                </p>
+                {candidate.discordUserId ? (
+                  <p className="mt-1 truncate font-public text-[9px] uppercase tracking-[0.14em] text-emerald-200">
+                    {`<@${candidate.discordUserId}> • Discord Synced`}
+                  </p>
+                ) : null}
               </div>
               <CandidateCategoryBadge category={candidate.category} />
             </div>
 
             <p className="mt-3 text-[12px] font-medium text-emerald-200">
-              Masuk {formatIngressTimestamp(candidate.createdAt, candidate.updatedAt)}
+              Masuk{" "}
+              {formatIngressTimestamp(candidate.createdAt, candidate.updatedAt)}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -191,11 +204,19 @@ function RegistrantIntakeBanner({
                 value={candidate.joinedVia || "Backend"}
                 tone="emerald"
               />
-              <CandidateMetaPill label="Resimen" value={candidate.resimen || "Belum ada"} />
+              <CandidateMetaPill
+                label="Resimen"
+                value={candidate.resimen || "Belum ada"}
+              />
               <CandidateMetaPill
                 label="Device"
                 value={candidate.device || "Tidak tercatat"}
                 tone="amber"
+              />
+              <CandidateMetaPill
+                label="Discord ID"
+                value={candidate.discordUserId}
+                tone="emerald"
               />
             </div>
           </article>
@@ -222,31 +243,51 @@ function CandidateCategoryBadge({ category }) {
   );
 }
 
-function SelectableCandidateRow({ candidate, selected, onToggle }) {
-  const ingressTimestamp = formatIngressTimestamp(candidate.createdAt, candidate.updatedAt);
+function SelectableCandidateRow({
+  candidate,
+  selected,
+  focused = false,
+  onToggle,
+}) {
+  const ingressTimestamp = formatIngressTimestamp(
+    candidate.createdAt,
+    candidate.updatedAt,
+  );
 
   return (
     <div
       className={[
-        "grid min-h-[112px] grid-cols-[1.3fr_1.2fr_0.5fr_0.75fr_0.7fr] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
+        "grid min-h-[132px] grid-cols-[1.38fr_1.2fr_0.5fr_0.75fr_0.7fr] items-center gap-4 rounded-2xl border px-3.5 py-3.5 transition",
         selected
           ? "border-emerald-300/50 bg-[linear-gradient(90deg,rgba(174,209,143,0.95)_0%,rgba(205,223,165,0.88)_100%)] text-black shadow-[0_18px_40px_rgba(174,209,143,0.14)]"
           : "border-white/6 bg-[#131313] text-stone-100 hover:border-white/12 hover:bg-[#1a1a1a]",
+        focused ? "ring-2 ring-amber-300/55" : "",
       ].join(" ")}
     >
       <div className="min-w-0">
-        <p className="truncate font-sans text-base font-bold md:text-lg">{candidate.roblox}</p>
+        <p className="truncate font-sans text-base font-bold md:text-lg">
+          {candidate.roblox}
+        </p>
         <p
           className={`mt-1 truncate text-[13px] ${selected ? "text-black/70" : "text-stone-400"}`}
         >
           {candidate.discord}
         </p>
+        {candidate.discordUserId ? (
+          <p
+            className={`mt-1 truncate font-public text-[9px] uppercase tracking-[0.14em] ${selected ? "text-black/60" : "text-emerald-200"}`}
+          >
+            {`<@${candidate.discordUserId}> • Discord Synced`}
+          </p>
+        ) : null}
         <p
           className={`mt-2 font-public text-[10px] uppercase tracking-[0.14em] ${selected ? "text-black/55" : "text-emerald-200"}`}
         >
           Waktu Masuk
         </p>
-        <p className={`mt-1 text-[12px] ${selected ? "text-black/70" : "text-stone-300"}`}>
+        <p
+          className={`mt-1 text-[12px] ${selected ? "text-black/70" : "text-stone-300"}`}
+        >
           {ingressTimestamp}
         </p>
       </div>
@@ -280,6 +321,12 @@ function SelectableCandidateRow({ candidate, selected, onToggle }) {
             value={candidate.device || "Tidak tercatat"}
             selected={selected}
             tone="amber"
+          />
+          <CandidateMetaPill
+            label="Discord ID"
+            value={candidate.discordUserId}
+            selected={selected}
+            tone="emerald"
           />
         </div>
       </div>
@@ -362,7 +409,9 @@ function ActiveTrainingSessionCard({ session }) {
           <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
             Golongan
           </p>
-          <p className="mt-2 text-sm leading-6 text-stone-200">{session.golongan}</p>
+          <p className="mt-2 text-sm leading-6 text-stone-200">
+            {session.golongan}
+          </p>
         </div>
       </div>
 
@@ -387,6 +436,7 @@ function ActiveTrainingSessionCard({ session }) {
 // Section: main page.
 export default function DashboardHomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     candidates,
     reports,
@@ -403,10 +453,13 @@ export default function DashboardHomePage() {
   const [launchError, setLaunchError] = useState("");
   const [launching, setLaunching] = useState(false);
   const [candidatePage, setCandidatePage] = useState(1);
+  const [focusedCandidateIdentity, setFocusedCandidateIdentity] = useState("");
 
   const availableCandidates = useMemo(() => {
     const reportedCandidateIdentities = new Set(
-      reports.map((report) => report.candidateIdentity || createCandidateIdentity(report)),
+      reports.map(
+        (report) => report.candidateIdentity || createCandidateIdentity(report),
+      ),
     );
 
     return candidates.filter((candidate) => {
@@ -430,7 +483,12 @@ export default function DashboardHomePage() {
         return true;
       }
 
-      return [candidate.roblox, candidate.discord, candidate.categoryLabel]
+      return [
+        candidate.roblox,
+        candidate.discord,
+        candidate.discordUserId,
+        candidate.categoryLabel,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearchTerm);
@@ -443,7 +501,9 @@ export default function DashboardHomePage() {
     );
 
     return new Set(
-      selectedIdentities.filter((identity) => availableIdentitySet.has(identity)),
+      selectedIdentities.filter((identity) =>
+        availableIdentitySet.has(identity),
+      ),
     );
   }, [availableCandidates, selectedIdentities]);
 
@@ -474,7 +534,9 @@ export default function DashboardHomePage() {
   ).length;
   const activeTrainingSessions = useMemo(
     () =>
-      trainingSessions.filter((session) => !isTrainingSessionDispatched(session, reports)),
+      trainingSessions.filter(
+        (session) => !isTrainingSessionDispatched(session, reports),
+      ),
     [reports, trainingSessions],
   );
 
@@ -496,7 +558,37 @@ export default function DashboardHomePage() {
     );
   }, [candidatePageCount]);
 
-  const handleOpenTraining = async ({ operators: selectedOperators, golongan }) => {
+  useEffect(() => {
+    const targetIdentity = String(
+      location.state?.focusCandidateIdentity || "",
+    ).trim();
+
+    if (!targetIdentity || availableCandidates.length === 0) {
+      return;
+    }
+
+    const targetCandidate = availableCandidates.find(
+      (candidate) => candidate.identity === targetIdentity,
+    );
+
+    if (!targetCandidate) {
+      return;
+    }
+
+    setFocusedCandidateIdentity(targetCandidate.identity);
+    setSearchTerm(targetCandidate.roblox || targetCandidate.discord || "");
+    setSelectedIdentities((currentIds) =>
+      currentIds.includes(targetCandidate.identity)
+        ? currentIds
+        : [targetCandidate.identity, ...currentIds],
+    );
+    setCandidatePage(1);
+  }, [availableCandidates, location.state]);
+
+  const handleOpenTraining = async ({
+    operators: selectedOperators,
+    golongan,
+  }) => {
     try {
       setLaunching(true);
       setLaunchError("");
@@ -506,7 +598,9 @@ export default function DashboardHomePage() {
         golongan,
       });
       const nextSession = result?.session;
-      const createdReports = Array.isArray(result?.reports) ? result.reports : [];
+      const createdReports = Array.isArray(result?.reports)
+        ? result.reports
+        : [];
 
       if (!nextSession) {
         throw new Error("Sesi pelatihan belum berhasil dibuat di backend.");
@@ -522,7 +616,8 @@ export default function DashboardHomePage() {
       });
     } catch (error) {
       setLaunchError(
-        error?.message || "Gagal membuka pelatihan. Coba ulang beberapa saat lagi.",
+        error?.message ||
+          "Gagal membuka pelatihan. Coba ulang beberapa saat lagi.",
       );
     } finally {
       setLaunching(false);
@@ -589,7 +684,7 @@ export default function DashboardHomePage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 type="text"
-                placeholder="Cari kandidat, discord, atau tipe..."
+                placeholder="Cari kandidat, discord, Discord ID, atau tipe..."
                 className="w-full rounded-xl border border-gray-600 bg-[#111111] px-3 py-2 text-sm text-white outline-none transition focus:border-emerald-400 sm:w-[260px]"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -633,9 +728,9 @@ export default function DashboardHomePage() {
           ) : null}
 
           <div className="overflow-x-auto">
-            <div className="min-w-[1040px]">
-              <div className="mb-3 grid grid-cols-[1.3fr_1.2fr_0.5fr_0.75fr_0.7fr] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
-                <div>Identitas / Masuk</div>
+            <div className="min-w-[1120px]">
+              <div className="mb-3 grid grid-cols-[1.38fr_1.2fr_0.5fr_0.75fr_0.7fr] gap-4 px-4 text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                <div>Identitas / Discord ID / Masuk</div>
                 <div>Kategori / Intel</div>
                 <div className="text-center">Usia</div>
                 <div className="text-center">Gender</div>
@@ -649,12 +744,14 @@ export default function DashboardHomePage() {
                       key={candidate.identity}
                       candidate={candidate}
                       selected={selectedIdentitySet.has(candidate.identity)}
+                      focused={candidate.identity === focusedCandidateIdentity}
                       onToggle={() => handleToggleCandidate(candidate.identity)}
                     />
                   ))
                 ) : (
                   <div className="rounded-sm border border-dashed border-white/10 bg-black/20 px-4 py-8 text-center text-sm text-stone-400">
-                    Tidak ada kandidat sipil atau PMC yang siap untuk pelatihan saat ini.
+                    Tidak ada kandidat sipil atau PMC yang siap untuk pelatihan
+                    saat ini.
                   </div>
                 )}
               </div>
@@ -667,14 +764,19 @@ export default function DashboardHomePage() {
                 {filteredCandidates.length} kandidat tampil pada tabel aktif.
               </span>
               <span className="font-public text-[10px] uppercase tracking-[0.16em] text-stone-500">
-                Menampilkan maksimal {DASHBOARD_CANDIDATE_PAGE_SIZE} kandidat per halaman.
+                Menampilkan maksimal {DASHBOARD_CANDIDATE_PAGE_SIZE} kandidat
+                per halaman.
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCandidatePage((currentPage) => Math.max(1, currentPage - 1))}
+                onClick={() =>
+                  setCandidatePage((currentPage) =>
+                    Math.max(1, currentPage - 1),
+                  )
+                }
                 disabled={candidatePage === 1}
                 className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[10px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-45"
               >
@@ -705,9 +807,7 @@ export default function DashboardHomePage() {
               <p className="text-[10px] uppercase tracking-[0.35em] text-stone-500">
                 Active Session Registry
               </p>
-              <h2 className="mt-2 text-lg font-bold text-white">
-                Sesi Aktif
-              </h2>
+              <h2 className="mt-2 text-lg font-bold text-white">Sesi Aktif</h2>
             </div>
 
             <div className="font-public text-[10px] uppercase tracking-[0.16em] text-stone-500">
@@ -722,7 +822,8 @@ export default function DashboardHomePage() {
               ))
             ) : (
               <div className="rounded-sm border border-dashed border-white/10 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 xl:col-span-2">
-                Belum ada sesi aktif. Setelah kamu membuka pelatihan, sesi akan muncul di sini.
+                Belum ada sesi aktif. Setelah kamu membuka pelatihan, sesi akan
+                muncul di sini.
               </div>
             )}
           </div>

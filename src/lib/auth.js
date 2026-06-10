@@ -35,6 +35,22 @@ import {
 } from "./staffApi";
 
 const AuthContext = createContext(null);
+const AUTH_REFRESH_TIMEOUT_MS = 4500;
+
+function withTimeout(promise, timeoutMs = AUTH_REFRESH_TIMEOUT_MS) {
+  let timeoutId = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error("Pemeriksaan sesi terlalu lama. Silakan login ulang bila dashboard belum terbuka."));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+  });
+}
 
 function AuthProviderInner({ children }) {
   const [user, setUser] = useState(null);
@@ -42,18 +58,33 @@ function AuthProviderInner({ children }) {
   const [error, setError] = useState("");
 
   const refreshSession = useCallback(async () => {
-    try {
-      const session = await refreshStaffSession();
-      const nextUser = session?.user || normalizeStaffUser(readStoredStaffSession()?.user);
-      setUser(nextUser);
+    setLoading(true);
+    const storedSession = readStoredStaffSession();
+    const storedUser = normalizeStaffUser(storedSession?.user);
+    const storedAccessToken = String(storedSession?.accessToken || "").trim();
+
+    if (storedUser && storedAccessToken) {
+      setUser(storedUser);
       setError("");
-      return;
-    } catch {
-      clearStoredStaffSession();
+      setLoading(false);
     }
 
     try {
-      const internalUser = await refreshInternalSession();
+      const session = await withTimeout(refreshStaffSession());
+      const nextUser = session?.user || normalizeStaffUser(readStoredStaffSession()?.user);
+      if (nextUser) {
+        setUser(nextUser);
+        setError("");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      clearStoredStaffSession();
+      setUser(null);
+    }
+
+    try {
+      const internalUser = await withTimeout(refreshInternalSession());
       const nextUser = internalUser?.scope === "admin" ? internalUser : null;
       setUser(nextUser);
       setError("");

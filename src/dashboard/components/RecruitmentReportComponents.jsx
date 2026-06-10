@@ -13,6 +13,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
+  buildRecruitmentReportNotesTemplate,
+  buildRecruitmentReportQuestionTemplate,
+  getRecruitmentReportValidationMessage,
+  MIN_RECRUITMENT_REPORT_TEXT_LENGTH,
   RECRUITMENT_REPORT_STATUS_OPTIONS,
 } from "../data/recruitmentData";
 
@@ -54,6 +58,10 @@ function withModalEscape(onClose) {
   };
 }
 
+function getReportTextLength(value) {
+  return String(value || "").trim().length;
+}
+
 // Section: report editor modal.
 export function ArchiveReportEditorModal({
   report,
@@ -69,33 +77,48 @@ export function ArchiveReportEditorModal({
     status: report.status,
     age: report.age,
     gender: report.gender,
-    question: report.question,
-    notes: report.notes,
+    question: report.question || buildRecruitmentReportQuestionTemplate(report),
+    notes: report.notes || buildRecruitmentReportNotesTemplate(),
   }));
+  const [submitError, setSubmitError] = useState("");
+  const questionLength = getReportTextLength(formState.question);
+  const notesLength = getReportTextLength(formState.notes);
 
   useEffect(() => withModalEscape(onClose), [onClose]);
-  useEffect(() => {
-    setFormState({
-      name: report.name,
-      discord: report.discord,
-      group: report.group,
-      status: report.status,
-      age: report.age,
-      gender: report.gender,
-      question: report.question,
-      notes: report.notes,
-    });
-  }, [report]);
 
   const handleChange = (field) => (event) => {
     setFormState((currentState) => ({
       ...currentState,
       [field]: event.target.value,
     }));
+    setSubmitError("");
+  };
+
+  const handleApplySopTemplate = () => {
+    setFormState((currentState) => ({
+      ...currentState,
+      question: buildRecruitmentReportQuestionTemplate({
+        ...report,
+        name: currentState.name,
+        group: currentState.group,
+      }),
+      notes: buildRecruitmentReportNotesTemplate(),
+    }));
+    setSubmitError("");
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const validationMessage = getRecruitmentReportValidationMessage({
+      ...report,
+      ...formState,
+    });
+
+    if (validationMessage) {
+      setSubmitError(validationMessage);
+      return;
+    }
+
     onSave({
       ...report,
       ...formState,
@@ -139,108 +162,150 @@ export function ArchiveReportEditorModal({
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Nama Kandidat
-            </span>
-            <input
-              value={formState.name}
-              onChange={handleChange("name")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Nama Kandidat
+              </span>
+              <input
+                value={formState.name}
+                onChange={handleChange("name")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Discord
+              </span>
+              <input
+                value={formState.discord}
+                onChange={handleChange("discord")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Golongan
+              </span>
+              <select
+                value={formState.group}
+                onChange={handleChange("group")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              >
+                <option value="Golongan 1">Golongan 1</option>
+                <option value="Golongan 2">Golongan 2</option>
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Status
+              </span>
+              <select
+                value={formState.status}
+                onChange={handleChange("status")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              >
+                {RECRUITMENT_REPORT_STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Usia
+              </span>
+              <input
+                value={formState.age}
+                onChange={handleChange("age")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Gender
+              </span>
+              <input
+                value={formState.gender}
+                onChange={handleChange("gender")}
+                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] p-3.5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-public text-[8px] uppercase tracking-[0.22em] text-amber-200">
+                  Template Wawancara SOP Perekrutan
+                </p>
+                <p className="mt-1 text-[12px] leading-5 text-stone-300">
+                  Template sudah berisi indikator wawancara sesuai SOP. Isi jawaban
+                  kandidat di setiap baris setelah tanda titik dua.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplySopTemplate}
+                disabled={submitting}
+                className="self-start rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-60 md:self-center"
+              >
+                Reset ke Template SOP
+              </button>
+            </div>
+          </div>
+
+          <label className="mt-3 grid gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Fokus / Topik Wawancara
+              </span>
+              <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-500">
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {questionLength} karakter
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              value={formState.question}
+              onChange={handleChange("question")}
+              placeholder="Topik wawancara dan cakupan pertanyaan yang dibawakan pada sesi ini..."
+              className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300 placeholder:text-stone-600"
             />
           </label>
 
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Discord
-            </span>
-            <input
-              value={formState.discord}
-              onChange={handleChange("discord")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+          <label className="mt-3 grid gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Hasil Wawancara (Indikator SOP)
+              </span>
+              <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-500">
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {notesLength} karakter
+              </span>
+            </div>
+            <textarea
+              rows={14}
+              value={formState.notes}
+              onChange={handleChange("notes")}
+              className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 font-mono text-[12px] leading-[1.65] text-stone-100 outline-none transition focus:border-amber-300"
             />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Golongan
+            <span className="text-[11px] leading-5 text-stone-500">
+              Isi jawaban kandidat di setiap baris indikator setelah tanda titik dua. Template yang
+              masih kosong tidak dihitung sebagai laporan final.
             </span>
-            <select
-              value={formState.group}
-              onChange={handleChange("group")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
-            >
-              <option value="Golongan 1">Golongan 1</option>
-              <option value="Golongan 2">Golongan 2</option>
-            </select>
-          </label>
-
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Status
-            </span>
-            <select
-              value={formState.status}
-              onChange={handleChange("status")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
-            >
-              {RECRUITMENT_REPORT_STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Usia
-            </span>
-            <input
-              value={formState.age}
-              onChange={handleChange("age")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Gender
-            </span>
-            <input
-              value={formState.gender}
-              onChange={handleChange("gender")}
-              className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
-            />
           </label>
         </div>
 
-        <label className="mt-3 grid gap-2">
-          <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-            Pertanyaan Strategis
-          </span>
-          <textarea
-            rows={3}
-            value={formState.question}
-            onChange={handleChange("question")}
-            className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
-          />
-        </label>
-
-        <label className="mt-3 grid gap-2">
-          <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-            Keterangan Analis
-          </span>
-          <textarea
-            rows={4}
-            value={formState.notes}
-            onChange={handleChange("notes")}
-            className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
-          />
-        </label>
-
-        </div>
+        {submitError ? (
+          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] leading-5 text-rose-100">
+            {submitError}
+          </div>
+        ) : null}
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/6 pt-3.5 md:flex-row md:items-center md:justify-between">
           <button
@@ -289,18 +354,32 @@ export function ArchiveReportSupplementModal({
     supplement?.question ?? `Update lanjutan untuk kandidat ${report.name}?`,
   );
   const [notes, setNotes] = useState(supplement?.notes ?? "");
+  const [submitError, setSubmitError] = useState("");
   const isEditMode = mode === "edit";
+  const questionLength = getReportTextLength(question);
+  const notesLength = getReportTextLength(notes);
 
   useEffect(() => withModalEscape(onClose), [onClose]);
-  useEffect(() => {
-    setQuestion(
-      supplement?.question ?? `Update lanjutan untuk kandidat ${report.name}?`,
-    );
-    setNotes(supplement?.notes ?? "");
-  }, [report, supplement]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const validationMessage = getRecruitmentReportValidationMessage({
+      status: "LULUS",
+      question: buildRecruitmentReportQuestionTemplate(report),
+      notes: "Laporan utama sudah valid.",
+      additionalReports: [
+        {
+          question,
+          notes,
+        },
+      ],
+    });
+
+    if (validationMessage) {
+      setSubmitError(validationMessage);
+      return;
+    }
+
     onSave(report.id, {
       id: supplement?.id ?? `archive-supplement-${Date.now()}`,
       question,
@@ -348,31 +427,52 @@ export function ArchiveReportSupplementModal({
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-        <label className="grid gap-2">
-          <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-            Pertanyaan Strategis
-          </span>
-          <textarea
-            rows={3}
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
-          />
-        </label>
+          <label className="grid gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Pertanyaan Strategis
+              </span>
+              <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-500">
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {questionLength} karakter
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              value={question}
+              onChange={(event) => {
+                setQuestion(event.target.value);
+                setSubmitError("");
+              }}
+              className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
+            />
+          </label>
 
-        <label className="mt-3 grid gap-2">
-          <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-            Keterangan Analis
-          </span>
-          <textarea
-            rows={5}
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
-          />
-        </label>
-
+          <label className="mt-3 grid gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Keterangan Analis
+              </span>
+              <span className="font-public text-[8px] uppercase tracking-[0.14em] text-stone-500">
+                Min. {MIN_RECRUITMENT_REPORT_TEXT_LENGTH} • {notesLength} karakter
+              </span>
+            </div>
+            <textarea
+              rows={5}
+              value={notes}
+              onChange={(event) => {
+                setNotes(event.target.value);
+                setSubmitError("");
+              }}
+              className="resize-none border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] leading-5 text-stone-100 outline-none transition focus:border-amber-300"
+            />
+          </label>
         </div>
+
+        {submitError ? (
+          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] leading-5 text-rose-100">
+            {submitError}
+          </div>
+        ) : null}
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/6 pt-3.5 md:flex-row md:items-center md:justify-between">
           <div>
@@ -444,7 +544,9 @@ export function ArchiveReportCard({
             <div className="mt-2 flex items-center gap-2 opacity-70">
               <span className="h-3 w-3 rounded-full bg-stone-200" />
               <span className="font-public text-xs font-medium text-stone-200">
-                {report.discord}
+                {report.discordUserId
+                  ? `${report.discord} • <@${report.discordUserId}> • Discord Synced`
+                  : report.discord}
               </span>
             </div>
           </div>
@@ -468,7 +570,9 @@ export function ArchiveReportCard({
             <p className="font-public text-[9px] uppercase tracking-[0.08em] text-stone-200/40">
               Usia
             </p>
-            <p className="mt-1 text-sm font-bold text-stone-200">{report.age}</p>
+            <p className="mt-1 text-sm font-bold text-stone-200">
+              {report.age}
+            </p>
           </div>
           <div className="bg-stone-950 p-3">
             <p className="font-public text-[9px] uppercase tracking-[0.08em] text-stone-200/40">

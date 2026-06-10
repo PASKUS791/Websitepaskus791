@@ -160,9 +160,15 @@ export async function loginStaff(username, password) {
     },
   });
   const user = normalizeStaffUser(payload?.user);
+  const accessToken = String(payload?.accessToken || "").trim();
+
+  if (!user || !accessToken) {
+    throw new Error("Sesi staff tidak valid. Silakan login ulang.");
+  }
+
   const session = {
     user,
-    accessToken: payload?.accessToken || null,
+    accessToken,
     updatedAt: new Date().toISOString(),
   };
 
@@ -173,11 +179,26 @@ export async function loginStaff(username, password) {
 }
 
 export async function refreshStaffSession() {
-  const payload = await staffApiFetch("/auth/me");
   const storedSession = readStoredStaffSession();
-  const decoded = decodeJwtPayload(payload?.accessToken);
+  const storedAccessToken = String(storedSession?.accessToken || "").trim();
+
+  if (!storedAccessToken) {
+    clearStoredStaffSession();
+    return null;
+  }
+
+  const payload = await staffApiFetch("/auth/me");
+  const nextAccessToken = String(payload?.accessToken || storedAccessToken).trim();
+
+  if (payload?.authenticated === false || !nextAccessToken) {
+    clearStoredStaffSession();
+    return null;
+  }
+
+  const decoded = decodeJwtPayload(nextAccessToken);
   const user =
-    storedSession?.user ||
+    normalizeStaffUser(payload?.user) ||
+    normalizeStaffUser(storedSession?.user) ||
     normalizeStaffUser({
       id: decoded?.id,
       username: decoded?.username,
@@ -185,12 +206,13 @@ export async function refreshStaffSession() {
     });
 
   if (!user) {
+    clearStoredStaffSession();
     return null;
   }
 
   const session = {
     user,
-    accessToken: payload?.accessToken || null,
+    accessToken: nextAccessToken,
     updatedAt: new Date().toISOString(),
   };
 
@@ -218,14 +240,18 @@ export async function bootstrapInternalStaffSession(accessToken) {
     return null;
   }
 
-  const payload = await apiFetch("/api/staff/bootstrap-session", {
-    method: "POST",
-    body: {
-      accessToken,
-    },
-  });
+  try {
+    const payload = await apiFetch("/api/staff/bootstrap-session", {
+      method: "POST",
+      body: {
+        accessToken,
+      },
+    });
 
-  return payload?.user ?? null;
+    return payload?.user ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function refreshInternalSession() {
@@ -471,10 +497,23 @@ export async function deleteStaffOperatorAccount(username) {
   return payload?.operators ?? [];
 }
 
+export async function deleteAllStaffOperatorAccounts() {
+  const payload = await apiFetch("/api/pelatih/operators-all", {
+    method: "DELETE",
+  });
+
+  return {
+    operators: payload?.operators ?? [],
+    deletedCount: payload?.deletedCount ?? 0,
+    message: payload?.message ?? "Semua petugas berhasil dihapus.",
+  };
+}
+
 export async function fetchSharedStaffOperators() {
   const payload = await apiFetch("/api/pelatih/operators");
   return Array.isArray(payload?.operators) ? payload.operators : [];
 }
+
 
 export async function updateSharedStaffOperatorMetadata({
   username,

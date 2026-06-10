@@ -7,18 +7,56 @@
 
 Options -Indexes
 
+AddType video/webm .webm
+AddType video/mp4 .mp4
+AddType image/jpeg .jpg .jpeg
+
 <IfModule mod_headers.c>
   Header always set X-Frame-Options "DENY"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
   Header always set Cross-Origin-Resource-Policy "same-site"
   Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set X-Permitted-Cross-Domain-Policies "none"
   Header always set X-Download-Options "noopen"
-  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net; connect-src 'self' https://discord.com https://cdn.discordapp.com https://media.discordapp.net; worker-src 'self' blob:;"
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'sha256-UcRjHEH7Jb07ITZq7RaKeflRgUow/Ly3Y509kaa5FPI=' 'sha256-sqPDFND611Iq5QVrUwbQQIm2uPbiZBzBuMwbLYWA/UE=' 'sha256-3yH8seLRPZxhSvaSF/JWIZReEqq7aqyaCc49VYA4bzI=' 'sha256-EE66dP7U1+XZ0ifBMoRB8Wm00tmsR83wqNDTkYdwzT0=' 'sha256-WoJxKV/6/peT9LqgUR43NoKSryOnKz7+VEm0qHIZ0Hc=' 'sha256-bflRIFbmKthZe+QMsfUsKO7cVUKzk6bOvIJlUjX5FeI=' 'sha256-8dLwhm52IiaDEv9RPW/O67Ho9EGsmSjXOEyAmzKax4Q=' 'sha256-FGzXtJ6DjR7wz1mCerqSWOikKaowWBz8Zp6pt5oV27c=' 'sha256-DozQc+l+lQ7V3Dt7dKVPHYMixd5FZtV1yEcL8duVRvw=' 'sha256-mKYrWciqBcd3hrgJLTzXGc4vZFioMh1NuO8aAgRNcq8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net; connect-src 'self' https://discord.com https://cdn.discordapp.com https://media.discordapp.net; worker-src 'self' blob:;"
+  <FilesMatch "\.(?:php|json|md)$">
+    Header set X-Robots-Tag "noindex, nofollow, noarchive"
+  </FilesMatch>
+  <FilesMatch "^(?:robots\.txt|sitemap\.xml)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+  <FilesMatch "\.(?:html?)$">
+    Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "^robots\.txt$">
+    Header set Content-Type "text/plain; charset=UTF-8"
+  </FilesMatch>
+  <FilesMatch "^sitemap\.xml$">
+    Header set Content-Type "application/xml; charset=UTF-8"
+  </FilesMatch>
+  <FilesMatch "\.(?:js|css|webp|png|jpe?g|svg|woff2?|mov|mp4|webm)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "^structure_documentation\.md$">
+    Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+    Header set Content-Type "text/markdown; charset=UTF-8"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType video/quicktime "access plus 1 year"
+  ExpiresByType video/mp4 "access plus 1 year"
+  ExpiresByType video/webm "access plus 1 year"
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -26,6 +64,42 @@ Options -Indexes
   RewriteBase /
   RewriteRule ^(?:\.git|server|src|node_modules)(?:/|$) - [F,L,NC]
   RewriteRule ^(?:\.env(?:\..*)?|package(?:-lock)?\.json|vite\.config\.[^.]+|eslint\.config\.[^.]+|README\.md|DEPLOY\.md|SECURITY\.md)$ - [F,L,NC]
+  RewriteRule ^data/.*\.md$ - [F,L,NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^uploads/streamer/ - [R=404,L,NC]
+  RewriteRule ^assets/paskus-discord-sync-v[0-9]+\.js$ /assets/paskus-discord-sync.js [L,NC]
+  RewriteRule ^assets/index-paskus-enlist-gi1-v[0-9]+\.js$ /assets/index-paskus-enlist-gi1.js [L,NC]
+  RewriteRule ^assets/paskus-streamer-linktree-v[0-9]+\.js$ /assets/paskus-streamer-linktree.js [L,NC]
+  RewriteRule ^assets/paskus-streamer-admin-v[0-9]+\.js$ /assets/paskus-streamer-admin.js [L,NC]
+  RewriteRule ^index-seo\.html$ / [R=301,L,NC]
+  RewriteCond %{HTTP_HOST} ^(gi1|4hn|aang)\.so791\.com$ [NC]
+  RewriteRule ^$ /streamer-profile.html?creator=%1 [L,QSA]
+  RewriteCond %{HTTP_HOST} ^(gi1|4hn|aang)\.so791\.com$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^.*$ /streamer-profile.html?creator=%1 [L,QSA]
+  RewriteRule ^streamers?/(gi1|4hn|aang)/?$ /streamer-profile.html?creator=$1 [L,QSA,NC]
+  RewriteRule ^streamers?/?$ /index.html [L,NC]
+  RewriteCond %{THE_REQUEST} \s/+brm5-roleplay\.html[?\s] [NC]
+  RewriteRule ^brm5-roleplay\.html$ /brm5-roleplay [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+resimen-brm5\.html[?\s] [NC]
+  RewriteRule ^resimen-brm5\.html$ /resimen-brm5 [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+roleplay-grup-brm5\.html[?\s] [NC]
+  RewriteRule ^roleplay-grup-brm5\.html$ /roleplay-grup-brm5 [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+cara-gabung-brm5-roleplay\.html[?\s] [NC]
+  RewriteRule ^cara-gabung-brm5-roleplay\.html$ /cara-gabung-brm5-roleplay [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+unit-brm5-paskus\.html[?\s] [NC]
+  RewriteRule ^unit-brm5-paskus\.html$ /unit-brm5-paskus [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+blackhawk-rescue-5-roleplay-fraksi\.html[?\s] [NC]
+  RewriteRule ^blackhawk-rescue-5-roleplay-fraksi\.html$ /blackhawk-rescue-5-roleplay-fraksi [R=301,L,NC]
+  RewriteRule ^brm5-roleplay/?$ /brm5-roleplay.html [L,NC]
+  RewriteRule ^resimen-brm5/?$ /resimen-brm5.html [L,NC]
+  RewriteRule ^roleplay-grup-brm5/?$ /roleplay-grup-brm5.html [L,NC]
+  RewriteRule ^cara-gabung-brm5-roleplay/?$ /cara-gabung-brm5-roleplay.html [L,NC]
+  RewriteRule ^unit-brm5-paskus/?$ /unit-brm5-paskus.html [L,NC]
+  RewriteRule ^blackhawk-rescue-5-roleplay-fraksi/?$ /blackhawk-rescue-5-roleplay-fraksi.html [L,NC]
+  RewriteRule ^(?:roleplay-brm5|game-brm5-roleplay|blackhawk-rescue-mission-5-roleplay)/?$ /brm5-roleplay [R=301,L,NC]
+  RewriteRule ^unit/serigala/?$ /unit/sierra [R=301,L,NC]
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

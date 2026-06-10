@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetch, createApiEventSource } from "./api";
+import { apiFetch } from "./api";
 
 export const RESOURCE_KEYS = {
   dashboardCandidates: "dashboard.candidates",
@@ -116,22 +116,12 @@ export function useSyncedResource(
       return undefined;
     }
 
-    const eventSource = createApiEventSource();
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-
-        if (payload?.resource === resourceKey) {
-          reload();
-        }
-      } catch {
-        // Ignore malformed server events.
-      }
-    };
-    eventSource.onerror = () => undefined;
+    const interval = window.setInterval(() => {
+      reload();
+    }, 60000);
 
     return () => {
-      eventSource.close();
+      window.clearInterval(interval);
     };
   }, [enabled, reload, resourceKey]);
 

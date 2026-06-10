@@ -22,4 +22,5 @@ export { default as PelatihanPage } from "./views/PelatihanPage";
 export { default as RecruitmentReportPage } from "./views/RecruitmentReportPage";
 export { default as TambahPetugasPage } from "./views/TambahPetugasPage";
 export { default as TindakanPage } from "./views/TindakanPage";
+export { default as PinSertijabPage } from "./views/PinSertijabPage";
 export { default as SopPage } from "./views/SopPage";

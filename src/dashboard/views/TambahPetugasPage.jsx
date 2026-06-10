@@ -240,6 +240,7 @@ export default function TambahPetugasPage() {
   const [formState, setFormState] = useState(INITIAL_FORM_STATE);
   const [submitting, setSubmitting] = useState(false);
   const [deletingOperator, setDeletingOperator] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const {
@@ -247,11 +248,16 @@ export default function TambahPetugasPage() {
     loading,
     error: portalError,
     deleteOperator,
+    deleteAllOperators,
     registerOperator,
     updateOperatorMetadata,
   } = useStaffPortalData();
 
   const operatorCountLabel = useMemo(() => `${operators.length} petugas aktif`, [operators]);
+  const otherOperators = useMemo(
+    () => operators.filter((op) => op.username !== user?.username),
+    [operators, user],
+  );
 
   const handleChange = (field) => (event) => {
     setFormState((currentState) => ({
@@ -289,6 +295,29 @@ export default function TambahPetugasPage() {
       throw deleteError;
     } finally {
       setDeletingOperator(null);
+    }
+  };
+
+  const handleDeleteAllOperators = async () => {
+    const confirmed = window.confirm(
+      `Hapus SEMUA ${otherOperators.length} petugas lain dari database? Akun Anda sendiri tidak akan terhapus. Tindakan ini tidak bisa dibatalkan.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingAll(true);
+      setError("");
+      setNotice("Sedang menghapus semua petugas...");
+      const result = await deleteAllOperators();
+      setNotice(result?.message || "Semua petugas lain berhasil dihapus.");
+    } catch (err) {
+      setError(err?.message || "Gagal menghapus semua petugas.");
+      setNotice("");
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -425,9 +454,21 @@ export default function TambahPetugasPage() {
                 Petugas Aktif
               </h2>
             </div>
-            <span className="rounded-full border border-white/8 bg-black/20 px-3 py-1 font-public text-[10px] uppercase tracking-[0.16em] text-stone-300">
-              {operatorCountLabel}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="rounded-full border border-white/8 bg-black/20 px-3 py-1 font-public text-[10px] uppercase tracking-[0.16em] text-stone-300">
+                {operatorCountLabel}
+              </span>
+              {otherOperators.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllOperators}
+                  disabled={deletingAll || !!deletingOperator}
+                  className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-rose-200 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingAll ? "Menghapus Semua..." : "Hapus Semua Petugas"}
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">

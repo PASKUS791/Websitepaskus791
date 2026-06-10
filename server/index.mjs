@@ -869,47 +869,13 @@ async function destroySession(sessionId) {
   await storage.deleteSession(sessionId);
 }
 
-async function getAuthenticatedSession(request) {
-  await cleanupExpiredSessions();
-  const cookies = parseCookies(request);
-  const sessionId = decodeSignedSessionId(cookies.pelatihdash_session);
-
-  if (!sessionId) {
-    return null;
-  }
-
-  const session = await storage.getSessionWithUser(sessionId);
-
-  if (!session || !session.active) {
-    await destroySession(sessionId);
-    return null;
-  }
-
-  if (new Date(session.expiresAt).getTime() <= Date.now()) {
-    await destroySession(sessionId);
-    return null;
-  }
-
-  const currentUserAgent = String(request.headers["user-agent"] || "");
-
-  if (session.userAgent && currentUserAgent && session.userAgent !== currentUserAgent) {
-    await destroySession(sessionId);
-    return null;
-  }
-
-  return {
-    sessionId,
-    user: {
-      id: session.userId,
-      scope: session.scope,
-      username: session.username,
-      label: session.label,
-      unit: session.unit,
-    },
-  };
+function getBearerAccessToken(request) {
+  const authorization = String(request.headers.authorization || "").trim();
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : "";
 }
 
-async function ensureInternalStaffSessionFromAccessToken(accessToken, request) {
+async function resolveInternalStaffUserFromAccessToken(accessToken) {
   if (!accessToken) {
     throw createHttpError(400, "Access token staff wajib diisi.");
   }
@@ -953,7 +919,72 @@ async function ensureInternalStaffSessionFromAccessToken(accessToken, request) {
   });
   await syncSharedPortalOperators([internalUser]);
 
-  await storage.deleteSessionsByUser(internalUser.id);
+  return {
+    id: internalUser.id,
+    scope: "pelatih",
+    username: internalUser.username,
+    label: internalUser.label,
+    unit: internalUser.unit,
+  };
+}
+
+async function getAuthenticatedSession(request) {
+  await cleanupExpiredSessions();
+  const cookies = parseCookies(request);
+  const sessionId = decodeSignedSessionId(cookies.pelatihdash_session);
+  const bearerAccessToken = getBearerAccessToken(request);
+  const resolveBearerSession = async () => {
+    if (!bearerAccessToken) {
+      return null;
+    }
+
+    try {
+      return {
+        sessionId: "",
+        user: await resolveInternalStaffUserFromAccessToken(bearerAccessToken),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  if (!sessionId) {
+    return resolveBearerSession();
+  }
+
+  const session = await storage.getSessionWithUser(sessionId);
+
+  if (!session || !session.active) {
+    await destroySession(sessionId);
+    return resolveBearerSession();
+  }
+
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    await destroySession(sessionId);
+    return resolveBearerSession();
+  }
+
+  const currentUserAgent = String(request.headers["user-agent"] || "");
+
+  if (session.userAgent && currentUserAgent && session.userAgent !== currentUserAgent) {
+    await destroySession(sessionId);
+    return resolveBearerSession();
+  }
+
+  return {
+    sessionId,
+    user: {
+      id: session.userId,
+      scope: session.scope,
+      username: session.username,
+      label: session.label,
+      unit: session.unit,
+    },
+  };
+}
+
+async function ensureInternalStaffSessionFromAccessToken(accessToken, request) {
+  const internalUser = await resolveInternalStaffUserFromAccessToken(accessToken);
   const nextSession = await createSession(
     {
       ...internalUser,
@@ -2347,6 +2378,66 @@ async function handleRequest(request, response) {
         response,
         error.statusCode || 500,
         error.message || "Gagal menghapus petugas.",
+      );
+      return;
+    }
+  }
+
+  // Hapus SEMUA petugas kecuali akun yang sedang aktif login.
+  if (path === "/api/pelatih/operators-all" && request.method === "DELETE") {
+    if (!canManagePelatihScope(session)) {
+      notAuthorized(response);
+      return;
+    }
+
+    try {
+      const currentUsername = normalizeUsername(session?.user?.username);
+      const allUsers = await storage.listUsersByScope("pelatih");
+      const toDelete = allUsers.filter(
+        (u) => normalizeUsername(u.username) !== currentUsername,
+      );
+
+      await Promise.all(
+        toDelete.map(async (u) => {
+          try {
+            await requestStaffBackendJson(`/auth/operator/${encodeURIComponent(u.username)}`, {
+              method: "DELETE",
+            });
+          } catch (extError) {
+            if (![401, 403, 404].includes(extError.statusCode || 0)) {
+              throw extError;
+            }
+          }
+          await storage.deleteSessionsByUser(u.id);
+          await storage.deleteUserByScopeAndUsername("pelatih", u.username);
+        }),
+      );
+
+      // Bersihkan shared operator state
+      const sharedState = await readSharedPortalState();
+      const nextSharedState = {
+        ...sharedState,
+        operators: sharedState.operators.filter(
+          (entry) => normalizeUsername(entry.username) === currentUsername,
+        ),
+      };
+      await writeSharedPortalState(nextSharedState);
+
+      sendJson(response, 200, {
+        ok: true,
+        deletedCount: toDelete.length,
+        message: `${toDelete.length} petugas berhasil dihapus. Akun aktif Anda tetap tersimpan.`,
+        operators: mergeOperatorProfiles(
+          await storage.listUsersByScope("pelatih"),
+          nextSharedState.operators,
+        ),
+      });
+      return;
+    } catch (error) {
+      sendError(
+        response,
+        error.statusCode || 500,
+        error.message || "Gagal menghapus semua petugas.",
       );
       return;
     }

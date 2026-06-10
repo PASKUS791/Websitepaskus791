@@ -22,6 +22,7 @@ const RecruitmentReportPage = lazy(() => import("./dashboard/views/RecruitmentRe
 const PelatihanPage = lazy(() => import("./dashboard/views/PelatihanPage"));
 const TambahPetugasPage = lazy(() => import("./dashboard/views/TambahPetugasPage"));
 const TindakanPage = lazy(() => import("./dashboard/views/TindakanPage"));
+const PinSertijabPage = lazy(() => import("./dashboard/views/PinSertijabPage"));
 const SopPage = lazy(() => import("./dashboard/views/SopPage"));
 const AdminConsolePage = lazy(() => import("./dashboard/views/AdminConsolePage"));
 
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="pelatihan/:sessionId" element={<RouteSuspense><PelatihanPage /></RouteSuspense>} />
           <Route path="petugas" element={<RouteSuspense><TambahPetugasPage /></RouteSuspense>} />
           <Route path="tindakan" element={<RouteSuspense><TindakanPage /></RouteSuspense>} />
+          <Route path="pin-sertijab" element={<RouteSuspense><PinSertijabPage /></RouteSuspense>} />
           <Route path="sop" element={<RouteSuspense><SopPage /></RouteSuspense>} />
         </Route>
       </Route>

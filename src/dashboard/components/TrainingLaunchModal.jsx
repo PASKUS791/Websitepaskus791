@@ -36,7 +36,9 @@ function OperatorChoiceCard({ operator, selected, onToggle }) {
           <p className="mt-1.5 font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
             {operator.unit}
           </p>
-          <p className="mt-1.5 text-[13px] text-stone-400">{operator.username}</p>
+          <p className="mt-1.5 text-[13px] text-stone-400">
+            {operator.username}
+          </p>
         </div>
 
         <span
@@ -88,7 +90,9 @@ export default function TrainingLaunchModal({
 
   const selectedOperators = useMemo(
     () =>
-      operators.filter((operator) => selectedOperatorIds.includes(String(operator.id))),
+      operators.filter((operator) =>
+        selectedOperatorIds.includes(String(operator.id)),
+      ),
     [operators, selectedOperatorIds],
   );
   const selectedCandidatePageCount = Math.max(
@@ -156,7 +160,8 @@ export default function TrainingLaunchModal({
               Buka Pelatihan
             </h3>
             <p className="mt-1.5 text-[13px] text-stone-400">
-              {selectedCount} kandidat dipilih untuk masuk ke sesi pelatihan baru.
+              {selectedCount} kandidat dipilih untuk masuk ke sesi pelatihan
+              baru.
             </p>
           </div>
 
@@ -172,63 +177,68 @@ export default function TrainingLaunchModal({
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="grid gap-2">
-            <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-              Pilihan Pelatih
-            </span>
-            <div className="grid max-h-[320px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-              {loadingOperators ? (
-                <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
-                  Memuat data petugas dari database...
-                </div>
-              ) : operators.length > 0 ? (
-                operators.map((operator) => (
-                  <OperatorChoiceCard
-                    key={operator.id}
-                    operator={operator}
-                    selected={selectedOperatorIds.includes(String(operator.id))}
-                    onToggle={() => handleToggleOperator(String(operator.id))}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
-                  Belum ada petugas yang tersedia.
-                </div>
-              )}
+              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                Pilihan Pelatih
+              </span>
+              <div className="grid max-h-[320px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                {loadingOperators ? (
+                  <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
+                    Memuat data petugas dari database...
+                  </div>
+                ) : operators.length > 0 ? (
+                  operators.map((operator) => (
+                    <OperatorChoiceCard
+                      key={operator.id}
+                      operator={operator}
+                      selected={selectedOperatorIds.includes(
+                        String(operator.id),
+                      )}
+                      onToggle={() => handleToggleOperator(String(operator.id))}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-dashed border-white/8 bg-black/20 px-4 py-8 text-center text-sm text-stone-400 md:col-span-2">
+                    Belum ada petugas yang tersedia.
+                  </div>
+                )}
+              </div>
+              <p className="font-public text-[9px] uppercase tracking-[0.12em] text-stone-500">
+                Klik beberapa box pelatih untuk memilih lebih dari satu petugas.
+              </p>
             </div>
-            <p className="font-public text-[9px] uppercase tracking-[0.12em] text-stone-500">
-              Klik beberapa box pelatih untuk memilih lebih dari satu petugas.
-            </p>
-          </div>
 
             <div className="space-y-4">
-            <label className="grid gap-2">
-              <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-                Golongan
-              </span>
-              <select
-                value={golongan}
-                onChange={(event) => setGolongan(event.target.value)}
-                className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
-              >
-                {TRAINING_GOLONGAN_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="grid gap-2">
+                <span className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                  Golongan
+                </span>
+                <select
+                  value={golongan}
+                  onChange={(event) => setGolongan(event.target.value)}
+                  className="border border-white/8 bg-black/20 px-3 py-2.5 text-[13px] text-stone-100 outline-none transition focus:border-amber-300"
+                >
+                  {TRAINING_GOLONGAN_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <div className="border border-white/8 bg-black/20 p-3.5">
-              <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
-                Ringkasan Sesi
-              </p>
-              <div className="mt-2.5 space-y-1.5 text-[13px] text-stone-200">
-                <p>{selectedCount} kandidat siap dibuka ke pelatihan.</p>
-                <p>{selectedOperators.length} petugas akan ditautkan ke sesi ini.</p>
-                <p>{golongan} akan menjadi golongan aktif untuk sesi baru.</p>
+              <div className="border border-white/8 bg-black/20 p-3.5">
+                <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                  Ringkasan Sesi
+                </p>
+                <div className="mt-2.5 space-y-1.5 text-[13px] text-stone-200">
+                  <p>{selectedCount} kandidat siap dibuka ke pelatihan.</p>
+                  <p>
+                    {selectedOperators.length} petugas akan ditautkan ke sesi
+                    ini.
+                  </p>
+                  <p>{golongan} akan menjadi golongan aktif untuk sesi baru.</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
             <div className="border border-white/8 bg-black/20 p-3.5">
               <p className="font-public text-[10px] uppercase tracking-[0.18em] text-stone-400">
@@ -270,6 +280,11 @@ export default function TrainingLaunchModal({
                         <p className="mt-1 text-[12px] text-stone-400">
                           {candidate.discord}
                         </p>
+                        {candidate.discordUserId ? (
+                          <p className="mt-1 truncate font-public text-[9px] uppercase tracking-[0.14em] text-emerald-200">
+                            {`<@${candidate.discordUserId}> • Discord Synced`}
+                          </p>
+                        ) : null}
                       </div>
                     ))
                   ) : (
@@ -282,7 +297,8 @@ export default function TrainingLaunchModal({
                 </div>
               </div>
 
-              {selectedCandidates.length > MODAL_SELECTED_CANDIDATE_PAGE_SIZE ? (
+              {selectedCandidates.length >
+              MODAL_SELECTED_CANDIDATE_PAGE_SIZE ? (
                 <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-white/6 pt-3.5">
                   <p className="font-public text-[9px] uppercase tracking-[0.14em] text-stone-500">
                     Geser kandidat terpilih
@@ -301,7 +317,8 @@ export default function TrainingLaunchModal({
                       Prev
                     </button>
                     <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300">
-                      Page {resolvedSelectedCandidatePage} / {selectedCandidatePageCount}
+                      Page {resolvedSelectedCandidatePage} /{" "}
+                      {selectedCandidatePageCount}
                     </div>
                     <button
                       type="button"
@@ -311,7 +328,8 @@ export default function TrainingLaunchModal({
                         )
                       }
                       disabled={
-                        resolvedSelectedCandidatePage === selectedCandidatePageCount
+                        resolvedSelectedCandidatePage ===
+                        selectedCandidatePageCount
                       }
                       className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 font-public text-[9px] font-bold uppercase tracking-[0.16em] text-stone-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-45"
                     >

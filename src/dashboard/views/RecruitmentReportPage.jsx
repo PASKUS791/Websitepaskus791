@@ -11,7 +11,7 @@
  */
 
 import { AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ArchiveReportCard,
@@ -23,6 +23,7 @@ import {
   formatArchiveTimestamp,
   formatOperationalDateLabel,
   formatRelativeMinutes,
+  getRecruitmentReportValidationMessage,
   isArchivePendingDispatch,
   normalizeArchiveSupplement,
   normalizeRecruitmentReport,
@@ -68,7 +69,6 @@ function DispatchArchivePanel({ dispatchRecord }) {
       : dispatchRecord.attachmentPreviewUrl
         ? [dispatchRecord.attachmentPreviewUrl]
         : [];
-
   return (
     <section className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -77,11 +77,23 @@ function DispatchArchivePanel({ dispatchRecord }) {
             Dispatch Terakhir
           </p>
           <h2 className="mt-2 font-sans text-xl font-bold uppercase text-stone-100">
-            Sinkron Ke Resimen Tercatat
+            Format Baru Terkirim Ke Resimen
           </h2>
-          <p className="mt-2 text-sm leading-6 text-stone-300">
-            {dispatchRecord.description || "Tidak ada deskripsi dispatch yang tersimpan."}
+          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-stone-300">
+            {dispatchRecord.description ||
+              "Tidak ada deskripsi dispatch yang tersimpan."}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-emerald-400/24 bg-emerald-400/10 px-3 py-1 font-public text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-200">
+              Sesi Telah Selesai
+            </span>
+            <span className="rounded-full border border-emerald-400/24 bg-emerald-400/10 px-3 py-1 font-public text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-200">
+              Laporan Terkirim
+            </span>
+            <span className="rounded-full border border-amber-300/24 bg-amber-300/10 px-3 py-1 font-public text-[9px] font-bold uppercase tracking-[0.14em] text-amber-100">
+              Pin & Sertijab Manual
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 lg:min-w-[360px]">
@@ -98,7 +110,10 @@ function DispatchArchivePanel({ dispatchRecord }) {
               Lampiran
             </p>
             <p className="mt-2 text-sm text-stone-200">
-              {dispatchRecord.attachmentCount || attachmentFileNames.length || 0} foto
+              {dispatchRecord.attachmentCount ||
+                attachmentFileNames.length ||
+                0}{" "}
+              foto
             </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-black/20 p-3">
@@ -111,7 +126,7 @@ function DispatchArchivePanel({ dispatchRecord }) {
           </div>
           <div className="rounded-xl border border-white/8 bg-black/20 p-3">
             <p className="font-public text-[9px] uppercase tracking-[0.16em] text-stone-500">
-              Tag Pendaftar
+              Tag Peserta
             </p>
             <p className="mt-2 text-sm text-stone-200">
               {dispatchRecord.mentionedRegistrantCount} akun
@@ -230,6 +245,8 @@ export default function RecruitmentReportPage() {
     location.state?.archiveNotice ||
       "Channel siap untuk sinkronisasi laporan ke database.",
   );
+  const dispatchOpenedFromTindakanRef = useRef(false);
+  const focusReportId = String(location.state?.focusReportId || "");
 
   useEffect(() => {
     const interval = window.setInterval(() => setSystemTime(new Date()), 1000);
@@ -249,11 +266,14 @@ export default function RecruitmentReportPage() {
     () =>
       persistedSessionReports
         .map((report) =>
-          normalizeRecruitmentReport(reportVisualOverrides[report.id] ?? report),
+          normalizeRecruitmentReport(
+            reportVisualOverrides[report.id] ?? report,
+          ),
         )
         .sort(
           (left, right) =>
-            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+            new Date(right.updatedAt).getTime() -
+            new Date(left.updatedAt).getTime(),
         ),
     [persistedSessionReports, reportVisualOverrides],
   );
@@ -262,7 +282,9 @@ export default function RecruitmentReportPage() {
     setReportVisualOverrides((currentOverrides) => {
       let hasChanges = false;
       const nextOverrides = { ...currentOverrides };
-      const persistedIds = new Set(persistedSessionReports.map((report) => report.id));
+      const persistedIds = new Set(
+        persistedSessionReports.map((report) => report.id),
+      );
 
       Object.keys(nextOverrides).forEach((reportId) => {
         if (!persistedIds.has(reportId)) {
@@ -275,7 +297,10 @@ export default function RecruitmentReportPage() {
         const normalizedReport = normalizeRecruitmentReport(report);
         const override = nextOverrides[normalizedReport.id];
 
-        if (override && isReportVisualizationSynced(normalizedReport, override)) {
+        if (
+          override &&
+          isReportVisualizationSynced(normalizedReport, override)
+        ) {
           delete nextOverrides[normalizedReport.id];
           hasChanges = true;
         }
@@ -284,6 +309,23 @@ export default function RecruitmentReportPage() {
       return hasChanges ? nextOverrides : currentOverrides;
     });
   }, [persistedSessionReports]);
+
+  useEffect(() => {
+    if (
+      dispatchOpenedFromTindakanRef.current ||
+      !location.state?.openDispatch ||
+      !trainingSession ||
+      sessionReports.length === 0
+    ) {
+      return;
+    }
+
+    dispatchOpenedFromTindakanRef.current = true;
+    setArchiveNotice(
+      "Dibuka dari Perlu Tindakan. Selesaikan dispatch laporan lewat modal ini.",
+    );
+    setDispatchModalOpen(true);
+  }, [location.state?.openDispatch, sessionReports.length, trainingSession]);
 
   const setOptimisticReport = (report) => {
     setReportVisualOverrides((currentOverrides) => ({
@@ -341,7 +383,9 @@ export default function RecruitmentReportPage() {
       const supplementTimestamp = report.additionalReports.reduce(
         (latestSupplement, entry) => {
           const entryTimestamp = new Date(entry.updatedAt).getTime();
-          return entryTimestamp > latestSupplement ? entryTimestamp : latestSupplement;
+          return entryTimestamp > latestSupplement
+            ? entryTimestamp
+            : latestSupplement;
         },
         0,
       );
@@ -350,7 +394,9 @@ export default function RecruitmentReportPage() {
     }, 0);
   }, [sessionReports]);
 
-  const latestUpdatedDate = latestUpdatedAt ? new Date(latestUpdatedAt) : systemTime;
+  const latestUpdatedDate = latestUpdatedAt
+    ? new Date(latestUpdatedAt)
+    : systemTime;
   const pendingDispatchCount = sessionReports.filter((report) =>
     isArchivePendingDispatch(report),
   ).length;
@@ -379,14 +425,45 @@ export default function RecruitmentReportPage() {
       return;
     }
 
+    const invalidReport = sessionReports
+      .map((report) => ({
+        report,
+        message: getRecruitmentReportValidationMessage(report, {
+          requireFinalStatus: true,
+        }),
+      }))
+      .find((entry) => entry.message);
+
+    if (invalidReport) {
+      setArchiveNotice(
+        `Laporan ${invalidReport.report.name} belum siap dikirim: ${invalidReport.message}`,
+      );
+      return;
+    }
+
     setDispatchModalOpen(true);
   };
 
   const handleSubmitDispatch = async ({ description, attachments }) => {
     const dispatchTimestamp = new Date().toISOString();
+    const invalidReport = sessionReports
+      .map((report) => ({
+        report,
+        message: getRecruitmentReportValidationMessage(report, {
+          requireFinalStatus: true,
+        }),
+      }))
+      .find((entry) => entry.message);
+
+    if (invalidReport) {
+      const message = `Laporan ${invalidReport.report.name} belum siap dikirim: ${invalidReport.message}`;
+      setArchiveNotice(message);
+      throw new Error(message);
+    }
 
     try {
       setDispatchSubmitting(true);
+      setArchiveNotice("Mengirim laporan sesi ke resimen...");
       const dispatchResult = await dispatchRecruitmentSessionReport({
         session: trainingSession,
         reports: sessionReports,
@@ -394,21 +471,23 @@ export default function RecruitmentReportPage() {
         attachments,
         requestedBy: user,
       });
+
       await dispatchTrainingSession(sessionId, sessionReports, {
         description,
         attachments,
         dispatchResult,
       });
-      setDispatchModalOpen(false);
       setArchiveNotice(
         `${sessionReports.length} laporan berhasil dikirim ke resimen pada ${formatArchiveTimestamp(
           new Date(dispatchTimestamp),
-        )}.`,
+        )}. Pin dan Sertijab diproses manual lewat menu terpisah.`,
       );
+      return dispatchResult;
     } catch (dispatchError) {
       setArchiveNotice(
         dispatchError?.message || "Gagal mengirim laporan sesi ke resimen.",
       );
+      throw dispatchError;
     } finally {
       setDispatchSubmitting(false);
     }
@@ -417,7 +496,8 @@ export default function RecruitmentReportPage() {
   const handleSaveReport = async (updatedReport) => {
     const normalizedReport = normalizeRecruitmentReport(updatedReport);
     const previousReport =
-      sessionReports.find((report) => report.id === normalizedReport.id) ?? null;
+      sessionReports.find((report) => report.id === normalizedReport.id) ??
+      null;
 
     try {
       setReportSubmittingId(normalizedReport.id);
@@ -447,7 +527,9 @@ export default function RecruitmentReportPage() {
   const handleSaveSupplement = async (reportId, supplement) => {
     const normalizedSupplement = normalizeArchiveSupplement(supplement);
     const isEditMode = supplementEditorState?.mode === "edit";
-    const targetReport = sessionReports.find((report) => report.id === reportId);
+    const targetReport = sessionReports.find(
+      (report) => report.id === reportId,
+    );
 
     if (!targetReport) {
       return;
@@ -493,7 +575,9 @@ export default function RecruitmentReportPage() {
   };
 
   const handleDeleteSupplement = async (reportId, supplementId) => {
-    const targetReport = sessionReports.find((report) => report.id === reportId);
+    const targetReport = sessionReports.find(
+      (report) => report.id === reportId,
+    );
     const targetSupplement = targetReport?.additionalReports.find(
       (entry) => entry.id === supplementId,
     );
@@ -548,7 +632,9 @@ export default function RecruitmentReportPage() {
   };
 
   const handleEliminateCandidate = async (reportId) => {
-    const targetReport = sessionReports.find((report) => report.id === reportId);
+    const targetReport = sessionReports.find(
+      (report) => report.id === reportId,
+    );
 
     if (!targetReport) {
       return;
@@ -640,7 +726,8 @@ export default function RecruitmentReportPage() {
                 Laporan Perekrutan
               </h1>
               <p className="text-[13px] leading-5 text-stone-400">
-                {trainingSession.title} • {formatOperationalDateLabel(trainingSession.scheduledDate)}
+                {trainingSession.title} •{" "}
+                {formatOperationalDateLabel(trainingSession.scheduledDate)}
               </p>
             </div>
 
@@ -667,7 +754,9 @@ export default function RecruitmentReportPage() {
                 <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current">
                   <path d="M14.5 1L1 7l4.8 1.9L7.7 14 14.5 1zm-8 6.2l5.2-3-3.7 4.6-.7-1.6-.8 0z" />
                 </svg>
-                {dispatchSubmitting ? "mengirim..." : "kirim laporan ke resimen"}
+                {dispatchSubmitting
+                  ? "mengirim..."
+                  : "kirim laporan ke resimen"}
               </button>
 
               <Link
@@ -696,8 +785,13 @@ export default function RecruitmentReportPage() {
               <ArchiveReportCard
                 key={report.id}
                 report={report}
-                busy={Boolean(reportSubmitting) && reportSubmittingId === report.id}
-                highlighted={Boolean(reportVisualOverrides[report.id])}
+                busy={
+                  Boolean(reportSubmitting) && reportSubmittingId === report.id
+                }
+                highlighted={
+                  Boolean(reportVisualOverrides[report.id]) ||
+                  report.id === focusReportId
+                }
                 onAddSupplement={() =>
                   setSupplementEditorState({
                     mode: "create",
@@ -725,17 +819,26 @@ export default function RecruitmentReportPage() {
 
         <div className="flex flex-col gap-4 border-t border-white/6 pt-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-3 border-l-2 border-stone-400 bg-stone-900 px-4 py-2">
+            <div
+              className={[
+                "flex items-center gap-3 border-l-2 bg-stone-900 px-4 py-2",
+                dispatchRecord ? "border-emerald-400" : "border-stone-400",
+              ].join(" ")}
+            >
               <div className="relative h-2 w-2">
-                <span className="absolute inset-0 rounded-full bg-stone-400/20" />
-                <span className="absolute inset-0 rounded-full bg-stone-400" />
+                <span
+                  className={`absolute inset-0 rounded-full ${dispatchRecord ? "bg-emerald-400/20" : "bg-stone-400/20"}`}
+                />
+                <span
+                  className={`absolute inset-0 rounded-full ${dispatchRecord ? "bg-emerald-400" : "bg-stone-400"}`}
+                />
               </div>
               <div>
                 <p className="font-public text-[8px] font-bold uppercase tracking-[0.14em] text-stone-400">
                   Status Pelatihan
                 </p>
                 <p className="font-public text-[10px] font-bold uppercase tracking-[0.08em] text-stone-200">
-                  Aktif
+                  {dispatchRecord ? "Selesai" : "Aktif"}
                 </p>
               </div>
             </div>
@@ -756,7 +859,11 @@ export default function RecruitmentReportPage() {
           </div>
 
           <div className="flex flex-col gap-3 text-[10px] uppercase tracking-[0.18em] text-stone-200/50 md:flex-row md:items-center md:gap-8">
-            <span>{trainingSession.operators.map((operator) => operator.label).join(", ")}</span>
+            <span>
+              {trainingSession.operators
+                .map((operator) => operator.label)
+                .join(", ")}
+            </span>
             <span>{trainingSession.golongan}</span>
             <span>{trainingSession.candidates.length} Kandidat</span>
           </div>
@@ -772,7 +879,9 @@ export default function RecruitmentReportPage() {
             reports={sessionReports}
             pendingDispatchCount={pendingDispatchCount}
             submitting={dispatchSubmitting}
-            onClose={() => (dispatchSubmitting ? undefined : setDispatchModalOpen(false))}
+            onClose={() =>
+              dispatchSubmitting ? undefined : setDispatchModalOpen(false)
+            }
             onSubmit={handleSubmitDispatch}
           />
         ) : null}

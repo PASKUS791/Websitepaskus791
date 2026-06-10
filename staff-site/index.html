@@ -19,9 +19,100 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>PASKUS 791 Staff Portal</title>
+    <style>
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+        background: #06090b;
+      }
+
+      .boot-loader {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        color: #f5f5f4;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+      }
+
+      .boot-loader__panel {
+        width: min(520px, 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 28px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+      }
+
+      .boot-loader__eyebrow {
+        margin: 0 0 14px;
+        color: rgba(190, 242, 100, 0.86);
+        font-family: "Public Sans", system-ui, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+      }
+
+      .boot-loader__title {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.18;
+      }
+
+      .boot-loader__message {
+        margin: 14px 0 0;
+        color: #c7c3bd;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+
+      .boot-loader__bar {
+        height: 6px;
+        margin-top: 24px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .boot-loader__bar::before {
+        content: "";
+        display: block;
+        width: 38%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #84a98c 0%, #e9c349 100%);
+        animation: boot-loader-pulse 1.2s ease-in-out infinite;
+      }
+
+      @keyframes boot-loader-pulse {
+        0%,
+        100% {
+          opacity: 0.58;
+          transform: translateX(0);
+        }
+        50% {
+          opacity: 1;
+          transform: translateX(165%);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-loader">
+        <div class="boot-loader__panel">
+          <p class="boot-loader__eyebrow">Recruitment Auth</p>
+          <h1 class="boot-loader__title">Memuat portal staff...</h1>
+          <p class="boot-loader__message">
+            Aplikasi sedang mengambil modul utama dan memulihkan sesi.
+          </p>
+          <div class="boot-loader__bar"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="../src/staffMain.jsx"></script>
   </body>
  </html>

@@ -17,6 +17,36 @@ const API_BASE_URL = (
 const appHttpClient = createJsonHttpClient({
   baseURL: API_BASE_URL,
 });
+const STAFF_SESSION_STORAGE_KEY = "pelatihdash.staff.session.v1";
+
+function getStoredStaffAccessToken() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const rawSession = window.localStorage.getItem(STAFF_SESSION_STORAGE_KEY);
+    const session = rawSession ? JSON.parse(rawSession) : null;
+    return String(session?.accessToken || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function mergeApiRequestHeaders(headers = {}) {
+  const mergedHeaders = { ...(headers || {}) };
+  const accessToken = getStoredStaffAccessToken();
+
+  if (
+    accessToken &&
+    !("Authorization" in mergedHeaders) &&
+    !("authorization" in mergedHeaders)
+  ) {
+    mergedHeaders.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return mergedHeaders;
+}
 
 export async function apiFetch(path, options = {}) {
   try {
@@ -24,7 +54,7 @@ export async function apiFetch(path, options = {}) {
       url: path,
       method: options.method || "GET",
       data: options.body,
-      headers: options.headers,
+      headers: mergeApiRequestHeaders(options.headers),
       timeout: options.timeout,
     });
 
