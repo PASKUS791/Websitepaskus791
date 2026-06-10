@@ -459,163 +459,145 @@ const SOP_LIBRARY = [
     accent: "rose",
     cardEyebrow: "SOP Penggunaan Aplikasi",
     cardSummary:
-      "Panduan lengkap penggunaan aplikasi staff: login, membaca data kandidat, membuka sesi, mengisi laporan, dispatch ke resimen, Pin & Sertijab manual, dan monitoring Perlu Tindakan.",
+      "Panduan lengkap penggunaan aplikasi staff: login, perekrutan wawancara awal, sesi pengambilan Pin (Wingman & Latpur) dengan auto-grant role, serta monitoring Perlu Tindakan.",
     badge: "WEB",
     documentTag: "SOP-APP-REKRUT-791",
-    serial: "APP FLOW REVISION MEI 2026",
-    title: "SOP PENGGUNAAN APLIKASI PEREKRUTAN",
+    serial: "APP FLOW REVISION JUNI 2026",
+    title: "SOP PENGGUNAAN APLIKASI STAFF PASKUS",
     description:
-      "Dokumen ini menjelaskan cara memakai aplikasi dari awal sampai akhir. Mulai dari login staff, memahami dashboard, memilih kandidat, membuka sesi pelatihan, mengisi laporan peserta, mengirim laporan ke resimen, lalu menindaklanjuti pin dan Sertijab melalui menu manual terpisah.",
+      "Dokumen ini menjelaskan alur penggunaan portal staff secara komprehensif, mencakup dua alur operasional utama: Sesi Wawancara Perekrutan (calon anggota baru) dan Sesi Pengambilan Pin khusus (Wingman & Pin Latpur) dengan otomatisasi pemberian role Discord dan laporan sertijab.",
     referenceLabel: "Mode Sistem",
-    referenceValue: "STAFF PORTAL",
+    referenceValue: "STAFF PORTAL V2",
     overviewTitle: "Alur Utama Aplikasi",
     overviewDescription:
-      "Urutan kerja aplikasi adalah login sebagai staff, cek Dashboard Pelatih, pilih kandidat yang sudah siap, buka sesi pelatihan, isi laporan per peserta, kirim laporan sesi ke resimen, review histori di Hasil Laporan, lalu buka Pin & Sertijab bila peserta lulus perlu tindak lanjut manual. Menu Perlu Tindakan dipakai untuk menangkap data yang belum selesai, belum terkirim, atau butuh follow-up.",
+      "Aplikasi staff terbagi menjadi dua alur utama: 1) Sesi Wawancara Perekrutan untuk memproses pendaftaran calon anggota baru (Sipil/PMC) menjadi Prada secara manual; dan 2) Sesi Pengambilan Pin untuk menguji anggota aktif guna mendapatkan Pin Wingman atau Pin Latpur, yang dilengkapi fitur pemindaian Voice Channel, auto-save fase SOP, dan pemberian role Discord secara otomatis oleh bot resimen.",
     directives: [
       {
-        label: "URUTAN WAJIB",
-        text: '"Login -> Dashboard -> Pilih Kandidat -> Buka Pelatihan -> Isi Laporan -> Kirim Laporan Resimen -> Review Hasil -> Pin & Sertijab Manual bila diperlukan."',
+        label: "ALUR WAWANCARA",
+        text: '"Pilih Kandidat -> Buka Pelatihan -> Isi Evaluasi Wawancara -> Kirim Laporan Resimen (Tag manual / tidak ada auto-role)."',
       },
       {
-        label: "DATA WAJIB",
-        text: '"Setiap peserta harus punya identitas Roblox, Discord name, status laporan, hasil tanya jawab, catatan analis, dan Discord ID jika ingin tag Discord akurat pada laporan."',
+        label: "ALUR AMBIL PIN",
+        text: '"Masuk Menu Pin -> Pilih Tipe Pin & Pindai VC -> Pilih Peserta -> Buka Sesi -> Nilai 9 Fase SOP (Auto-Save) -> Nilai Akhir LULUS -> Kirim Sertijab (Auto-Grant Role)."',
       },
       {
-        label: "ATURAN DISCORD",
-        text: '"Jika Discord ID tersedia dari API, aplikasi memakai ID tersebut untuk tag laporan. Pin, role, dan Sertijab diproses terpisah sesuai SOP manual."',
+        label: "PRINSIP AUTO-SAVE",
+        text: '"Semua penilaian fase L/G/B dan kolom catatan pada sesi Pengambilan Pin disimpan secara otomatis ke database saat kursor berpindah dari bidang input (onBlur)."',
       },
     ],
     fieldSpecs: [
       { label: "Login Staff", value: "Masukkan username dan password portal" },
-      { label: "Dashboard", value: "Seleksi kandidat siap pelatihan" },
-      { label: "Discord Synced", value: "Tanda ID Discord tersedia dari API" },
-      {
-        label: "Buka Pelatihan",
-        value: "Pilih petugas, golongan, dan kandidat",
-      },
-      { label: "Pelatihan", value: "Isi laporan utama per peserta" },
-      {
-        label: "Dispatch",
-        value: "Kirim laporan perekrutan ke resimen",
-      },
-      { label: "Pin & Sertijab", value: "Tindak lanjut manual setelah laporan" },
-      { label: "Perlu Tindakan", value: "Monitoring data belum selesai" },
-      { label: "Hasil Laporan", value: "Histori dan edit arsip laporan" },
+      { label: "Dashboard", value: "Pilih kandidat wawancara awal" },
+      { label: "Menu Pin", value: "Akses sesi pengujian Pin Wingman & Latpur" },
+      { label: "Voice Scan", value: "Daftar anggota aktif di Voice Channel Discord staff" },
+      { label: "Penilaian 9 Fase", value: "Evaluasi taktis/fisik berdasarkan SOP" },
+      { label: "Auto-Save", value: "Data tersimpan otomatis saat focus input hilang" },
+      { label: "Auto-Role Discord", value: "Pemberian role otomatis bagi peserta lulus" },
+      { label: "Hasil Laporan", value: "Histori, edit arsip, & tambah laporan" },
+      { label: "Perlu Tindakan", value: "Monitoring data yang belum diselesaikan" },
     ],
     phases: [
       {
         index: "01",
-        title: "Phase 1: Login dan Cek Akses",
+        title: "Phase 1: Login dan Membaca Dashboard",
         description:
-          "Buka portal staff, masukkan username dan password, lalu tunggu dashboard selesai memulihkan sesi. Jika muncul error 401 atau sesi tidak valid, logout atau refresh setelah token diperbarui.",
-        bullets: ["Masuk sebagai staff", "Pastikan dashboard termuat"],
+          "Masuk menggunakan akun petugas (contoh: paskusadmin). Periksa dashboard pendaftaran untuk melihat daftar kandidat Sipil dan PMC yang siap diproses wawancara awal.",
+        bullets: ["Masuk portal staff", "Pastikan status operator aktif"],
       },
       {
         index: "02",
-        title: "Phase 2: Membaca Dashboard",
+        title: "Phase 2: Wawancara Perekrutan Awal",
         description:
-          "Dashboard menampilkan kandidat siap pelatihan, jumlah sipil, PMC, data terpilih, dan sesi aktif. Gunakan pencarian untuk mencari Roblox, Discord name, Discord ID, atau kategori.",
-        bullets: ["Cek data kandidat", "Gunakan pencarian"],
+          "Pilih calon anggota dari dashboard, klik Buka Pelatihan, dan isi evaluasi wawancara berdasarkan 9 topik standardisasi. Gunakan template indikator wawancara [IDENTITAS] hingga [PELATIHAN] untuk mencatat jawaban lisan.",
+        bullets: ["Pilih calon kandidat", "Isi hasil wawancara lisan"],
       },
       {
         index: "03",
-        title: "Phase 3: Pilih Kandidat",
+        title: "Phase 3: Kirim Laporan Wawancara (Manual)",
         description:
-          "Klik tombol Pilih pada kandidat yang akan diproses. Kandidat dengan Discord ID akan menampilkan indikator Discord Synced dan siap dipakai untuk mention laporan.",
-        bullets: ["Pilih peserta", "Cek Discord Synced"],
+          "Setelah laporan wawancara diisi, klik Kirim Laporan untuk mengirim embed ke Discord resimen. Catatan: Untuk perekrutan awal ini, pemberian role Prada dan administrasi nama dilakukan manual oleh pengurus.",
+        bullets: ["Kirim ke Discord resimen", "Proses administrasi manual"],
       },
       {
         index: "04",
-        title: "Phase 4: Buka Pelatihan",
+        title: "Phase 4: Buka Sesi Pengambilan Pin",
         description:
-          "Klik Buka Pelatihan, pilih petugas yang bertugas, tentukan golongan, lalu simpan. Setelah sesi dibuat, aplikasi otomatis membuka halaman pelatihan dan menyiapkan draft laporan untuk tiap peserta.",
-        bullets: ["Pilih petugas", "Tentukan golongan"],
+          "Buka menu Pin di bottom nav. Pilih tipe pin (Pin Wingman atau Pin Latpur). Masuk ke Voice Channel Discord bersama peserta, lalu klik 'Segarkan VC'. Pilih nama peserta yang terdeteksi, kemudian klik 'Buka Sesi Penilaian'.",
+        bullets: ["Pilih Wingman / Latpur", "Pindai VC & pilih peserta"],
       },
       {
         index: "05",
-        title: "Phase 5: Isi Laporan Peserta",
+        title: "Phase 5: Nilai Fase SOP (Ambil Pin)",
         description:
-          "Pada halaman pelatihan, buka setiap peserta lalu isi status, pertanyaan atau uji wawancara, jawaban, catatan analis, dan kesimpulan. Gunakan laporan tambahan jika ada update setelah laporan utama.",
-        bullets: ["Isi status peserta", "Simpan catatan jelas"],
+          "Nilai ke-9 fase taktis dan fisik. Klik tombol status: L (Lulus), G (Gagal), atau B (Belum) dan ketik catatan performa. Sistem akan otomatis menyimpan data penilaian ke server setiap kali Anda memindahkan kursor (onBlur).",
+        bullets: ["Nilai 9 fase kelulusan", "Fitur auto-save aktif saat blur"],
       },
       {
         index: "06",
-        title: "Phase 6: Kirim Laporan",
+        title: "Phase 6: Penentuan Kelulusan Pin",
         description:
-          "Setelah semua peserta punya laporan, klik Kirim Laporan. Aplikasi membuka modal dispatch untuk deskripsi dan lampiran, lalu mengirim laporan perekrutan ke resimen tanpa auto role atau Sertijab.",
-        bullets: ["Isi deskripsi", "Lampirkan foto bila perlu"],
+          "Tentukan Nilai Akhir peserta di bagian atas (Lulus / Gagal / Belum). Hanya peserta yang diberi Nilai Akhir LULUS yang akan secara otomatis mendapatkan role Discord yang bersangkutan ketika sesi dikirim.",
+        bullets: ["Pilih status kelulusan akhir", "Hanya LULUS yang dapat role"],
       },
       {
         index: "07",
-        title: "Phase 7: Pin & Sertijab Manual",
+        title: "Phase 7: Kirim Laporan Sertijab Pin (Otomatis)",
         description:
-          "Setelah laporan terkirim, buka menu Pin & Sertijab untuk melihat peserta lulus yang siap ditindaklanjuti. Pemberian pin, role, rename, dan Sertijab dilakukan manual sesuai prosedur admin Discord.",
-        bullets: ["Cek peserta lulus", "Proses manual"],
+          "Periksa pratinjau dokumen Uji Mutu yang dikompilasi secara real-time. Klik 'Kirim Sertijab & Selesai'. Bot resimen akan otomatis mengirim laporan Uji Mutu ke Discord dan memberikan role Wingman atau Pin Latpur kepada peserta yang lulus.",
+        bullets: ["Kirim Sertijab ke Discord", "Auto-grant role Discord oleh bot"],
       },
       {
         index: "08",
-        title: "Phase 8: Review Histori",
+        title: "Phase 8: Monitoring dan Hasil Laporan",
         description:
-          "Setelah selesai, buka Hasil Laporan untuk melihat arsip. Dari halaman laporan perekrutan, recruiter dapat edit laporan, tambah laporan tambahan, kirim ulang dispatch, atau eliminasi kandidat jika memang diperlukan.",
-        bullets: ["Cek hasil laporan", "Edit bila perlu"],
+          "Gunakan menu Perlu Tindakan untuk memantau data yang belum tuntas dikirim. Jika terjadi kesalahan input pada sesi yang sudah terkirim, buka menu Hasil Laporan untuk mengedit arsip atau menambahkan laporan tambahan.",
+        bullets: ["Cek status di Perlu Tindakan", "Edit arsip di Hasil Laporan"],
       },
     ],
     inputGuides: [
       {
-        title: "Login Portal",
-        required: "Username dan password staff",
+        title: "Pendaftaran Wawancara",
+        required: "Roblox, Discord name, & evaluasi tertulis",
         description:
-          "Gunakan kredensial staff yang diberikan admin. Setelah login, aplikasi menyimpan sesi internal agar dashboard tetap terbuka saat refresh.",
+          "Gunakan data pendaftaran yang sinkron. Tulis jawaban dan catatan wawancara sesuai template format indikator SOP Perekrutan agar hasil penilaian objektif.",
         fields: [
-          "Username: akun staff/pelatih yang terdaftar.",
-          "Password: password portal staff.",
-          "Jika token expired, lakukan refresh atau login ulang.",
+          "Nama Roblox & Discord: identitas wajib kandidat.",
+          "Hasil wawancara: isi catatan di setiap blok indikator [IDENTITAS] dst.",
+          "Status kelulusan: tentukan kelayakan lolos seleksi.",
         ],
       },
       {
-        title: "Data Kandidat",
-        required: "Roblox, Discord name, kategori, dan Discord ID bila ada",
+        title: "Voice Channel Roster (Sesi Pin)",
+        required: "Masuk Voice Channel Discord bersama peserta",
         description:
-          "Data kandidat dibaca dari API pendaftaran. Recruiter tidak perlu mengetik Discord ID manual jika field discordUserId, discord_user_id, atau discord_id sudah tersedia.",
+          "Pemindaian voice channel menyinkronkan data peserta secara real-time. Perekrut wajib berada di voice channel yang sama dengan peserta agar sistem bot dapat membaca daftar anggota yang aktif.",
         fields: [
-          "Nama Roblox dipakai sebagai identitas utama peserta.",
-          "Discord name dipakai sebagai fallback jika Discord ID kosong.",
-          "Discord ID dipakai untuk mention laporan dan validasi tindak lanjut manual.",
+          "Tombol Segarkan VC: memindai ulang anggota di Voice Channel.",
+          "Checklist peserta: centang nama peserta yang akan diuji.",
+          "Jika nama tidak muncul: pastikan Discord ID operator telah diisi di menu Petugas.",
         ],
       },
       {
-        title: "Modal Buka Pelatihan",
-        required: "Minimal satu kandidat, minimal satu petugas, dan golongan",
+        title: "Penilaian Fase (Sesi Pin)",
+        required: "Kelulusan fase (L/G/B) & catatan performa",
         description:
-          "Modal ini membuat sesi aktif. Pastikan peserta dan petugas sudah benar sebelum menyimpan, karena sesi akan langsung muncul pada halaman pelatihan.",
+          "Setiap fase dari 9 fase taktis SOP diisi nilainya secara individual. Kursor yang keluar dari textarea catatan atau perubahan tombol status akan memicu auto-save ke server.",
         fields: [
-          "Petugas: pilih satu atau beberapa perekrut/pelatih.",
-          "Golongan: pilih golongan sesi yang sesuai.",
-          "Kandidat terpilih: cek lagi nama Roblox dan Discord peserta.",
+          "Status L (Lulus): memenuhi syarat standar kelulusan fase.",
+          "Status G (Gagal): tidak memenuhi syarat, tulis rujukan di catatan.",
+          "Status B (Belum): belum diuji atau dinilai.",
+          "Kolom catatan: rujukan alasan meloloskan/menggagalkan sesuai standar SOP.",
         ],
       },
       {
-        title: "Laporan Peserta",
-        required: "Status, pertanyaan, jawaban/catatan, dan rekomendasi",
+        title: "Laporan Uji Mutu & Sertijab",
+        required: "Nilai Akhir LULUS & verifikasi pratinjau",
         description:
-          "Isi laporan dengan format yang jelas agar embed Discord tidak sulit dibaca. Pisahkan pertanyaan dan jawaban, hindari menggabungkan semua informasi dalam satu kalimat panjang.",
+          "Uji Mutu dikompilasi secara otomatis berdasarkan performa fase yang dinilai. Sebelum mengirim, verifikasi draf Uji Mutu pada kotak pratinjau.",
         fields: [
-          "Status: PROSES, LULUS, GAGAL, atau status lain yang tersedia.",
-          "Pertanyaan strategis: pertanyaan atau fokus penilaian.",
-          "Keterangan analis: jawaban, hasil observasi, dan alasan keputusan.",
-          "Laporan tambahan: update lanjutan setelah laporan utama disimpan.",
-        ],
-      },
-      {
-        title: "Dispatch Laporan",
-        required:
-          "Deskripsi dispatch dan lampiran foto bila diperlukan",
-        description:
-          "Saat kirim laporan, aplikasi hanya mengirim laporan perekrutan ke channel resimen. Peserta dan perekrut dengan Discord ID akan ditag pada embed, sedangkan pin, role, dan Sertijab dilakukan dari menu terpisah.",
-        fields: [
-          "Deskripsi: ringkasan singkat konteks laporan.",
-          "Lampiran: tambahkan foto jika dibutuhkan dan ukurannya masih valid.",
-          "Hasil: tunggu sampai laporan terkirim lalu review di Hasil Laporan.",
+          "Nilai Akhir: ubah status ke LULUS untuk memicu pemberian role.",
+          "Preview Uji Mutu: tampilan laporan akhir yang akan dikirim ke Discord.",
+          "Tombol Kirim: memicu pengiriman webhook & auto-role secara instan.",
         ],
       },
     ],
@@ -623,62 +605,52 @@ const SOP_LIBRARY = [
       {
         name: "Dashboard Pelatih",
         detail:
-          "Tempat melihat kandidat baru, memilih peserta, membuka sesi, dan membuka ulang sesi aktif.",
+          "Tempat memantau pendaftar baru, memilih peserta, dan mengelola sesi wawancara awal.",
       },
       {
-        name: "Pelatihan",
+        name: "Menu Pengambilan Pin",
         detail:
-          "Tempat mengisi laporan utama setiap peserta, edit laporan sebelum dispatch, cancel sesi, atau eliminasi kandidat.",
+          "Menu khusus staff tertentu untuk menguji Pin Wingman & Latpur berbasis 9 fase kelulusan SOP.",
       },
       {
-        name: "Kirim Laporan",
+        name: "Real-time Voice Scan",
         detail:
-          "Mengubah sesi aktif menjadi arsip dan mengirim embed laporan perekrutan ke resimen tanpa auto role atau Sertijab.",
+          "Membaca daftar anggota Discord aktif di Voice Channel yang sama dengan petugas penguji secara instan.",
       },
       {
-        name: "Pin & Sertijab",
+        name: "Auto-Save Penilaian",
         detail:
-          "Menu tindak lanjut manual untuk peserta lulus setelah laporan terkirim. Gunakan menu ini sebagai antrian kerja, bukan sebagai auto role.",
+          "Menyimpan otomatis progres penilaian fase dan catatan ketika kursor meninggalkan bidang input (onBlur).",
       },
       {
-        name: "Hasil Laporan",
+        name: "Auto-Role Discord",
         detail:
-          "Tempat membaca histori sesi, membuka laporan perekrutan, menambah laporan tambahan, dan kirim ulang jika ada update.",
+          "Bot resimen secara otomatis memberikan role Wingman / Pin Latpur ke Discord peserta yang dinyatakan LULUS.",
       },
       {
-        name: "Perlu Tindakan",
+        name: "Hasil Laporan & Perlu Tindakan",
         detail:
-          "Monitoring realtime untuk kandidat tanpa laporan, jadwal terlewat, dan data yang belum terkirim. Klik kartu untuk langsung menuju data yang harus diselesaikan.",
-      },
-      {
-        name: "Tambah Petugas",
-        detail:
-          "Tempat admin/pengelola menambahkan petugas, menyimpan metadata, dan menghubungkan Discord ID petugas untuk tag otomatis.",
-      },
-      {
-        name: "SOP",
-        detail:
-          "Pusat panduan operasional recruiter agar urutan kerja, bahasa roleplay, dan penggunaan aplikasi tetap konsisten.",
+          "Monitoring data pendaftaran tertunda dan penyimpanan histori arsip yang bisa diedit kembali.",
       },
     ],
     completionChecklist: [
-      "Semua peserta yang diproses sudah punya laporan utama.",
-      "Pertanyaan dan jawaban ditulis terpisah serta mudah dibaca.",
-      "Peserta dengan Discord ID sudah muncul sebagai Discord Synced.",
-      "Jika ada peserta lulus, buka menu Pin & Sertijab untuk tindak lanjut manual.",
-      "Pin, role, rename, dan Sertijab tidak dijalankan otomatis dari dispatch laporan.",
-      "Laporan perekrutan terkirim ke channel resimen.",
-      "Sesi sudah muncul di Hasil Laporan sebagai arsip.",
-      "Tidak ada item tersisa di Perlu Tindakan untuk sesi tersebut.",
+      "Semua sesi wawancara awal dikirim manual ke resimen (tanpa auto-role).",
+      "Sesi pengambilan pin dibuka dengan memindai Voice Channel aktif.",
+      "Seluruh fase penilaian (9 fase) diisi status kelulusannya.",
+      "Catatan performa fase ditulis dengan referensi standar SOP.",
+      "Nilai Akhir peserta diatur ke LULUS agar mendapatkan role.",
+      "Sertijab dikirim dan role Discord (Wingman/Latpur) ter-grant otomatis oleh bot.",
+      "Sesi yang telah diselesaikan diarsip di Hasil Laporan.",
+      "Status antrean di Perlu Tindakan untuk sesi terkait telah bersih.",
     ],
     emergency: {
-      title: "Protokol Salah Input dan Data Bermasalah",
+      title: "Protokol Salah Input dan Gangguan Bot Role",
       description:
-        "Jika sesi salah dibuat dan belum dikirim, gunakan Cancel Sesi agar kandidat kembali ke dashboard. Jika hanya satu peserta bermasalah, gunakan Eliminasi Kandidat dengan hati-hati. Jika laporan sudah terkirim tetapi data Discord bermasalah, buka Hasil Laporan dan menu Pin & Sertijab untuk mencatat tindak lanjut manual.",
-      code: "APP-FAILSAFE-03",
+        "Jika bot gagal memberikan role otomatis karena kendala API Discord, status sesi akan ditandai FAILED. Pelatih dapat memeriksa koneksi bot, memverifikasi role manual di Discord, lalu menambahkan catatan penjelas di Hasil Laporan untuk arsip komando.",
+      code: "APP-FAILSAFE-04",
     },
     footer: [
-      "Revisi Penggunaan Aplikasi Mei 2026",
+      "Revisi Penggunaan Aplikasi Juni 2026",
       "Divisi Rekrutmen Paskus 791",
     ],
   },
