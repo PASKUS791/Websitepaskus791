@@ -563,3 +563,38 @@ export async function fetchAdminOverview() {
   const payload = await apiFetch("/api/admin/overview");
   return payload?.overview ?? null;
 }
+
+export async function createPinSession({ pinType, memberIds }) {
+  const payload = await staffApiFetch("/pelatih/pin-sessions", {
+    method: "POST",
+    body: { pinType, memberIds },
+  });
+  return payload?.data ?? null;
+}
+
+export async function getPinSessions() {
+  const payload = await staffApiFetch("/pelatih/pin-sessions");
+  return payload?.data ?? [];
+}
+
+export async function addPinReport(sessionId, { discordUserId, phases, nilaiAkhir, displayName, username }) {
+  const payload = await staffApiFetch(`/pelatih/pin-sessions/${encodeURIComponent(sessionId)}/reports`, {
+    method: "PATCH",
+    body: { discordUserId, phases, nilaiAkhir, displayName, username },
+  });
+  return payload?.data ?? null;
+}
+
+export async function dispatchPinSession(sessionId) {
+  const payload = await staffApiFetch(`/pelatih/pin-sessions/${encodeURIComponent(sessionId)}/dispatch`, {
+    method: "POST",
+  });
+  return payload ?? null;
+}
+
+export async function getVoiceRoster() {
+  const payload = await staffApiFetch("/sertijab/voice");
+  return payload ?? null;
+}
+
+

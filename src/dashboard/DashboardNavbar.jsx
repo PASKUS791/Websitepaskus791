@@ -33,6 +33,11 @@ const NAV_ITEMS = [
     icon: "petugas",
   },
   {
+    label: "Pin",
+    to: "/dashboard/pin",
+    icon: "pin",
+  },
+  {
     label: "SOP",
     to: "/dashboard/sop",
     icon: "sop",
@@ -47,6 +52,7 @@ function resolvePageTitle(pathname) {
   if (pathname.startsWith("/dashboard/laporan-perekrutan/")) return "Laporan Perekrutan";
   if (pathname === "/dashboard/petugas") return "Tambah Petugas";
   if (pathname === "/dashboard/sop") return "Standard Operating Procedure";
+  if (pathname === "/dashboard/pin") return "Pengambilan Pin";
   return "SO-791 Data Center";
 }
 
@@ -56,6 +62,13 @@ function NavIcon({ name, active }) {
   const stroke = active ? "stroke-[2]" : "stroke-[1.5]";
   const cls = `${size} ${baseClass} fill-none stroke-current ${stroke}`;
 
+  if (name === "pin") {
+    return (
+      <svg viewBox="0 0 20 20" className={cls}>
+        <path d="M10 2.5 L12.5 6.5 L17 7 L13.5 10 L14.5 14.5 L10 12 L5.5 14.5 L6.5 10 L3 7 L7.5 6.5 Z" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   if (name === "jadwal") {
     return (
       <svg viewBox="0 0 20 20" className={cls}>
