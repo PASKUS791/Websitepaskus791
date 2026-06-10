@@ -178,7 +178,7 @@ export default function DashboardNavbar() {
         }}
         className="shrink-0 z-40 px-4 py-3 sm:px-6"
       >
-        <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between gap-3 max-w-7xl mx-auto">
           {/* Left: back + title */}
           <div className="flex items-center gap-3 min-w-0">
             {canGoBack ? (
@@ -290,7 +290,7 @@ export default function DashboardNavbar() {
         className="flex-1 overflow-y-auto overflow-x-hidden"
         style={{ paddingBottom: "88px" }} // space for bottom nav
       >
-        <section className="min-w-0 p-4 sm:p-6 max-w-5xl mx-auto">
+        <section className="min-w-0 p-4 sm:p-6 max-w-7xl mx-auto">
           <Outlet />
         </section>
       </main>
