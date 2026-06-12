@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const PASKUS_DISCORD_URL = "https://discord.gg/HegkQrHXeU";
+  const PASKUS_DISCORD_URL = "https://discord.gg/aaBR9ruFva";
   const PASKUS_COMMUNITY_URL = "https://paskus.so791.com/streamer";
   const PASKUS_FAMILY_URL = "https://paskus.so791.com/about";
   const STREAMER_CONTENT_API_URL = "/api/streamer-content.php";

@@ -8,7 +8,7 @@ const RESERVED_HOSTS = new Set(["so791.com", "www.so791.com", "paskus.so791.com"
 const HTML_CACHE = "public, max-age=120, stale-while-revalidate=600";
 const ASSET_CACHE = "public, max-age=31536000, immutable";
 const ORIGIN = "https://paskus.so791.com";
-const PASKUS_DISCORD_URL = "https://discord.gg/HegkQrHXeU";
+const PASKUS_DISCORD_URL = "https://discord.gg/aaBR9ruFva";
 const PASKUS_COMMUNITY_URL = "https://paskus.so791.com/streamer";
 const PASKUS_FAMILY_URL = "https://paskus.so791.com/about";
 const MEDIA_CACHE_TAG = "20260609-video-policy-safe";
