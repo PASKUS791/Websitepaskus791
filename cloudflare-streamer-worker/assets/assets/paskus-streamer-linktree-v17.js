@@ -176,6 +176,15 @@
       mergedMedia.preferMp4 = localMedia.preferMp4;
     }
 
+    // Guard Aang: API masih menyimpan aang-highlight-v2 (belum ada di server).
+    // Paksa pakai local config v1 agar video tidak di-override ke URL yang 404.
+    if (normalized(profile?.slug) === "aang" && /\/assets\/aang-highlight-v2\./.test(remoteHighlight)) {
+      mergedMedia.highlightPoster = localMedia.highlightPoster;
+      mergedMedia.highlightWebm = localMedia.highlightWebm;
+      mergedMedia.highlightMp4 = localMedia.highlightMp4;
+      mergedMedia.preferMp4 = localMedia.preferMp4;
+    }
+
     return mergedMedia;
   }
 
