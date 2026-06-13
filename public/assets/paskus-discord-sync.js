@@ -9806,6 +9806,7 @@
         brm5: "BRM5",
         structure: "STRUKTURAL",
         about: "ABOUT US",
+        regulation: "PERATURAN",
         discord: "DISCORD",
         brandSub: "So-791",
       },
@@ -9963,7 +9964,7 @@
       },
     },
     en: {
-      nav: { home: "HOME", combat: "COMBAT", support: "SUPPORT", streamer: "STREAMER", brm5: "BRM5", structure: "STRUCTURE", about: "ABOUT US", discord: "DISCORD", brandSub: "So-791" },
+      nav: { home: "HOME", combat: "COMBAT", support: "SUPPORT", streamer: "STREAMER", brm5: "BRM5", structure: "STRUCTURE", about: "ABOUT US", regulation: "PERATURAN", discord: "DISCORD", brandSub: "So-791" },
       module: {
         overviewKicker: "So-791 Unit And Service Introduction Module",
         overviewTitle: "Capability, Career, And Placement Analysis",
@@ -10012,7 +10013,7 @@
       unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Rapid Action & Swift Strike)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     fil: {
-      nav: { home: "HOME", combat: "COMBAT", support: "SUPORTA", streamer: "STREAMER", brm5: "BRM5", structure: "ISTRUKTURA", about: "ABOUT US", discord: "DISCORD", brandSub: "So-791" },
+      nav: { home: "HOME", combat: "COMBAT", support: "SUPORTA", streamer: "STREAMER", brm5: "BRM5", structure: "ISTRUKTURA", about: "ABOUT US", regulation: "REGULASYON", discord: "DISCORD", brandSub: "So-791" },
       module: {
         overviewKicker: "Modyul Ng Unit At Dinas So-791",
         overviewTitle: "Pagsusuri Ng Kakayahan, Karera, At Placement",
@@ -10061,7 +10062,7 @@
       unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Gerak Cepat At Sigap)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     hi: {
-      nav: { home: "होम", combat: "कॉम्बैट", support: "सपोर्ट", streamer: "स्ट्रीमर", brm5: "BRM5", structure: "स्ट्रक्चर", about: "अबाउट", discord: "DISCORD", brandSub: "So-791" },
+      nav: { home: "होम", combat: "कॉम्बैट", support: "सपोर्ट", streamer: "स्ट्रीमर", brm5: "BRM5", structure: "स्ट्रक्चर", about: "अबाउट", regulation: "नियम", discord: "DISCORD", brandSub: "So-791" },
       module: {
         overviewKicker: "So-791 यूनिट और सेवा परिचय मॉड्यूल",
         overviewTitle: "क्षमता, करियर, और प्लेसमेंट विश्लेषण",
@@ -10110,7 +10111,7 @@
       unitSelectLabels: { GATAM: "GATAM (Covert Operations)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Ground / Mechanized Infantry)", SIERRA: "SIERRA (Gerak Cepat Dan Sigap)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Air Unit)" },
     },
     jv: {
-      nav: { home: "HOME", combat: "TEMPUR", support: "DINAS", streamer: "STREAMER", brm5: "BRM5", structure: "STRUKTURAL", about: "BABAGAN", discord: "DISCORD", brandSub: "So-791" },
+      nav: { home: "HOME", combat: "TEMPUR", support: "DINAS", streamer: "STREAMER", brm5: "BRM5", structure: "STRUKTURAL", about: "BABAGAN", regulation: "PERATURAN", discord: "DISCORD", brandSub: "So-791" },
       module: {
         overviewKicker: "Modul Pangenalan Unit Lan Dinas So-791",
         overviewTitle: "Analisa Kemampuan, Karir, Lan Penempatan",
@@ -10333,7 +10334,7 @@
 
   GLOBAL_COPY.su = {
     ...GLOBAL_COPY.id,
-    nav: { home: "BERANDA", combat: "TEMPUR", support: "DINAS", streamer: "STREAMER", brm5: "BRM5", structure: "STRUKTURAL", about: "NGEUNAAN", discord: "DISCORD", brandSub: "So-791" },
+    nav: { home: "BERANDA", combat: "TEMPUR", support: "DINAS", streamer: "STREAMER", brm5: "BRM5", structure: "STRUKTURAL", about: "NGEUNAAN", regulation: "PERATURAN", discord: "DISCORD", brandSub: "So-791" },
     module: {
       overviewKicker: "Modul Pangenalan Unit Jeung Dinas So-791",
       overviewTitle: "Analisa Kamampuan, Karir, Jeung Penempatan",
@@ -11480,6 +11481,7 @@
       { href: "/brm5-roleplay", key: "brm5", label: ui.nav.brm5 },
       { href: "/struktural", key: "structure", label: ui.nav.structure },
       { href: "/about", key: "about", label: ui.nav.about },
+      { href: "/peraturan", key: "regulation", label: ui.nav.regulation || "PERATURAN" },
       { href: "https://discord.gg/aaBR9ruFva", key: "discord", label: ui.nav.discord, external: true, className: "btn-discord discord-link" },
     ];
     return `
