@@ -512,6 +512,12 @@
     .body-nav.paskus-main-nav .nav-links a[aria-current="page"] {
       color: #ffffff;
     }
+    .body-nav.paskus-main-nav .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
     .body-nav.paskus-main-nav .btn-discord,
     .body-nav.paskus-main-nav .discord-link {
       border: 1px solid rgba(230, 236, 232, 0.46);
@@ -522,9 +528,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-    .body-nav.paskus-main-nav .paskus-language-switcher {
-      margin-left: 0;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-decoration: none;
     }
     @media (max-width: 1100px) {
       .body-nav.paskus-main-nav {
@@ -621,10 +629,13 @@
         padding: 2px 1px 3px;
         scrollbar-width: none;
       }
-      .body-nav.paskus-main-nav .paskus-language-switcher {
+      .body-nav.paskus-main-nav .nav-actions {
         grid-column: 2;
         grid-row: 1;
         justify-self: end;
+        display: flex !important;
+        align-items: center;
+        gap: 6px;
       }
       .body-nav.paskus-main-nav .nav-links::-webkit-scrollbar {
         display: none;
@@ -10872,7 +10883,47 @@
     return Math.max(70, Math.round(rect.height + rect.top + 18));
   }
 
+  function ensureUnifiedNavbar() {
+    if (!document.getElementById("paskus-hide-nav-style")) {
+      const hideStyle = document.createElement("style");
+      hideStyle.id = "paskus-hide-nav-style";
+      hideStyle.textContent = `
+        #root > nav,
+        nav.fixed.top-0.w-full.z-50.px-6.py-4,
+        nav:not(.paskus-navbar-unified),
+        header:not(.paskus-navbar-unified),
+        .paskus-seo-prerender__nav {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      `;
+      document.head.appendChild(hideStyle);
+    }
+
+    let unifiedNav = document.querySelector(".paskus-navbar-unified");
+    if (!unifiedNav) {
+      const path = window.location.pathname.toLowerCase();
+      let activeKey = "home";
+      if (path === "/about" || path === "/about.html") activeKey = "about";
+      else if (path.includes("streamer") || path.includes("streamers.html")) activeKey = "streamer";
+      else if (path === "/struktural" || path === "/struktural.html") activeKey = "structure";
+      else if (path === "/peraturan" || path === "/peraturan.html") activeKey = "regulation";
+      else if (path.includes("brm5") || path.includes("roleplay") || path.includes("resimen")) activeKey = "brm5";
+      else if (window.location.hash === "#combat") activeKey = "combat";
+      else if (window.location.hash === "#support") activeKey = "support";
+
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = mainNavHtml(activeKey).trim();
+      unifiedNav = tempDiv.firstElementChild;
+      unifiedNav.classList.add("paskus-floating-nav", "paskus-navbar-unified");
+      document.body.prepend(unifiedNav);
+    }
+  }
+
   function applyFloatingNav() {
+    ensureUnifiedNavbar();
     const navs = floatingNavCandidates();
     navs.forEach((nav) => {
       nav.classList.add("paskus-floating-nav");
@@ -10881,21 +10932,7 @@
   }
 
   function ensureLanguageSwitcher() {
-    floatingNavCandidates().forEach((nav) => {
-      let switcher = nav.querySelector(".paskus-language-switcher");
-      if (!switcher) {
-        const template = document.createElement("template");
-        template.innerHTML = languageSwitcherHtml().trim();
-        switcher = template.content.firstElementChild;
-        const reference = nav.querySelector(".paskus-structural-header-cta")
-          || Array.from(nav.children).find((child) => child.tagName === "BUTTON");
-        if (reference) {
-          reference.before(switcher);
-        } else {
-          nav.appendChild(switcher);
-        }
-      }
-    });
+    ensureUnifiedNavbar();
     syncLanguageSwitchers();
   }
 
@@ -11481,8 +11518,6 @@
       { href: "/brm5-roleplay", key: "brm5", label: ui.nav.brm5 },
       { href: "/struktural", key: "structure", label: ui.nav.structure },
       { href: "/about", key: "about", label: ui.nav.about },
-      { href: "/peraturan", key: "regulation", label: ui.nav.regulation || "PERATURAN" },
-      { href: "https://discord.gg/aaBR9ruFva", key: "discord", label: ui.nav.discord, external: true, className: "btn-discord discord-link" },
     ];
     return `
       <nav class="body-nav paskus-main-nav">
@@ -11495,6 +11530,10 @@
         </a>
         <div class="nav-links">
           ${links.map((link) => mainNavLinkHtml({ ...link, active })).join("")}
+        </div>
+        <div class="nav-actions">
+          <a href="https://discord.gg/aaBR9ruFva" target="_blank" rel="noreferrer" class="btn-discord discord-link">${escapeHtml(ui.nav.discord)}</a>
+          ${languageSwitcherHtml()}
         </div>
       </nav>
     `;

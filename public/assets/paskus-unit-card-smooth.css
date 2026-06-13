@@ -12,6 +12,16 @@
   transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* Fix: klik detail unit tidak terhalang oleh front card saat flip */
+.flip-card:hover .flip-card-front,
+.flip-card:focus-within .flip-card-front {
+  pointer-events: none !important;
+}
+.flip-card:hover .flip-card-back,
+.flip-card:focus-within .flip-card-back {
+  pointer-events: auto !important;
+}
+
 /* ─── unit-logo: halus filter transition tanpa jitter ─── */
 .unit-logo {
   transition: filter 0.3s ease, transform 0.3s ease !important;
@@ -51,6 +61,7 @@
 /* Fix: transition 'all' menyebabkan sebelum-pseudo animate juga */
 .card-toruk,
 .card-serigala,
+.card-sierra,
 .card-beringas,
 .card-Sentinel,
 .card-Pathfinder,
@@ -62,6 +73,7 @@
 
 .card-toruk:before,
 .card-serigala:before,
+.card-sierra:before,
 .card-beringas:before,
 .card-Sentinel:before,
 .card-Pathfinder:before,
@@ -72,6 +84,7 @@
 /* Active state smooth */
 .card-toruk:active,
 .card-serigala:active,
+.card-sierra:active,
 .card-beringas:active,
 .card-Sentinel:active,
 .card-Pathfinder:active,
@@ -97,6 +110,7 @@
   .unit-logo,
   .card-toruk,
   .card-serigala,
+  .card-sierra,
   .card-beringas,
   .card-Sentinel,
   .card-Pathfinder,

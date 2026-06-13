@@ -15,6 +15,37 @@ Setup deploy yang direkomendasikan sekarang:
 - frontend static: `https://staff.paskus791.cloud`
 - backend API: `https://api.paskus791.cloud`
 
+## Website Utama vs Portal Staff: Fitur & Hubungan Alur Kerja
+
+Aplikasi ini mengintegrasikan dua sistem utama yang bekerja secara sinergis melalui satu database dan backend API terpusat:
+
+### 1. Website Utama (Main Public Site)
+Website publik PASKUS Gi1 (`paskus.so791.com`) berfungsi sebagai gerbang luar bagi komunitas dan calon personel:
+- **Landing Page & Navigation**: Menggunakan navigasi *floating pill* terpadu (HOME, COMBAT, SUPPORT, STREAMER, BRM5, STRUKTURAL, ABOUT US) yang konsisten di semua halaman, lengkap dengan integrasi multi-bahasa dan pintasan masuk Discord.
+- **Pendaftaran Personel (Enlist Form)**: Calon anggota melakukan sinkronisasi akun Discord mereka, mengisi formulir pendaftaran, dan memilih waktu aktif latihan. Data ini langsung dikirim ke backend API terpusat.
+- **Informasi Unit & Cluster SEO**: Halaman-halaman statis pendukung SEO (seperti `/peraturan`, `/brm5-roleplay`, `/cara-gabung-brm5-roleplay`) dan halaman dinas/unit menyajikan informasi lengkap bagi calon anggota.
+
+### 2. Portal Staff / Pelatih (Internal Dashboard)
+Dashboard internal (`staff.paskus791.cloud`) digunakan oleh para instruktur dan pengurus resimen untuk memproses pendaftaran dan pelatihan secara taktis:
+- **Manajemen Kandidat**: Menampilkan seluruh data pendaftar baru yang masuk dari Website Utama secara real-time.
+- **Sesi Pelatihan**: Pelatih dapat memilih kandidat dari dashboard, menunjuk instruktur, membuka sesi pelatihan, memberikan penilaian, dan mencatat histori laporan kelulusan.
+- **Integrasi Webhook Discord**: Setiap laporan sesi pelatihan yang diselesaikan oleh pelatih otomatis dikirim ke server Discord PASKUS lewat webhook sebagai arsip dan log laporan resmi.
+- **Admin Console**: Konsol khusus administrator untuk memantau status server, registry akun pelatih, dan mengelola database.
+
+### Alur Hubungan & Arsitektur Data
+
+```mermaid
+graph TD
+    A[Calon Anggota] -->|Buka Website Utama| B(Website Utama: paskus.so791.com)
+    B -->|Sinkron Discord & Isi Form| C[Backend API: api.paskus791.cloud]
+    C -->|Simpan Data Pendaftaran| D[(Database: MongoDB)]
+    E[Instruktur / Staff] -->|Buka Portal Staff| F(Dashboard Staff: staff.paskus791.cloud)
+    F -->|Tarik Data Real-time| C
+    F -->|Buka Sesi & Input Nilai| G{Proses Pelatihan}
+    G -->|Sesi Selesai/Kirim Laporan| C
+    C -->|Kirim Notifikasi Laporan| H[Discord Webhook: Log Laporan]
+```
+
 ## Stack
 
 - React 19

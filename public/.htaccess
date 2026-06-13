@@ -21,7 +21,7 @@ AddType image/jpeg .jpg .jpeg
   Header always set X-Permitted-Cross-Domain-Policies "none"
   Header always set X-Download-Options "noopen"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'sha256-UcRjHEH7Jb07ITZq7RaKeflRgUow/Ly3Y509kaa5FPI=' 'sha256-sqPDFND611Iq5QVrUwbQQIm2uPbiZBzBuMwbLYWA/UE=' 'sha256-3yH8seLRPZxhSvaSF/JWIZReEqq7aqyaCc49VYA4bzI=' 'sha256-EE66dP7U1+XZ0ifBMoRB8Wm00tmsR83wqNDTkYdwzT0=' 'sha256-WoJxKV/6/peT9LqgUR43NoKSryOnKz7+VEm0qHIZ0Hc=' 'sha256-bflRIFbmKthZe+QMsfUsKO7cVUKzk6bOvIJlUjX5FeI=' 'sha256-8dLwhm52IiaDEv9RPW/O67Ho9EGsmSjXOEyAmzKax4Q=' 'sha256-FGzXtJ6DjR7wz1mCerqSWOikKaowWBz8Zp6pt5oV27c=' 'sha256-DozQc+l+lQ7V3Dt7dKVPHYMixd5FZtV1yEcL8duVRvw=' 'sha256-mKYrWciqBcd3hrgJLTzXGc4vZFioMh1NuO8aAgRNcq8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net; connect-src 'self' https://discord.com https://cdn.discordapp.com https://media.discordapp.net; worker-src 'self' blob:;"
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'sha256-UcRjHEH7Jb07ITZq7RaKeflRgUow/Ly3Y509kaa5FPI=' 'sha256-sqPDFND611Iq5QVrUwbQQIm2uPbiZBzBuMwbLYWA/UE=' 'sha256-3yH8seLRPZxhSvaSF/JWIZReEqq7aqyaCc49VYA4bzI=' 'sha256-EE66dP7U1+XZ0ifBMoRB8Wm00tmsR83wqNDTkYdwzT0=' 'sha256-WoJxKV/6/peT9LqgUR43NoKSryOnKz7+VEm0qHIZ0Hc=' 'sha256-bflRIFbmKthZe+QMsfUsKO7cVUKzk6bOvIJlUjX5FeI=' 'sha256-8dLwhm52IiaDEv9RPW/O67Ho9EGsmSjXOEyAmzKax4Q=' 'sha256-FGzXtJ6DjR7wz1mCerqSWOikKaowWBz8Zp6pt5oV27c=' 'sha256-DozQc+l+lQ7V3Dt7dKVPHYMixd5FZtV1yEcL8duVRvw=' 'sha256-mKYrWciqBcd3hrgJLTzXGc4vZFioMh1NuO8aAgRNcq8=' 'sha256-N9Mw/72cJsZ/6SE5VDKietSviKh1yLIEm4YGwiWPu/M='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net; connect-src 'self' https://discord.com https://cdn.discordapp.com https://media.discordapp.net; worker-src 'self' blob:;"
   <FilesMatch "\.(?:php|json|md)$">
     Header set X-Robots-Tag "noindex, nofollow, noarchive"
   </FilesMatch>
@@ -92,12 +92,15 @@ AddType image/jpeg .jpg .jpeg
   RewriteRule ^unit-brm5-paskus\.html$ /unit-brm5-paskus [R=301,L,NC]
   RewriteCond %{THE_REQUEST} \s/+blackhawk-rescue-5-roleplay-fraksi\.html[?\s] [NC]
   RewriteRule ^blackhawk-rescue-5-roleplay-fraksi\.html$ /blackhawk-rescue-5-roleplay-fraksi [R=301,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+peraturan\.html[?\s] [NC]
+  RewriteRule ^peraturan\.html$ /peraturan [R=301,L,NC]
   RewriteRule ^brm5-roleplay/?$ /brm5-roleplay.html [L,NC]
   RewriteRule ^resimen-brm5/?$ /resimen-brm5.html [L,NC]
   RewriteRule ^roleplay-grup-brm5/?$ /roleplay-grup-brm5.html [L,NC]
   RewriteRule ^cara-gabung-brm5-roleplay/?$ /cara-gabung-brm5-roleplay.html [L,NC]
   RewriteRule ^unit-brm5-paskus/?$ /unit-brm5-paskus.html [L,NC]
   RewriteRule ^blackhawk-rescue-5-roleplay-fraksi/?$ /blackhawk-rescue-5-roleplay-fraksi.html [L,NC]
+  RewriteRule ^peraturan/?$ /peraturan.html [L,NC]
   RewriteRule ^(?:roleplay-brm5|game-brm5-roleplay|blackhawk-rescue-mission-5-roleplay)/?$ /brm5-roleplay [R=301,L,NC]
   RewriteRule ^unit/serigala/?$ /unit/sierra [R=301,L,NC]
   RewriteRule ^index\.html$ - [L]
@@ -105,3 +108,29 @@ AddType image/jpeg .jpg .jpeg
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
 </IfModule>
+
+# Enable GZIP compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+  AddOutputFilterByType DEFLATE application/x-font
+  AddOutputFilterByType DEFLATE application/x-font-opentype
+  AddOutputFilterByType DEFLATE application/x-font-otf
+  AddOutputFilterByType DEFLATE application/x-font-truetype
+  AddOutputFilterByType DEFLATE application/x-font-ttf
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE font/opentype
+  AddOutputFilterByType DEFLATE font/otf
+  AddOutputFilterByType DEFLATE font/ttf
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE image/x-icon
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+</IfModule>
+
