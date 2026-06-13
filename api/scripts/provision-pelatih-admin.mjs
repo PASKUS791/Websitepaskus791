@@ -1,6 +1,8 @@
 import { randomBytes, scryptSync } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { MongoClient } from "mongodb";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function parseEnvFile(path) {
   const env = {};
@@ -77,7 +79,9 @@ function hashPassword(password, env) {
 }
 
 async function main() {
-  const env = parseEnvFile("deploy/staff.paskus791.cloud.env");
+  const projectRoot = fileURLToPath(new URL("../..", import.meta.url));
+  const envPath = resolve(projectRoot, "api/deploy/staff.paskus791.cloud.env");
+  const env = parseEnvFile(envPath);
   const uri = String(env.MONGODB_URI || "").trim();
   const databaseName = String(
     env.MONGODB_DB_NAME || inferMongoDbName(uri),

@@ -34,7 +34,7 @@ function getNodeModulePackageName(id) {
 
 export default defineConfig({
   root: resolve(projectRoot, "staff-site"),
-  publicDir: resolve(projectRoot, "public"),
+  publicDir: resolve(projectRoot, "../webutama"),
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
@@ -48,7 +48,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: resolve(projectRoot, "dist-staff"),
+    outDir: resolve(projectRoot, "../dist-staff"),
     emptyOutDir: true,
     rollupOptions: {
       output: {

@@ -15,9 +15,9 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+const projectRoot = fileURLToPath(new URL("../..", import.meta.url));
 const DEFAULT_INPUT_PATH = resolve(projectRoot, ".env.production");
-const DEFAULT_OUTPUT_PATH = resolve(projectRoot, "deploy/staff.paskus791.cloud.env.enc");
+const DEFAULT_OUTPUT_PATH = resolve(projectRoot, "api/deploy/staff.paskus791.cloud.env.enc");
 const DEFAULT_KEY_PATH = resolve(projectRoot, ".env.production.key");
 const ENVELOPE_VERSION = 1;
 

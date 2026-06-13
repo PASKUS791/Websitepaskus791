@@ -21,8 +21,8 @@ PelatihDash-vps-deploy-*/
 *.local
 .env
 .env.*
-server/data/*
-!server/data/.gitkeep
+api/data/*
+!api/data/.gitkeep
 
 # Editor directories and files
 .vscode/*
