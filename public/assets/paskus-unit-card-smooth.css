@@ -1,0 +1,157 @@
+/*
+ * PASKUS Unit Card Smooth Patch
+ * Fix: glitch/lag pada Combat Unit & Support Unit card hover & flip animation
+ * Dipatch tanpa modifikasi build CSS utama (index-CIqmiua3.css)
+ */
+
+/* ─── GPU compositing layer: paksa browser siapkan layer sebelum animasi ─── */
+.flip-card,
+.unit-card,
+.card-glass,
+.card-toruk,
+.card-serigala,
+.card-beringas,
+.card-Sentinel,
+.card-Pathfinder,
+.card-Gatam {
+  will-change: transform;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* ─── flip-card: fix bounce glitch & percepat respons ─── */
+.flip-card {
+  /* Isolate stacking context agar tidak interfere dengan parent */
+  isolation: isolate;
+}
+
+.flip-card-inner {
+  /* Ganti cubic-bezier bounce agresif ke ease yang mulus */
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  /* Paksa GPU compositing untuk 3D transform */
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  /* Hilangkan sub-pixel rendering flicker */
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card-front,
+.flip-card-back {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Cegah layer re-paint saat flip */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Matikan scanline saat flip aktif — scanline animation + 3D transform = glitch */
+.flip-card:hover .flip-card-front:after,
+.flip-card:focus-within .flip-card-front:after {
+  animation-play-state: paused;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ─── unit-logo: halus filter transition tanpa jitter ─── */
+.unit-logo {
+  /* Spesifik property saja, bukan 'all' */
+  transition: filter 0.3s ease, transform 0.3s ease !important;
+  will-change: filter, transform;
+}
+
+.flip-card:hover .unit-logo {
+  /* Kurangi scale dari 1.1 ke 1.06 agar tidak bouncy */
+  transform: translateZ(0) scale(1.06) !important;
+}
+
+/* ─── unit-card (Combat/Support): fix double transform glitch ─── */
+.unit-card {
+  /* Ganti 'all' ke property spesifik — menghilangkan backdrop-filter re-paint */
+  transition:
+    transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.35s ease !important;
+  /* Pisahkan layer dari backdrop-filter agar tidak trigger repaint */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.unit-card:hover {
+  /* Kurangi translateY dari -10px ke -6px + kurangi scale: lebih elegant */
+  transform: translateY(-6px) translateZ(0) scale(1.015) !important;
+}
+
+/* ─── card-glass: fix transition 'all' yang animate backdrop-filter ─── */
+.card-glass {
+  transition:
+    transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease !important;
+}
+
+.card-glass:hover {
+  transform: translateY(-4px) translateZ(0) !important;
+}
+
+/* ─── card-* buttons (Toruk, Serigala, Beringas, Sentinel, Pathfinder, Gatam) ─── */
+/* Fix: transition 'all' menyebabkan before-pseudo re-render ikut animate */
+.card-toruk,
+.card-serigala,
+.card-beringas,
+.card-Sentinel,
+.card-Pathfinder,
+.card-Gatam {
+  transition:
+    box-shadow 0.28s ease,
+    border-color 0.28s ease !important;
+}
+
+.card-toruk:before,
+.card-serigala:before,
+.card-beringas:before,
+.card-Sentinel:before,
+.card-Pathfinder:before,
+.card-Gatam:before {
+  transition: opacity 0.28s ease !important;
+}
+
+/* Active scale tetap ada tapi lebih smooth */
+.card-toruk:active,
+.card-serigala:active,
+.card-beringas:active,
+.card-Sentinel:active,
+.card-Pathfinder:active,
+.card-Gatam:active {
+  transform: translateZ(0) scale(0.96) !important;
+  transition: transform 0.12s ease !important;
+}
+
+/* ─── page-section scroll reveal: fix choppy transform ─── */
+.page-section {
+  transition:
+    opacity 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  will-change: opacity, transform;
+}
+
+/* ─── Reduce motion: hormati preferensi aksesibilitas user ─── */
+@media (prefers-reduced-motion: reduce) {
+  .flip-card-inner {
+    transition: none !important;
+  }
+  .unit-card,
+  .card-glass,
+  .unit-logo,
+  .card-toruk,
+  .card-serigala,
+  .card-beringas,
+  .card-Sentinel,
+  .card-Pathfinder,
+  .card-Gatam {
+    transition: none !important;
+    will-change: auto !important;
+  }
+  .page-section {
+    transition: opacity 0.3s ease !important;
+  }
+}

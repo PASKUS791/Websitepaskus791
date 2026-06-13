@@ -362,8 +362,8 @@ function cs_unit_catalog(): array
             'title' => 'SIERRA',
             'aliases' => ['sierra', 'serigala'],
             'category' => 'Saboteur and Swift Attack Unit',
-            'summary' => 'SIERRA adalah unit infiltrasi dan sabotase taktis yang bergerak senyap untuk menghancurkan sasaran penting, memutus ritme lawan, dan membuka ruang operasi bagi pasukan utama.',
-            'doctrine' => 'Keberhasilan SIERRA bertumpu pada fokus, taktik, intelijen operasi, koordinasi tim kecil, dan komunikasi tajam. Unit ini bergerak cepat di area musuh untuk melemahkan target penting tanpa kehilangan disiplin komando.',
+            'summary' => 'SIERRA adalah unit gerak cepat dan sigap yang bergerak kilat untuk membuka celah operasi, mengganggu ritme lawan, dan menyelesaikan sasaran penting dengan eksekusi yang cepat dan disiplin.',
+            'doctrine' => 'Keberhasilan SIERRA bertumpu pada kecepatan gerak, respons instan terhadap situasi lapangan, koordinasi tim kecil, dan komunikasi tajam. Unit ini bergerak cepat dan sigap di area musuh untuk menghantam target penting dengan efisiensi tinggi dan disiplin komando.',
             'capabilities' => [
                 'Target Elimination: menghancurkan atau mengeliminasi sasaran penting dengan tempo tinggi.',
                 'Sabotage Action: melakukan sabotase fasilitas atau kompleks musuh untuk melemahkan kemampuan lawan.',
