@@ -12,7 +12,7 @@ Project ini siap dideploy sebagai `two-domain deployment`:
 ## Rekomendasi Topologi
 
 1. `CDN / WAF / Reverse Proxy`
-2. `Node server` yang menjalankan `server/index.mjs`
+2. `Node server` yang menjalankan `api/index.mjs`
 3. `MongoDB Atlas` atau server MongoDB privat
 4. `Backend staff eksternal` upstream bila masih dipakai
 
@@ -59,7 +59,7 @@ Kalau `.env` production ingin disimpan di repo tanpa plain text:
 
 1. Simpan file asli lokal di `.env.production`
 2. Jalankan `npm run env:encrypt`
-3. Commit file hasil enkripsi `deploy/staff.paskus791.cloud.env.enc`
+3. Commit file hasil enkripsi `api/deploy/staff.paskus791.cloud.env.enc`
 4. Simpan kunci lokal di `.env.production.key` dan jangan pernah push file itu
 
 Untuk restore:
@@ -105,7 +105,7 @@ Wajib disiapkan:
 Mode yang direkomendasikan untuk project ini:
 
 - `staff.paskus791.cloud` hanya meng-host hasil build `dist-staff/`
-- `api.paskus791.cloud` hanya menjalankan `server/index.mjs`
+- `api.paskus791.cloud` hanya menjalankan `api/index.mjs`
 - frontend memanggil internal API lewat `VITE_API_BASE_URL=https://api.paskus791.cloud`
 - frontend memanggil backend staff legacy lewat `VITE_STAFF_API_BASE_URL=https://api.paskus791.cloud`
 - backend internal meneruskan sinkron staff ke `STAFF_BACKEND_BASE_URL=https://api.paskus791.cloud`

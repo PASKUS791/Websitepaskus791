@@ -71,25 +71,19 @@ graph TD
 - Halaman `Butuh Tindakan`
 - Library SOP operasional BRM5, roleplay, dan penggunaan web perekrutan
 
-## Struktur Project
+### Struktur Project
 
 ```text
-server/
-  index.mjs                 API server, auth, session, resource storage
-
-scripts/
-  reset-seed-dashboard.mjs  Reset dan isi data test kandidat + pelatih
-
-src/
-  dashboard/                Halaman portal staff
-  pages/                    Login portal staff
-  lib/                      Auth client, API client, synced resources
-  components/               Shared UI components
-
-public/
-  .htaccess
-  _redirects
-  robots.txt
+webutama/                  Landing page utama dan file-file SEO statis (index.html, dll)
+staff_pelatih/             Frontend React SPA untuk portal staff & pelatih
+  src/                     Source code React (components, pages, dashboard, dll)
+  staff-site/              HTML template utama untuk portal staff
+  vite.staff.config.js     Konfigurasi bundler Vite untuk staff portal
+api/                       Backend Node.js server, database, scripts, dan deployment configs
+  index.mjs                API server utama (auth, session, routing, dll)
+  deploy/                  Konfigurasi deployment (Nginx, env, install scripts)
+  scripts/                 Script utilitas (reset-seed-dashboard.mjs, dll)
+  database/                Inisialisasi database
 ```
 
 ## Routing
@@ -121,7 +115,7 @@ npm install
 Kalau mau paling cepat, copy file siap pakai ini:
 
 ```bash
-cp deploy/staff.paskus791.cloud.env .env
+cp api/deploy/staff.paskus791.cloud.env .env
 ```
 
 Lalu sesuaikan `MONGODB_URI` dan password admin kalau diperlukan.
@@ -194,7 +188,7 @@ Catatan:
 Untuk reset database dashboard lokal dan mengisi data uji:
 
 ```bash
-node scripts/reset-seed-dashboard.mjs
+node api/scripts/reset-seed-dashboard.mjs
 ```
 
 Catatan:
@@ -235,7 +229,7 @@ npm run build     # Build production website staff
 npm run build:staff
 npm run preview   # Preview build staff
 npm run lint      # Lint project
-node scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
+node api/scripts/reset-seed-dashboard.mjs   # Reset seed data dashboard lokal
 ```
 
 ## Environment Variable Penting
@@ -300,10 +294,10 @@ Tujuannya agar histori dan shadow state portal staff tidak lagi terpecah per-bro
 Alur production yang direkomendasikan:
 
 1. Build frontend dengan `npm run build`.
-2. Deploy backend `server/index.mjs` ke hosting Node / VPS.
+2. Deploy backend `api/index.mjs` ke hosting Node / VPS.
 3. Sambungkan backend ke `MongoDB Atlas` atau MongoDB server lain lewat `MONGODB_URI`.
 4. Deploy hasil build `dist-staff/` ke `staff.paskus791.cloud`.
-5. Deploy `server/index.mjs` ke `api.paskus791.cloud`.
+5. Deploy `api/index.mjs` ke `api.paskus791.cloud`.
 6. Jalankan backend dengan:
 
 ```bash
@@ -406,7 +400,7 @@ Lalu upload isi `dist-staff/` ke hosting static.
 
 ### Full stack
 
-Kalau ingin auth, database, webhook, dan sync resource benar-benar jalan, project harus dideploy bersama backend `server/index.mjs` dan environment variable production.
+Kalau ingin auth, database, webhook, dan sync resource benar-benar jalan, project harus dideploy bersama backend `api/index.mjs` dan environment variable production.
 
 Static hosting biasa tidak cukup untuk fitur backend ini.
 
@@ -469,15 +463,15 @@ Backend project ini memakai `MongoDB`. Jadi ancaman injection yang relevan adala
 
 Lihat juga:
 
-- [SECURITY.md](/Users/jerikho/folder tanpa judul/New project/PelatihWebPaskus-main/SECURITY.md)
-- [DEPLOY.md](/Users/jerikho/folder tanpa judul/New project/PelatihWebPaskus-main/DEPLOY.md)
+- [SECURITY.md](SECURITY.md)
+- [DEPLOY.md](DEPLOY.md)
 
 ## Checklist Sebelum Push / Deploy
 
 1. Pastikan `.env` tidak ikut ke Git.
 2. Jalankan `npm run lint`.
 3. Jalankan `npm run build`.
-4. Jika perlu data test baru, jalankan `node scripts/reset-seed-dashboard.mjs`.
+4. Jika perlu data test baru, jalankan `node api/scripts/reset-seed-dashboard.mjs`.
 5. Uji login staff.
 6. Uji route penting di desktop dan mobile.
 7. Pastikan `APP_SESSION_SECRET` sudah diisi.
