@@ -125,14 +125,9 @@ export default function TrainingSessionReportModal({
   const notesLength = getReportTextLength(formState.notes);
 
   useEffect(() => withModalEscape(onClose), [onClose]);
-  useEffect(() => {
-    setFormState(buildFormState(report));
-    setSubmitError("");
-    setActiveAction("");
-    setHoveredStatus("");
-  }, [report]);
 
   const handleChange = (field) => (event) => {
+
     setFormState((currentState) => ({
       ...currentState,
       [field]: event.target.value,
