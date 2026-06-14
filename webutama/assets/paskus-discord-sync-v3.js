@@ -13899,7 +13899,7 @@
 		        copyKey: "sierra",
 		        className: "paskus-unit-sierra",
 		        role: ui.unitRoles.sierra,
-		        selector: "a.card-sierra, a[href='/unit/sierra']",
+		        selector: "a.card-sierra, a.card-serigala, a[href='/unit/sierra'], a[href='/unit/serigala']",
 		        logo: SIERRA_CARD_LOGO_URL,
 		        href: "/unit/sierra",
 		      },
@@ -13976,12 +13976,28 @@
 	      cardsByUnit.set(slug, card);
 	    });
 
-    unitOrder.forEach((slug) => {
-      const card = cardsByUnit.get(slug);
-      if (card) {
-        grid.appendChild(card);
+    const currentChildren = Array.from(grid.children);
+    const desiredOrder = unitOrder
+      .map((slug) => cardsByUnit.get(slug))
+      .filter(Boolean);
+
+    let needsReorder = false;
+    let desiredIndex = 0;
+    for (let i = 0; i < currentChildren.length; i++) {
+      if (desiredOrder.includes(currentChildren[i])) {
+        if (currentChildren[i] !== desiredOrder[desiredIndex]) {
+          needsReorder = true;
+          break;
+        }
+        desiredIndex++;
       }
-    });
+    }
+
+    if (needsReorder) {
+      desiredOrder.forEach((card) => {
+        grid.appendChild(card);
+      });
+    }
     enhanceCombatUnitRosters();
   }
 
