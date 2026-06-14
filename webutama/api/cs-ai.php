@@ -361,16 +361,16 @@ function cs_unit_catalog(): array
         'sierra' => [
             'title' => 'SIERRA',
             'aliases' => ['sierra', 'serigala'],
-            'category' => 'Saboteur and Swift Attack Unit',
+            'category' => 'Rapid Action & Swift Strike Unit',
             'summary' => 'SIERRA adalah unit gerak cepat dan sigap yang bergerak kilat untuk membuka celah operasi, mengganggu ritme lawan, dan menyelesaikan sasaran penting dengan eksekusi yang cepat dan disiplin.',
             'doctrine' => 'Keberhasilan SIERRA bertumpu pada kecepatan gerak, respons instan terhadap situasi lapangan, koordinasi tim kecil, dan komunikasi tajam. Unit ini bergerak cepat dan sigap di area musuh untuk menghantam target penting dengan efisiensi tinggi dan disiplin komando.',
             'capabilities' => [
-                'Target Elimination: menghancurkan atau mengeliminasi sasaran penting dengan tempo tinggi.',
-                'Sabotage Action: melakukan sabotase fasilitas atau kompleks musuh untuk melemahkan kemampuan lawan.',
-                'Silent Coordination: bergerak dalam koordinasi tim kecil yang butuh komunikasi jelas, keputusan matang, dan eksekusi tenang.',
+                'Rapid Entry: masuk ke area sasaran secara cepat dan sigap, membaca celah dengan instan, dan menyiapkan ruang aksi bagi pasukan utama.',
+                'Swift Strike: menyerang fasilitas, ritme, dan konsentrasi musuh melalui aksi cepat yang terukur.',
+                'Agile Cell: bergerak sebagai sel kecil dengan komunikasi tajam, keputusan matang, dan disiplin eksekusi.',
             ],
-            'priorities' => ['Fokus kuat', 'Taktik dan strategi', 'Koordinasi tinggi', 'Komunikasi baik'],
-            'route' => 'Wawancara, uji kemampuan taktis, uji karakter, lalu masa pra-dinas.',
+            'priorities' => ['Gerak cepat', 'Aksi sigap', 'Keputusan kilat', 'Koordinasi sel kecil'],
+            'route' => 'Wawancara, uji respons cepat, uji koordinasi tim kecil, uji karakter, lalu masa pra-dinas.',
         ],
         'pathfinder' => [
             'title' => 'PATHFINDER',
@@ -894,7 +894,7 @@ function cs_localized_knowledge_answer(string $question, array $check, string $l
     }
 
     if (preg_match('/unit tempur|combat|unit khusus|tempur/u', $q)) {
-        return "Unit tempur SO-791 miboga fungsi anu béda-béda: GATAM pikeun operasi rahasia, BRINGAS pikeun mekanis darat, TORUK MAKTO pikeun udara, SIERRA pikeun infiltrasi jeung sabotase, PATHFINDER pikeun pengintaian, SENTINEL pikeun combat medic, jeung KOMODO salaku pasukan reguler awal.";
+        return "Unit tempur SO-791 miboga fungsi anu béda-béda: GATAM pikeun operasi rahasia, BRINGAS pikeun mekanis darat, TORUK MAKTO pikeun udara, SIERRA pikeun gerak gancang jeung sigap, PATHFINDER pikeun pengintaian, SENTINEL pikeun combat medic, jeung KOMODO salaku pasukan reguler awal.";
     }
 
     if (preg_match('/dinas|support|non tempur/u', $q)) {

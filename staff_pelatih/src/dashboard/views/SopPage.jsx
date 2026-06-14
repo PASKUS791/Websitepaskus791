@@ -116,7 +116,7 @@ const SOP_LIBRARY = [
         index: "06",
         title: "Phase 6: Penjelasan Unit-Unit",
         description:
-          "Jelaskan unit-unit yang ada di PASKUS-791: GATAM (stealth/infiltrasi), BRINGAS (infanteri berat), SIERRA (infiltrasi & sabotase taktis), SENTINEL (medis/support), TORUK MAKTO (udara), dan PATHFINDER (recon/sniper). Jika kandidat sudah punya preferensi, catat. Penempatan akhir berdasarkan evaluasi komando.",
+          "Jelaskan unit-unit yang ada di PASKUS-791: GATAM (stealth/infiltrasi), BRINGAS (infanteri berat), SIERRA (gerak cepat & serangan sigap), SENTINEL (medis/support), TORUK MAKTO (udara), dan PATHFINDER (recon/sniper). Jika kandidat sudah punya preferensi, catat. Penempatan akhir berdasarkan evaluasi komando.",
         bullets: [
           "Jelaskan tiap unit dan perannya",
           "Tanyakan preferensi unit kandidat",
@@ -224,7 +224,7 @@ const SOP_LIBRARY = [
         fields: [
           "GATAM: infiltrasi senyap, stealth, dan penghancuran target vital secara presisi.",
           "BRINGAS: infanteri berat dan raider untuk garis depan dan kendaraan berat.",
-          "SIERRA: infiltrasi & sabotase taktis, bergerak senyap untuk menghancurkan sasaran penting dan membuka celah operasi.",
+          "SIERRA: gerak cepat & serangan sigap, bergerak lincah untuk menyerang target penting, mengacaukan ritme musuh, dan membuka celah operasi.",
           "SENTINEL: medis dan support untuk revive, healing, dan stabilitas tim.",
           "TORUK MAKTO: unit udara untuk transportasi, infiltrasi, dan dukungan aviation.",
           "PATHFINDER: recon dan sniper support untuk observasi dan intel jarak jauh.",
@@ -269,7 +269,7 @@ const SOP_LIBRARY = [
       {
         name: "SIERRA",
         detail:
-          "Unit infiltrasi dan sabotase taktis yang bergerak senyap, terukur, dan terarah untuk menghancurkan sasaran penting serta membuka celah operasi bagi pasukan utama.",
+          "Divisi infanteri khusus yang bergerak cepat, sigap, dan terukur untuk membuka celah operasi, mengacaukan struktur lawan, serta menyelesaikan sasaran bernilai tinggi tanpa kehilangan kendali komando.",
       },
       {
         name: "SENTINEL",

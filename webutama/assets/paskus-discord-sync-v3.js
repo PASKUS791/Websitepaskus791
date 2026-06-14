@@ -9516,18 +9516,18 @@
       },
       "sierra": {
         title: "SIERRA",
-        category: "Infiltration and Tactical Sabotage Unit",
+        category: "Rapid Action & Swift Strike Unit",
         color: "#d9c37a",
         hero: "SIERRA adalah divisi infanteri khusus yang bergerak cepat, sigap, dan terukur untuk membuka celah operasi, mengacaukan struktur lawan, serta menyelesaikan sasaran bernilai tinggi tanpa kehilangan kendali komando.",
         doctrineTitle: "Gerak Cepat, Tegas Dalam Eksekusi",
         doctrine: "SIERRA dibentuk sebagai unit gerak cepat dan sigap PASKUS Gi1. Fokusnya berada pada manuver kilat, respons instan terhadap situasi lapangan, koordinasi tim kecil, dan eksekusi cepat yang tetap disiplin. Setiap pergerakan harus gesit, responsif, dan menghasilkan dampak langsung bagi operasi utama.",
         cards: [
-          ["Rapid Entry", "Masuk ke area sasaran dengan gerak cepat dan sigap, membaca celah, dan menyiapkan ruang aksi untuk tim utama."],
-          ["Tactical Disruption", "Mengganggu fasilitas, ritme, dan konsentrasi lawan melalui aksi sabotase yang cepat serta terarah."],
-          ["Precision Cell", "Beroperasi sebagai sel kecil yang menuntut komunikasi singkat, keputusan matang, dan disiplin eksekusi."],
+          ["Rapid Entry", "Masuk ke area sasaran secara cepat dan sigap, membaca celah dengan instan, dan menyiapkan ruang aksi bagi pasukan utama."],
+          ["Swift Strike", "Menyerang fasilitas, ritme, dan konsentrasi musuh melalui aksi cepat yang terukur."],
+          ["Agile Cell", "Bergerak sebagai sel kecil dengan komunikasi tajam, keputusan matang, dan disiplin eksekusi."],
         ],
-        priorities: ["Gerak cepat dan sigap", "Kontrol emosi", "Keputusan presisi", "Koordinasi sel kecil"],
-        route: "Wawancara, uji infiltrasi taktis, uji komunikasi tim kecil, uji karakter, lalu masa pra-dinas.",
+        priorities: ["Gerak cepat", "Aksi sigap", "Keputusan kilat", "Koordinasi sel kecil"],
+        route: "Wawancara, uji respons cepat, uji koordinasi tim kecil, uji karakter, lalu masa pra-dinas.",
         footer: "SIERRA / RAPID ACTION CELL So-791",
       },
       "sentinel": {
@@ -10168,7 +10168,7 @@
           footer: "PASKUS Gi1 / KOMODO CORPS / INITIAL TRAINING BARRACKS",
         },
       },
-      unitSelectLabels: { GATAM: "GATAM (Operasi Rahasia)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)", SIERRA: "SIERRA (Infiltrasi & Sabotase Taktis)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)" },
+      unitSelectLabels: { GATAM: "GATAM (Operasi Rahasia)", SENTINEL: "SENTINEL (Combat Medic)", PATHFINDER: "PATHFINDER (Ranger & Scout)", BRINGAS: "BRINGAS (Darat / Infanteri Mekanis)", SIERRA: "SIERRA (Gerak Cepat & Serangan Sigap)", "TORUK MAKTO": "TORUK MAKTO (Sky Lord / Unit Udara)" },
     },
   };
 
