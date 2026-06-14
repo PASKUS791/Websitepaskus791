@@ -11647,7 +11647,7 @@
     if (source.includes("sentinel") || source.includes("medic")) {
       return "sentinel";
     }
-    if (source.includes("sierra") || source.includes("serigala")) {
+    if (source.includes("sierra")) {
       return "sierra";
     }
     if (source.includes("komodo") || source.includes("reguler") || source.includes("regular")) {
@@ -13542,7 +13542,7 @@
       setText(combat.querySelector(".mb-20 h2"), ui.module.combatKicker);
       setHtml(combat.querySelector(".mb-20 h3"), ui.module.combatTitle);
       Object.entries(copy.units).forEach(([slug, unit]) => {
-        const selector = slug === "bringas" ? "a.card-beringas, a[href='/unit/bringas']" : slug === "sierra" ? "a.card-sierra, a.card-serigala, a[href='/unit/sierra'], a[href='/unit/serigala']" : `a[href='/unit/${slug}']`;
+        const selector = slug === "bringas" ? "a.card-beringas, a[href='/unit/bringas']" : slug === "sierra" ? "a.card-sierra, a[href='/unit/sierra']" : `a[href='/unit/${slug}']`;
         const link = combat.querySelector(selector);
         const card = link?.closest(".flip-card");
         if (!card) {
@@ -13655,7 +13655,7 @@
   function currentUnitSlug() {
     const match = window.location.pathname.toLowerCase().match(/^\/unit\/([^/?#]+)/);
     const slug = match ? decodeURIComponent(match[1]) : "";
-    return slug === "sierra" ? "sierra" : slug;
+    return slug === "sierra" || slug === "serigala" ? "sierra" : slug;
   }
 
   function removeUnitGalleryButtons(body) {
@@ -13899,7 +13899,7 @@
 		        copyKey: "sierra",
 		        className: "paskus-unit-sierra",
 		        role: ui.unitRoles.sierra,
-		        selector: "a.card-sierra, a.card-serigala, a[href='/unit/sierra'], a[href='/unit/serigala']",
+		        selector: "a.card-sierra, a[href='/unit/sierra']",
 		        logo: SIERRA_CARD_LOGO_URL,
 		        href: "/unit/sierra",
 		      },
@@ -13968,7 +13968,7 @@
 		            link.setAttribute("href", unitMeta[slug].href);
 		          }
 		          if (slug === "sierra") {
-		            link.classList.remove("card-serigala");
+		            
 		            link.classList.add("card-sierra");
 		          }
 		        });
@@ -13989,7 +13989,7 @@
     const root = document.documentElement;
     const path = window.location.pathname.toLowerCase();
     root.classList.toggle("paskus-unit-detail-toruk", path === "/unit/toruk-makto");
-    root.classList.toggle("paskus-unit-detail-sierra", path === "/unit/serigala" || path === "/unit/sierra");
+    root.classList.toggle("paskus-unit-detail-sierra", path === "/unit/sierra");
     root.classList.toggle("paskus-unit-detail-pathfinder", path === "/unit/pathfinder");
     root.classList.toggle("paskus-unit-detail-sentinel", path === "/unit/sentinel");
     root.classList.toggle("paskus-unit-detail-gatam", path === "/unit/gatam");

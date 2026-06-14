@@ -57,10 +57,9 @@
   transform: translateY(-4px) !important;
 }
 
-/* ─── card-* label buttons (Toruk, Serigala, Beringas, Sentinel, Pathfinder, Gatam) ─── */
+/* ─── card-* label buttons (Toruk, Sierra, Beringas, Sentinel, Pathfinder, Gatam) ─── */
 /* Fix: transition 'all' menyebabkan sebelum-pseudo animate juga */
 .card-toruk,
-.card-serigala,
 .card-sierra,
 .card-beringas,
 .card-Sentinel,
@@ -72,7 +71,6 @@
 }
 
 .card-toruk:before,
-.card-serigala:before,
 .card-sierra:before,
 .card-beringas:before,
 .card-Sentinel:before,
@@ -83,7 +81,6 @@
 
 /* Active state smooth */
 .card-toruk:active,
-.card-serigala:active,
 .card-sierra:active,
 .card-beringas:active,
 .card-Sentinel:active,
@@ -109,7 +106,6 @@
   .card-glass,
   .unit-logo,
   .card-toruk,
-  .card-serigala,
   .card-sierra,
   .card-beringas,
   .card-Sentinel,

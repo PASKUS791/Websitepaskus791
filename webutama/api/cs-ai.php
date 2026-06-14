@@ -360,7 +360,7 @@ function cs_unit_catalog(): array
         ],
         'sierra' => [
             'title' => 'SIERRA',
-            'aliases' => ['sierra', 'serigala'],
+            'aliases' => ['sierra'],
             'category' => 'Rapid Action & Swift Strike Unit',
             'summary' => 'SIERRA adalah unit gerak cepat dan sigap yang bergerak kilat untuk membuka celah operasi, mengganggu ritme lawan, dan menyelesaikan sasaran penting dengan eksekusi yang cepat dan disiplin.',
             'doctrine' => 'Keberhasilan SIERRA bertumpu pada kecepatan gerak, respons instan terhadap situasi lapangan, koordinasi tim kecil, dan komunikasi tajam. Unit ini bergerak cepat dan sigap di area musuh untuk menghantam target penting dengan efisiensi tinggi dan disiplin komando.',
@@ -778,7 +778,7 @@ function cs_site_context(): string
 
 function cs_is_paskus_related(string $question): bool
 {
-    return (bool) preg_match('/paskus|so-?791|resimen|pendaftaran|daftar|enlist|gabung|join|ikut|masuk|discord|sinkron|sync|golongan|unit|tempur|combat|dinas|support|non tempur|anggota|member|prajurit|personel|pmc|sipil|civilian|event|pve|pvp|scenario|skenario|pangkat|struktural|struktur|perwira|bintara|tamtama|gatam|bringas|beringas|toruk|serigala|sierra|pathfinder|sentinel|komodo|staff|seksi|pengurus besar|dpdm|polisi militer|pusdiklat|propaganda|zeni|pelatih|map/u', cs_lower($question));
+    return (bool) preg_match('/paskus|so-?791|resimen|pendaftaran|daftar|enlist|gabung|join|ikut|masuk|discord|sinkron|sync|golongan|unit|tempur|combat|dinas|support|non tempur|anggota|member|prajurit|personel|pmc|sipil|civilian|event|pve|pvp|scenario|skenario|pangkat|struktural|struktur|perwira|bintara|tamtama|gatam|bringas|beringas|toruk|sierra|pathfinder|sentinel|komodo|staff|seksi|pengurus besar|dpdm|polisi militer|pusdiklat|propaganda|zeni|pelatih|map/u', cs_lower($question));
 }
 
 function cs_knowledge_answer(string $question, array $check): string
@@ -989,7 +989,6 @@ function cs_actions_for_intent(string $intent): array
         'unit:bringas' => '/unit/bringas',
         'unit:toruk' => '/unit/toruk-makto',
         'unit:toruk-makto' => '/unit/toruk-makto',
-        'unit:serigala' => '/unit/sierra',
         'unit:sierra' => '/unit/sierra',
         'unit:pathfinder' => '/unit/pathfinder',
         'unit:sentinel' => '/unit/sentinel',

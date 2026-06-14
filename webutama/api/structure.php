@@ -214,7 +214,7 @@ function structure_unit_slug(string $value): string
     if (strpos($source, 'sentinel') !== false || strpos($source, 'medic') !== false) {
         return 'sentinel';
     }
-    if (strpos($source, 'sierra') !== false || strpos($source, 'serigala') !== false) {
+    if (strpos($source, 'sierra') !== false) {
         return 'sierra';
     }
     if (strpos($source, 'komodo') !== false || strpos($source, 'reguler') !== false || strpos($source, 'regular') !== false) {
@@ -318,9 +318,14 @@ function structure_normalize_units(array $payload): array
             }
         }
 
+        $unitName = structure_clean_text($unit['name'] ?? $unit['title'] ?? $slug);
+        if ($slug === 'sierra') {
+            $unitName = 'SIERRA';
+        }
+
         $normalized[$slug] = [
             'slug' => $slug,
-            'name' => structure_clean_text($unit['name'] ?? $unit['title'] ?? $slug),
+            'name' => $unitName,
             'role_id' => structure_clean_text($unit['role_id'] ?? $unit['roleId'] ?? ''),
             'members' => $members,
             'member_count' => structure_unit_count($unit, count($members)),

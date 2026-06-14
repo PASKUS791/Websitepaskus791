@@ -143,7 +143,7 @@ function sync_unit_slug(string $value): string
     if (strpos($source, 'sentinel') !== false || strpos($source, 'medic') !== false) {
         return 'sentinel';
     }
-    if (strpos($source, 'sierra') !== false || strpos($source, 'serigala') !== false) {
+    if (strpos($source, 'sierra') !== false) {
         return 'sierra';
     }
     if (strpos($source, 'komodo') !== false || strpos($source, 'reguler') !== false || strpos($source, 'regular') !== false) {
@@ -247,9 +247,14 @@ function sync_normalize_units(array $payload): array
             }
         }
 
+        $unitName = sync_clean_text($unit['name'] ?? $unit['title'] ?? $slug, 120);
+        if ($slug === 'sierra') {
+            $unitName = 'SIERRA';
+        }
+
         $normalized[$slug] = [
             'slug' => $slug,
-            'name' => sync_clean_text($unit['name'] ?? $unit['title'] ?? $slug, 120),
+            'name' => $unitName,
             'role_id' => sync_clean_text($unit['role_id'] ?? $unit['roleId'] ?? '', 80),
             'members' => $members,
             'member_count' => sync_unit_count($unit, count($members)),

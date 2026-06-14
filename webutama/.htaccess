@@ -102,7 +102,6 @@ AddType image/jpeg .jpg .jpeg
   RewriteRule ^blackhawk-rescue-5-roleplay-fraksi/?$ /blackhawk-rescue-5-roleplay-fraksi.html [L,NC]
   RewriteRule ^peraturan/?$ /peraturan.html [L,NC]
   RewriteRule ^(?:roleplay-brm5|game-brm5-roleplay|blackhawk-rescue-mission-5-roleplay)/?$ /brm5-roleplay [R=301,L,NC]
-  RewriteRule ^unit/serigala/?$ /unit/sierra [R=301,L,NC]
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
