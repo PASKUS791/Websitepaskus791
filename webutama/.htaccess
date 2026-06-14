@@ -62,6 +62,7 @@ AddType image/jpeg .jpg .jpeg
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  RewriteRule ^unit/serigala/?$ /unit/sierra [R=301,L,NC]
   RewriteRule ^(?:\.git|server|src|node_modules)(?:/|$) - [F,L,NC]
   RewriteRule ^(?:\.env(?:\..*)?|package(?:-lock)?\.json|vite\.config\.[^.]+|eslint\.config\.[^.]+|README\.md|DEPLOY\.md|SECURITY\.md)$ - [F,L,NC]
   RewriteRule ^data/.*\.md$ - [F,L,NC]

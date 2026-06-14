@@ -13966,7 +13966,7 @@
     const root = document.documentElement;
     const path = window.location.pathname.toLowerCase();
     root.classList.toggle("paskus-unit-detail-toruk", path === "/unit/toruk-makto");
-    root.classList.toggle("paskus-unit-detail-sierra", path === "/unit/sierra");
+    root.classList.toggle("paskus-unit-detail-sierra", path === "/unit/sierra" || path === "/unit/serigala");
     root.classList.toggle("paskus-unit-detail-pathfinder", path === "/unit/pathfinder");
     root.classList.toggle("paskus-unit-detail-sentinel", path === "/unit/sentinel");
     root.classList.toggle("paskus-unit-detail-gatam", path === "/unit/gatam");
