@@ -38,3 +38,7 @@ api/data/*
 # Temporary scratch files
 scratch/
 
+# Build outputs
+/hasil build/
+/output/
+

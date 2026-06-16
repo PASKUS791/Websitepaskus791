@@ -1,0 +1,117 @@
+/*
+ * PASKUS Unit Card Smooth Patch v2
+ * Fix: glitch/lag pada Combat Unit & Support Unit card hover & flip animation
+ * v2: hapus backface/translateZ pada flip-card yang memutus preserve-3d
+ *     dan menyebabkan link detail unit tidak bisa diklik
+ */
+
+/* ─── flip-card-inner: hanya smooth transition, jangan ganggu preserve-3d ─── */
+/* CATATAN: Jangan tambahkan backface-visibility atau translateZ(0) di sini
+   karena akan memutus preserve-3d context dan link di flip-back tidak bisa diklik */
+.flip-card-inner {
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Fix: klik detail unit tidak terhalang oleh front card saat flip */
+.flip-card:hover .flip-card-front,
+.flip-card:focus-within .flip-card-front {
+  pointer-events: none !important;
+}
+.flip-card:hover .flip-card-back,
+.flip-card:focus-within .flip-card-back {
+  pointer-events: auto !important;
+}
+
+/* ─── unit-logo: halus filter transition tanpa jitter ─── */
+.unit-logo {
+  transition: filter 0.3s ease, transform 0.3s ease !important;
+}
+
+.flip-card:hover .unit-logo {
+  /* Kurangi scale dari 1.1 ke 1.06: lebih halus */
+  transform: scale(1.06) !important;
+}
+
+/* ─── unit-card (Combat/Support lama): fix transition 'all' ─── */
+/* 'all' menyebabkan backdrop-filter ikut animate = repaint mahal = glitch */
+.unit-card {
+  transition:
+    transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.35s ease !important;
+}
+
+.unit-card:hover {
+  transform: translateY(-6px) scale(1.015) !important;
+}
+
+/* ─── card-glass: fix transition 'all' ─── */
+.card-glass {
+  transition:
+    transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease !important;
+}
+
+.card-glass:hover {
+  transform: translateY(-4px) !important;
+}
+
+/* ─── card-* label buttons (Toruk, Sierra, Beringas, Sentinel, Pathfinder, Gatam) ─── */
+/* Fix: transition 'all' menyebabkan sebelum-pseudo animate juga */
+.card-toruk,
+.card-sierra,
+.card-beringas,
+.card-Sentinel,
+.card-Pathfinder,
+.card-Gatam {
+  transition:
+    box-shadow 0.28s ease,
+    border-color 0.28s ease !important;
+}
+
+.card-toruk:before,
+.card-sierra:before,
+.card-beringas:before,
+.card-Sentinel:before,
+.card-Pathfinder:before,
+.card-Gatam:before {
+  transition: opacity 0.28s ease !important;
+}
+
+/* Active state smooth */
+.card-toruk:active,
+.card-sierra:active,
+.card-beringas:active,
+.card-Sentinel:active,
+.card-Pathfinder:active,
+.card-Gatam:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.12s ease !important;
+}
+
+/* ─── page-section scroll reveal ─── */
+.page-section {
+  transition:
+    opacity 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+/* ─── Reduce motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .flip-card-inner {
+    transition: none !important;
+  }
+  .unit-card,
+  .card-glass,
+  .unit-logo,
+  .card-toruk,
+  .card-sierra,
+  .card-beringas,
+  .card-Sentinel,
+  .card-Pathfinder,
+  .card-Gatam,
+  .page-section {
+    transition: none !important;
+  }
+}
