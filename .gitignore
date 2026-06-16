@@ -38,7 +38,11 @@ api/data/*
 # Temporary scratch files
 scratch/
 
-# Build outputs
-/hasil build/
-/output/
+# Build outputs and dependencies
+/website_utama/dist/
+/website_utama/node_modules/
+/staff_pelatih/dist/
+/staff_pelatih/node_modules/
+/staff_pelatih/api/node_modules/
+/website_utama/cloudflare-streamer-worker/.wrangler/
 

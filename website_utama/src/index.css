@@ -1,0 +1,456 @@
+@import "tailwindcss";
+
+:root {
+  --sage-green: #8a9a5b;
+  --deep-black: #0d0d0d;
+  --gold-highlight: #d4af37;
+}
+
+body {
+  background-color: var(--deep-black);
+  color: #e0e0e0;
+  font-family: "Inter", sans-serif;
+}
+
+.heading-font {
+  font-family: "Orbitron", sans-serif;
+}
+
+/* Loading Screen */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--deep-black);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 1s cubic-bezier(0.7, 0, 0.3, 1);
+}
+
+/* Video Background */
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  margin-bottom: 6px;
+  filter: brightness(0.3) contrast(1.1) saturate(0.8);
+}
+
+/* 3D Flip Card Container */
+.flip-card {
+  background-color: transparent;
+  perspective: 1000px;
+  height: 250px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.flip-card:hover .flip-card-inner,
+.flip-card:active .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sage-green);
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.flip-card-front::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  top: 0;
+  left: 0;
+  animation: scan 3s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.flip-card-back {
+  background: linear-gradient(
+    135deg,
+    var(--deep-black),
+    rgba(138, 154, 91, 0.2)
+  );
+  color: white;
+  transform: rotateY(180deg);
+  border-color: var(--gold-highlight);
+}
+
+/* Unit Logo Style */
+.unit-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px var(--sage-green));
+  transition: 0.3s;
+  margin-bottom: 1.5rem;
+}
+
+.flip-card:hover .unit-logo {
+  filter: drop-shadow(0 0 12px var(--gold-highlight));
+  transform: scale(1.1);
+}
+
+/* Page Section Morphing */
+.page-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 1s ease-out;
+}
+
+.page-section.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Overlay Grid */
+.overlay-grid {
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+    linear-gradient(
+      90deg,
+      rgba(138, 154, 91, 0.02),
+      transparent,
+      rgba(138, 154, 91, 0.02)
+    );
+  background-size:
+    100% 4px,
+    4px 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Gold Stroke Button Style */
+.btn-enlist {
+  border: 2px solid var(--gold-highlight);
+  color: var(--gold-highlight);
+  background: rgba(212, 175, 55, 0.05);
+  backdrop-filter: blur(5px);
+  transition: all 0.4s ease;
+}
+
+.btn-enlist:hover {
+  background: var(--gold-highlight);
+  color: black;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+  transform: translateY(-3px) scale(1.02);
+}
+
+/* Outline White Button */
+.btn-outline-white {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  color: white;
+  transition: all 0.4s ease;
+}
+
+.btn-outline-white:hover {
+  border-color: white;
+  background: white;
+  color: black;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+}
+
+/* Navigation Logo */
+.nav-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 12px;
+}
+
+/* Unit Style */
+.card-toruk {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #430000;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-toruk::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #ff0000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-toruk:hover::before {
+  opacity: 1;
+}
+
+.card-toruk:hover {
+  box-shadow:
+    0 0 10px #fd3333,
+    0 0 20px #ff0000,
+    0 0 30px #ffa6a6;
+}
+
+.card-toruk:active {
+  transform: scale(0.95);
+}
+
+.card-sierra {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #ffffff;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-sierra::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #ffffff;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-sierra:hover::before {
+  opacity: 1;
+}
+
+.card-sierra:hover {
+  box-shadow:
+    0 0 10px #acacac,
+    0 0 20px #acacac,
+    0 0 30px #acacac;
+}
+
+.card-sierra:active {
+  transform: scale(0.95);
+}
+
+.card-beringas {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #ffd900;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-beringas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #ffd900;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-beringas:hover::before {
+  opacity: 1;
+}
+
+.card-beringas:hover {
+  box-shadow:
+    0 0 10px #ffd900,
+    0 0 20px #ffd900,
+    0 0 30px #ffd900;
+}
+
+.card-beringas:active {
+  transform: scale(0.95);
+}
+
+.card-Sentinel {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #430000;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-Sentinel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #6c0000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-Sentinel:hover::before {
+  opacity: 1;
+}
+
+.card-Sentinel:hover {
+  box-shadow:
+    0 0 10px #6c0000,
+    0 0 20px #6c0000,
+    0 0 30px #6c0000;
+}
+
+.card-Sentinel:active {
+  transform: scale(0.95);
+}
+
+.card-Pathfinder {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #267900;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-Pathfinder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #267900;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-Pathfinder:hover::before {
+  opacity: 1;
+}
+
+.card-Pathfinder:hover {
+  box-shadow:
+    0 0 10px #267900,
+    0 0 20px #267900,
+    0 0 30px #267900;
+}
+
+.card-Pathfinderactive {
+  transform: scale(0.95);
+}
+
+.card-Gatam {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+
+  color: #ffffff;
+  border: 1px solid #424242;
+
+  padding: 4px 12px;
+  margin-top: 12px;
+
+  background: transaprent;
+  border-radius: 6px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+}
+
+.card-Gatam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #585858;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.card-Gatam:hover::before {
+  opacity: 1;
+}
+
+.card-Gatam:hover {
+  box-shadow:
+    0 0 10px #424141,
+    0 0 20px #504f4f,
+    0 0 30px #484747;
+}
+
+.card-Gatam:active {
+  transform: scale(0.95);
+}
