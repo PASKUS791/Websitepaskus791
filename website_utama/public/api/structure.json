@@ -1,0 +1,253 @@
+{
+  "ok": true,
+  "title": "Struktural SO-791",
+  "overview": "Struktur komando, jenjang pangkat, dan daftar personel aktif SO-791.",
+  "categories": [
+    {
+      "category": "PERWIRA TINGGI",
+      "label": "Jajaran Jenderal Komando",
+      "ranks": [
+        {
+          "name": "MAYOR JENDRAL",
+          "role": "DIVISION GENERAL",
+          "color": "#EFBF04",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "BRIGADIR JENDRAL",
+          "role": "BRIGADE GENERAL",
+          "color": "#EFBF04",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "PERWIRA MENENGAH",
+      "label": "Komandan Resimen & Batalyon",
+      "ranks": [
+        {
+          "name": "KOLONEL",
+          "role": "REGIMENT COMMANDER",
+          "color": "#d4af37",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "LETNAN KOLONEL",
+          "role": "BATTALION COMMANDER",
+          "color": "#d4af37",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "MAYOR",
+          "role": "BATTALION EXECUTIVE OFFICER",
+          "color": "#d4af37",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "PERWIRA PERTAMA",
+      "label": "Komandan Kompi & Staf Lapangan",
+      "ranks": [
+        {
+          "name": "KAPTEN",
+          "role": "COMPANY COMMANDER",
+          "color": "#8c9f9e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "LETNAN SATU",
+          "role": "FIELD OFFICER",
+          "color": "#8c9f9e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "LETNAN DUA",
+          "role": "JUNIOR OFFICER",
+          "color": "#8c9f9e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "BINTARA TINGGI",
+      "label": "Jajaran NCO Senior",
+      "ranks": [
+        {
+          "name": "SERSAN MAYOR",
+          "role": "SENIOR NCO",
+          "color": "#8a9a5b",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "BINTARA MUDA",
+      "label": "Komandan Squad & Asisten",
+      "ranks": [
+        {
+          "name": "SERSAN KEPALA",
+          "role": "PLATOON ASSISTANT",
+          "color": "#8a9a5b",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "SERSAN SATU",
+          "role": "SENIOR SQUAD LEADER",
+          "color": "#8a9a5b",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "SERSAN DUA",
+          "role": "SQUAD LEADER",
+          "color": "#8a9a5b",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "TAMTAMA SENIOR",
+      "label": "Komandan Fireteam",
+      "ranks": [
+        {
+          "name": "KOPRAL KEPALA",
+          "role": "FIRETEAM LEADER",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "KOPRAL SATU",
+          "role": "SENIOR ASSISTANT",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "KOPRAL DUA",
+          "role": "ASSISTANT TEAM LEADER",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "TAMTAMA JUNIOR",
+      "label": "Operator Lapangan",
+      "ranks": [
+        {
+          "name": "PRAJURIT KEPALA",
+          "role": "SENIOR OPERATOR",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "PRAJURIT SATU",
+          "role": "OPERATOR FIRST CLASS",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        },
+        {
+          "name": "PRAJURIT DUA",
+          "role": "RECRUIT / TRAINEE",
+          "color": "#4a5d4e",
+          "members": [],
+          "member_count": 0,
+          "count_only": false
+        }
+      ]
+    },
+    {
+      "category": "SIPIL",
+      "label": "Civilians / Members Only",
+      "ranks": [
+        {
+          "name": "SIPIL",
+          "role": "CIVILIAN",
+          "color": "#7a7a7a",
+          "members": [],
+          "member_count": 0,
+          "count_only": true
+        }
+      ]
+    }
+  ],
+  "combat_units": {
+    "gatam": {
+      "slug": "gatam",
+      "name": "GATAM",
+      "members": [],
+      "member_count": 0
+    },
+    "bringas": {
+      "slug": "bringas",
+      "name": "BRINGAS",
+      "members": [],
+      "member_count": 0
+    },
+    "sierra": {
+      "slug": "sierra",
+      "name": "SIERRA",
+      "members": [],
+      "member_count": 0
+    },
+    "pathfinder": {
+      "slug": "pathfinder",
+      "name": "PATHFINDER",
+      "members": [],
+      "member_count": 0
+    },
+    "sentinel": {
+      "slug": "sentinel",
+      "name": "SENTINEL",
+      "members": [],
+      "member_count": 0
+    },
+    "toruk": {
+      "slug": "toruk",
+      "name": "TORUK MAKTO",
+      "members": [],
+      "member_count": 0
+    },
+    "komodo": {
+      "slug": "komodo",
+      "name": "KOMODO",
+      "members": [],
+      "member_count": 0
+    }
+  },
+  "revision": "mock-revision-9876",
+  "updated_at": "2026-06-20T14:38:04Z"
+}

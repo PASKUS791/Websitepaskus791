@@ -1,52 +1,110 @@
-import React from "react";
-import "./index.css";
-import Navbar from "./components/Navbar";
-import { Routes, Route } from "react-router";
-
-import Landing from "./pages/Landing";
-import About from "./pages/About";
-import Unit from "./pages/unit";
-
-import Struktural from "./pages/Struktural";
-import Streamers from "./pages/Streamers";
-import StreamerProfile from "./pages/StreamerProfile";
-
-import Brm5Roleplay from "./pages/Brm5Roleplay";
-import ResimenBrm5 from "./pages/ResimenBrm5";
-import RoleplayGrupBrm5 from "./pages/RoleplayGrupBrm5";
-import UnitBrm5Paskus from "./pages/UnitBrm5Paskus";
-import FraksiBrm5 from "./pages/FraksiBrm5";
-import CaraGabungBrm5 from "./pages/CaraGabungBrm5";
-import Peraturan from "./pages/Peraturan";
-
-import Loading from "./components/Loading";
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router";
+import Lenis from "lenis";
+import "@/styles/globals.css";
+import { AppRouter } from "@/app/router";
+import Loading from "@/features/loading/LoadingScreen";
+import { initializeConsoleWarning } from "./utils/consoleWarning";
+import { useMouseGlow } from "./hooks/useMouseGlow";
+import { useScrollReveal } from "./hooks/useScrollReveal";
 
 const App = () => {
+  const location = useLocation();
+  const glowRef = useRef(null);
+  const [scrollPct, setScrollPct] = useState(0);
+
+  // Inisialisasi Lenis untuk smooth scroll
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      direction: "vertical",
+      gestureDirection: "vertical",
+      smooth: true,
+    });
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+    window.lenis = lenis;
+
+    // Perbarui progress bar langsung dari event scroll Lenis
+    lenis.on("scroll", (e) => {
+      setScrollPct(e.progress * 100);
+    });
+
+    return () => {
+      lenis.destroy();
+      window.lenis = null;
+    };
+  }, []);
+
+  // Inisialisasi banner peringatan keamanan konsol developer
+  useEffect(() => {
+    initializeConsoleWarning();
+  }, []);
+
+  // Hubungkan hook performa khusus
+  useMouseGlow(glowRef);
+  useScrollReveal(location.pathname);
+
+  useEffect(() => {
+    // Gulir ke atas saat rute berubah
+    if (window.lenis) {
+      window.lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+
+    // Bersihkan tombol aksi navbar yang longgar dan picu perhitungan ulang ukuran
+    const cleanupNavbar = () => {
+      const nav = document.querySelector("nav.paskus-floating-nav");
+      if (!nav) return;
+
+      let actions = nav.querySelector(".nav-actions");
+      if (!actions) {
+        actions = document.createElement("div");
+        actions.className = "nav-actions";
+        nav.appendChild(actions);
+      }
+
+      const looseElements = nav.querySelectorAll(
+        ":scope > .nav-back, :scope > .peraturan-nav-back, :scope > .paskus-language-switcher, :scope > .paskus-structural-header-cta, :scope > .btn-discord, :scope > .discord-link"
+      );
+      looseElements.forEach((el) => {
+        actions.appendChild(el);
+      });
+
+      // Force recalculation by dispatching a resize event
+      window.dispatchEvent(new Event("resize"));
+    };
+
+    cleanupNavbar();
+    const cleanTimer1 = setTimeout(cleanupNavbar, 80);
+    const cleanTimer2 = setTimeout(cleanupNavbar, 250);
+    const cleanTimer3 = setTimeout(cleanupNavbar, 500);
+
+    return () => {
+      clearTimeout(cleanTimer1);
+      clearTimeout(cleanTimer2);
+      clearTimeout(cleanTimer3);
+    };
+  }, [location.pathname]);
+
   return (
-    <div className="">
+    <div className="relative min-h-screen text-[#f7f8f2]">
+      {/* Batang Progres Scroll Taktis */}
+      <div className="paskus-scroll-progress" style={{ width: `${scrollPct}%` }} />
+      {/* Urutan Boot Layar Muat Taktis */}
       <Loading />
-      <Navbar />
-      <Routes>
-        <Route index element={<Landing />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/unit/:namaUnit" element={<Unit />} />
-
-        {/* New Pages */}
-        <Route path="/struktural" element={<Struktural />} />
-        <Route path="/streamer" element={<Streamers />} />
-        <Route path="/streamers" element={<Streamers />} />
-        <Route path="/streamer/:creator" element={<StreamerProfile />} />
-        <Route path="/streamers/:creator" element={<StreamerProfile />} />
-
-        {/* BRM5 Pages */}
-        <Route path="/brm5-roleplay" element={<Brm5Roleplay />} />
-        <Route path="/resimen-brm5" element={<ResimenBrm5 />} />
-        <Route path="/roleplay-grup-brm5" element={<RoleplayGrupBrm5 />} />
-        <Route path="/unit-brm5-paskus" element={<UnitBrm5Paskus />} />
-        <Route path="/blackhawk-rescue-5-roleplay-fraksi" element={<FraksiBrm5 />} />
-        <Route path="/cara-gabung-brm5-roleplay" element={<CaraGabungBrm5 />} />
-        <Route path="/peraturan" element={<Peraturan />} />
-      </Routes>
+      {/* Cahaya Ambient Kursor Interaktif */}
+      <div className="cursor-glow" ref={glowRef} />
+      {/* Efek Overlay Scanline Visual */}
+      <div className="overlay-grid" />
+      <AppRouter />
     </div>
   );
 };

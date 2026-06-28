@@ -1,0 +1,251 @@
+{
+  "ok": true,
+  "data": {
+    "schema": 1,
+    "revision": "seed-20260606",
+    "updatedAt": "2026-06-20T14:38:04Z",
+    "hub": {
+      "metaTitle": "Streamer Hub PASKUS Gi1 | Karya So-791",
+      "heroKicker": "Highlight Play",
+      "heroTitle": "PASKUS GI1",
+      "heroSubtitle": "Streamer Hub / Karya So-791",
+      "live": {
+        "badge": "Featured Play",
+        "title": "Official Highlight",
+        "video": "/assets/paskus-streamer-highlight-download3-v1.mp4",
+        "poster": "/assets/paskus-streamer-highlight-download3-poster-v1.jpg"
+      },
+      "socialKicker": "Official Social Media",
+      "socialTitle": "Akun Resmi PASKUS Gi1",
+      "discordSocial": {
+        "name": "Discord PASKUS",
+        "handle": "PASKUS Gi1 / So-791",
+        "status": "Community Hub",
+        "href": "https://discord.gg/aaBR9ruFva"
+      },
+      "officialSocials": [
+        {
+          "type": "tiktok",
+          "name": "TikTok PASKUS",
+          "handle": "@paskus791",
+          "status": "Official Short Video",
+          "href": "https://www.tiktok.com/@paskus791"
+        },
+        {
+          "type": "roblox",
+          "name": "Roblox Community",
+          "handle": "PASUKAN KHUSUS 791",
+          "status": "Official Roblox Group",
+          "href": "https://www.roblox.com/communities/767288802/PASUKAN-KHUSUS-791"
+        }
+      ],
+      "events": [
+        {"day": "06", "month": "JUN", "title": "Highlight Drop", "body": "Publish short video official."},
+        {"day": "08", "month": "JUN", "title": "Training Clip", "body": "Dokumentasi briefing dan orientasi."},
+        {"day": "12", "month": "JUN", "title": "Operation Recap", "body": "Event recap untuk arsip website."}
+      ],
+      "galleryKicker": "Event Documentation",
+      "galleryTitle": "Featured Operations Gallery",
+      "galleryIntro": "Showcase horizontal untuk footage operasi, highlight event, POV unit, dan dokumentasi visual PASKUS Gi1.",
+      "galleryMoreLabel": "See More",
+      "archiveKicker": "Event Documentation",
+      "archiveTitle": "Dokumentasi Event PASKUS",
+      "creators": [
+        {
+          "slug": "gi1",
+          "name": "Gi1",
+          "role": "High Command / Proplayer",
+          "badge": "Counter-Strike Legend",
+          "nickname": "The Tactical Architect",
+          "focus": "Proplayer veteran yang membangun ritme komando PASKUS dari disiplin, aim legacy, dan keputusan cepat di bawah tekanan.",
+          "bio": "Gi1 dikenal sebagai legenda Counter-Strike yang membawa naluri kompetitif ke medan BRM5. Di PASKUS, ia bukan sekadar creator; ia adalah salah satu pemimpin tinggi yang mengubah pengalaman tempur menjadi standar komando, visual, dan budaya disiplin.",
+          "schedule": "Official / High Command / Event",
+          "tags": ["Proplayer", "High Command", "CS Legacy"],
+          "href": "https://gi1.so791.com",
+          "avatar": "/assets/gi1-profile-v2.jpg",
+          "background": "/assets/gi1-background-v2.jpg",
+          "cover": "/assets/gi1-background-v2.jpg",
+          "links": [
+            {"type": "tiktok", "label": "TikTok", "url": "https://www.tiktok.com/@gi1_gaming?_r=1&_t=ZS-96xVVdUmuIL"},
+            {"type": "youtube", "label": "YouTube", "url": "https://youtube.com/@gi1_gr?si=bBRRFye5kfc5KHRI"},
+            {"type": "discord", "label": "Discord", "url": "https://discord.gg/aaBR9ruFva"}
+          ]
+        },
+        {
+          "slug": "4hn",
+          "name": "4hn",
+          "role": "PvP MVP / Rule Master",
+          "badge": "MVP PvP & Rule Master",
+          "nickname": "The Rulebound Duelist",
+          "focus": "Spesialis PvP yang membaca duel cepat, menjaga ruleplay tetap bersih, dan mengubah momen lapangan menjadi konten yang tajam.",
+          "bio": "4hn adalah wajah creator yang kuat di dua sisi: agresif saat PvP, presisi saat membaca aturan. Julukan MVP PvP dan Rule Master melekat karena ia menjaga tempo permainan tetap kompetitif, rapi, dan layak dijadikan referensi anggota.",
+          "schedule": "Event / PvP POV / Ruleplay",
+          "tags": ["PvP MVP", "Rule Master", "Combat POV"],
+          "href": "https://4hn.so791.com",
+          "avatar": "/assets/4hn-profile-v2.jpg",
+          "background": "/assets/4hn-background-v2.jpg",
+          "cover": "/assets/4hn-background-v2.jpg",
+          "links": [
+            {"type": "tiktok", "label": "TikTok", "url": "https://www.tiktok.com/@soldier_791"},
+            {"type": "youtube", "label": "YouTube", "url": "https://www.youtube.com/@MrFarhanIsHere26"},
+            {"type": "discord", "label": "Discord", "url": "https://discord.gg/aaBR9ruFva"}
+          ]
+        },
+        {
+          "slug": "aang",
+          "name": "Aang",
+          "role": "Special Ops / Combat Creator",
+          "badge": "Special Ops",
+          "nickname": "The Silent Operator",
+          "focus": "Special Ops yang bergerak senyap, membaca ruang dengan dingin, dan mengemas momen operasi PASKUS menjadi highlight yang tajam.",
+          "bio": "Aang adalah salah satu Special Ops PASKUS dengan karakter tenang dan presisi. Ia membawa aura low-profile ke medan permainan: masuk tanpa banyak suara, menjaga ritme squad tetap terkunci, lalu meninggalkan footage yang terasa cinematic dan berkelas.",
+          "schedule": "Special Ops / Tactical POV / Event",
+          "tags": ["Special Ops", "Tactical POV", "Silent Play"],
+          "href": "https://aang.so791.com",
+          "avatar": "/assets/aang-profile-v3.jpg",
+          "background": "/assets/aang-background-v2.jpg",
+          "cover": "/assets/aang-background-v2.jpg",
+          "links": [
+            {"type": "tiktok", "label": "TikTok", "url": "https://www.tiktok.com/@.namakuaang?_r=1&_t=ZS-970xG9tEyRs"},
+            {"type": "discord", "label": "Discord", "url": "https://discord.gg/aaBR9ruFva"}
+          ]
+        }
+      ],
+      "contentCards": [
+        {
+          "type": "Featured Video",
+          "title": "PASKUS Gi1 Highlight Play",
+          "uploader": "PASKUS Official",
+          "unit": "Official",
+          "status": "Ready Watch",
+          "video": "/assets/paskus-landing-download3-6-45-v1.webm",
+          "fallback": "/assets/paskus-streamer-highlight-download3-v1.mp4",
+          "poster": "/assets/paskus-landing-loop-poster-v2.jpg"
+        },
+        {
+          "type": "Event Recap",
+          "title": "GATAM Operation Frame",
+          "uploader": "Media Archive",
+          "unit": "GATAM",
+          "status": "Photo Documentation",
+          "poster": "/assets/gatam-card-bg-card.webp"
+        },
+        {
+          "type": "Combat POV",
+          "title": "SIERRA Tactical Cell",
+          "uploader": "Combat Media",
+          "unit": "SIERRA",
+          "status": "Field Documentation",
+          "poster": "/assets/sierra-card-bg-card-v1.webp"
+        },
+        {
+          "type": "Air Insert",
+          "title": "TORUK Makto Air Wing",
+          "uploader": "Aviation Desk",
+          "unit": "TORUK MAKTO",
+          "status": "Operation Still",
+          "poster": "/assets/toruk-card-bg-card.webp"
+        },
+        {
+          "type": "Recon Shot",
+          "title": "Pathfinder Recon Route",
+          "uploader": "Recon Desk",
+          "unit": "PATHFINDER",
+          "status": "Photo Documentation",
+          "poster": "/assets/pathfinder-card-bg-card.webp"
+        },
+        {
+          "type": "Medic Recap",
+          "title": "Sentinel Field Support",
+          "uploader": "Medical Desk",
+          "unit": "SENTINEL",
+          "status": "Event Support",
+          "poster": "/assets/sentinel-card-bg-card.webp"
+        }
+      ]
+    },
+    "profiles": [
+      {
+        "slug": "gi1",
+        "callSign": "Gi1",
+        "displayName": "Gi1 Gaming",
+        "role": "High Command / Proplayer",
+        "handle": "@gi1_gaming",
+        "tagline": "The Tactical Architect. Legenda Counter-Strike dan pemimpin tinggi PASKUS yang membawa disiplin proplayer ke komando BRM5.",
+        "theme": "#d4af37",
+        "avatar": "/recruitment-webhook-logo.png",
+        "media": {
+          "avatar": "/assets/gi1-profile-v2.jpg",
+          "pageBackground": "/assets/gi1-background-v2.jpg",
+          "pageBackgroundPosition": "calc(50% - 400px) top",
+          "profileBackground": "/assets/gi1-background-v2.jpg",
+          "highlightPoster": "/assets/gi1-highlight-poster-v3.jpg",
+          "highlightWebm": "/assets/gi1-highlight-v3.webm",
+          "highlightMp4": "/assets/gi1-highlight-v3.mp4",
+          "avatarPhoto": true,
+          "preferMp4": true
+        },
+        "subdomain": "gi1.so791.com",
+        "links": [
+          {"type": "tiktok", "label": "TikTok", "handle": "@gi1_gaming", "url": "https://www.tiktok.com/@gi1_gaming?_r=1&_t=ZS-96xVVdUmuIL"},
+          {"type": "youtube", "label": "YouTube", "handle": "Gi1 Gaming", "url": "https://youtube.com/@gi1_gr?si=bBRRFye5kfc5KHRI"},
+          {"type": "discord", "label": "Discord PASKUS", "handle": "Community Hub", "url": "https://discord.gg/aaBR9ruFva"},
+          {"type": "community", "label": "Streamer Hub", "handle": "PASKUS karya dan event", "url": "https://paskus.so791.com/streamer"}
+        ]
+      },
+      {
+        "slug": "4hn",
+        "callSign": "4hn",
+        "displayName": "4hn",
+        "role": "PvP MVP / Rule Master",
+        "handle": "@soldier_791",
+        "tagline": "The Rulebound Duelist. MVP PvP dengan pembacaan aturan tajam, menjaga konten PASKUS tetap kompetitif dan tertata.",
+        "theme": "#8fbf64",
+        "avatar": "/recruitment-webhook-logo.png",
+        "media": {
+          "avatar": "/assets/4hn-profile-v2.jpg",
+          "pageBackground": "/assets/4hn-background-v2.jpg",
+          "profileBackground": "/assets/4hn-background-v2.jpg",
+          "highlightPoster": "/assets/4hn-highlight-poster-v1.jpg",
+          "highlightMp4": "/assets/4hn-highlight-v1.mp4",
+          "avatarPhoto": true,
+          "preferMp4": true
+        },
+        "subdomain": "4hn.so791.com",
+        "links": [
+          {"type": "tiktok", "label": "TikTok", "handle": "@soldier_791", "url": "https://www.tiktok.com/@soldier_791"},
+          {"type": "youtube", "label": "YouTube", "handle": "MrFarhanIsHere26", "url": "https://www.youtube.com/@MrFarhanIsHere26"},
+          {"type": "discord", "label": "Discord PASKUS", "handle": "Community Hub", "url": "https://discord.gg/aaBR9ruFva"},
+          {"type": "community", "label": "Streamer Hub", "handle": "PASKUS karya dan event", "url": "https://paskus.so791.com/streamer"}
+        ]
+      },
+      {
+        "slug": "aang",
+        "callSign": "Aang",
+        "displayName": "Aang",
+        "role": "Special Ops / Combat Creator",
+        "handle": "@.namakuaang",
+        "tagline": "The Silent Operator. Special Ops PASKUS yang bergerak senyap, membaca ruang dengan dingin, dan mengubah momen operasi menjadi highlight yang bersih, tajam, dan berkelas.",
+        "theme": "#b9c7d6",
+        "avatar": "/assets/aang-profile-v3.jpg",
+        "media": {
+          "avatar": "/assets/aang-profile-v3.jpg",
+          "pageBackground": "/assets/aang-background-v2.jpg",
+          "pageBackgroundPosition": "center 22%",
+          "profileBackground": "/assets/aang-background-v2.jpg",
+          "highlightPoster": "/assets/aang-highlight-poster-v2.jpg",
+          "highlightWebm": "/assets/aang-highlight-v1.webm",
+          "highlightMp4": "/assets/aang-highlight-v1.mp4",
+          "avatarPhoto": true,
+          "preferMp4": true
+        },
+        "subdomain": "aang.so791.com",
+        "links": [
+          {"type": "tiktok", "label": "TikTok", "handle": "@.namakuaang", "url": "https://www.tiktok.com/@.namakuaang?_r=1&_t=ZS-970xG9tEyRs"},
+          {"type": "discord", "label": "Discord PASKUS", "handle": "Special Ops Channel", "url": "https://discord.gg/aaBR9ruFva"},
+          {"type": "community", "label": "Streamer Hub", "handle": "PASKUS karya dan event", "url": "https://paskus.so791.com/streamer"}
+        ]
+      }
+    ]
+  }
+}

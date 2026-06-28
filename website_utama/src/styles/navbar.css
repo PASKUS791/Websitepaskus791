@@ -1,0 +1,262 @@
+/* ==========================================================================
+   SISTEM KOMPONEN NAVBAR DAN TRANSISI - file navbar terlokalisasi
+   ========================================================================== */
+
+/* ─── Tata Letak Dasar Grid (Desktop > 960px) ─── */
+body nav.paskus-floating-nav.paskus-navbar-unified {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  grid-template-rows: auto auto !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 6px 12px !important;
+  padding: 8px 24px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  
+  /* Paksa inisialisasi skala dan opacity agar transisi scroll stabil */
+  transform: translate3d(-50%, 0, 0) scale(1) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  
+  /* Transisi halus untuk kurva easing eksponensial yang sangat lembut */
+  transition:
+    transform 650ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    backdrop-filter 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    -webkit-backdrop-filter 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 350ms ease,
+    border-color 350ms ease,
+    box-shadow 350ms ease !important;
+}
+
+/* Logo Terpusat pada Baris 1 */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-logo,
+body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-brand {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+}
+
+/* Tautan Terpusat pada Baris 2 */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-links,
+body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  justify-self: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: clamp(4px, 0.8vw, 14px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Aksi pada Kolom 3 rata kiri (sejajar dengan tautan terpusat) */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+  justify-self: start !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* ─── Styling Tombol dan Dropdown (Terseragamkan) ─── */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .peraturan-nav-back,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .btn-discord,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .discord-link,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .paskus-language-switcher {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(212, 175, 55, 0.22) !important;
+  background: rgba(4, 7, 5, 0.62) !important;
+  color: rgba(232, 239, 226, 0.8) !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .peraturan-nav-back:hover,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .btn-discord:hover,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .discord-link:hover,
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .paskus-language-switcher:hover {
+  border-color: rgba(212, 175, 55, 0.6) !important;
+  color: #efbf04 !important;
+  background: rgba(212, 175, 55, 0.12) !important;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Elemen select dropdown yang terlokalisasi */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .paskus-language-switcher select {
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  text-transform: inherit !important;
+  padding: 0 18px 0 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+/* Sesuaikan posisi panah dropdown */
+body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions .paskus-language-switcher::after {
+  right: 12px !important;
+  border-right-color: inherit !important;
+  border-bottom-color: inherit !important;
+  margin-top: -1px !important;
+}
+
+/* ─── Animasi Mengambang dan Sembunyi Otomatis ─── */
+html.paskus-nav-hidden body nav.paskus-floating-nav.paskus-navbar-unified {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translate3d(-50%, calc(-100% - 36px), 0) scale(0.95) !important;
+  backdrop-filter: blur(0px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(0px) saturate(100%) !important;
+  box-shadow: none !important;
+  border-color: rgba(239, 191, 4, 0) !important;
+  
+  transition:
+    transform 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 450ms cubic-bezier(0.16, 1, 0.3, 1),
+    backdrop-filter 450ms ease,
+    -webkit-backdrop-filter 450ms ease,
+    box-shadow 350ms ease,
+    border-color 350ms ease !important;
+}
+
+/* ─── Tata Letak Responsif (Tablet & Ponsel <= 960px) ─── */
+@media (max-width: 960px) {
+  body nav.paskus-floating-nav.paskus-navbar-unified {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto !important;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-logo,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-brand {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: center !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding: 4px 0 !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links::-webkit-scrollbar,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 10px !important;
+    padding: 6px 12px !important;
+    border: 1px solid rgba(239, 191, 4, 0.14) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-actions {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    justify-self: center !important;
+    width: auto !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+ 
+  /* Catatan: status tersembunyi untuk max-width: 960px ditangani oleh posisi translate3d(-50%, ...) pada gaya dasar,
+     kecuali di bawah 720px saat tata letak bergeser ke anchor kiri/kanan */
+}
+
+/* ─── Override Khusus Ponsel (<= 720px) ─── */
+@media (max-width: 720px) {
+  body nav.paskus-floating-nav.paskus-navbar-unified {
+    transform: translate3d(0, 0, 0) scale(1) !important;
+  }
+  
+  html.paskus-nav-hidden body nav.paskus-floating-nav.paskus-navbar-unified {
+    transform: translate3d(0, calc(-100% - 36px), 0) scale(0.95) !important;
+  }
+}
+
+/* ─── Indikator Garis Bawah Geser Tautan Desktop (min-width: 961px) ─── */
+@media (min-width: 961px) {
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a {
+    position: relative !important;
+    color: rgba(226, 231, 224, 0.62) !important;
+    transition: color 400ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a::after,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: -6px !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, #d4af37, #efbf04) !important;
+    transform: scaleX(0) !important;
+    transform-origin: right center !important;
+    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    pointer-events: none !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a:hover,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a:hover,
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a[aria-current="page"],
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a[aria-current="page"] {
+    color: #efbf04 !important;
+  }
+  
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a:hover::after,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a:hover::after,
+  body nav.paskus-floating-nav.paskus-navbar-unified .nav-links a[aria-current="page"]::after,
+  body nav.paskus-floating-nav.paskus-navbar-unified .peraturan-nav-links a[aria-current="page"]::after {
+    transform: scaleX(1) !important;
+    transform-origin: left center !important;
+  }
+}

@@ -1,0 +1,235 @@
+/* Grid latar belakang */
+.page-bg-grid {
+  background-image: radial-gradient(circle at 50% 0%, rgba(138, 154, 91, 0.15) 0%, transparent 45%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 30px 30px, 30px 30px;
+}
+
+.page-bg-grid-struktural {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.page-bg-grid-streamers {
+  background-image: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.2) 0%, transparent 40%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 30px 30px, 30px 30px;
+}
+
+.page-bg-grid-peraturan {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Latar Belakang Video */
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  margin-bottom: 6px;
+  filter: brightness(0.3) contrast(1.1) saturate(0.8);
+}
+
+/* Grid Penutup */
+.overlay-grid {
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+    linear-gradient(
+      90deg,
+      rgba(138, 154, 91, 0.02),
+      transparent,
+      rgba(138, 154, 91, 0.02)
+    );
+  background-size:
+    100% 4px,
+    4px 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Tombol */
+.btn-enlist {
+  border: 2px solid var(--gold-highlight);
+  color: var(--gold-highlight);
+  background: rgba(212, 175, 55, 0.05);
+  backdrop-filter: blur(5px);
+  transition: all 0.4s ease;
+}
+
+.btn-enlist:hover {
+  background: var(--gold-highlight);
+  color: black;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.btn-outline-white {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  color: white;
+  transition: all 0.4s ease;
+}
+
+.btn-outline-white:hover {
+  border-color: white;
+  background: white;
+  color: black;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+}
+
+/* Properti tata letak kartu unit 3D saat hover */
+.flip-card {
+  background-color: transparent;
+  perspective: 1000px;
+  height: 250px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.flip-card:hover .flip-card-inner,
+.flip-card:active .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sage-green);
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.flip-card-front::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  top: 0;
+  left: 0;
+  animation: scan 3s linear infinite;
+}
+
+.flip-card-back {
+  background: linear-gradient(
+    135deg,
+    var(--deep-black),
+    rgba(138, 154, 91, 0.2)
+  );
+  color: white;
+  transform: rotateY(180deg);
+  border-color: var(--gold-highlight);
+}
+
+.unit-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px var(--sage-green));
+  transition: 0.3s;
+  margin-bottom: 1.5rem;
+}
+
+.flip-card:hover .unit-logo {
+  filter: drop-shadow(0 0 12px var(--gold-highlight));
+  transform: scale(1.1);
+}
+
+/* Detail gaya kartu unit */
+.unit-card-btn {
+  font-family: "Orbitron", sans-serif;
+  font-size: 14px;
+  color: #ffffff;
+  border: 1px solid var(--card-color, #424242);
+  padding: 4px 12px;
+  margin-top: 12px;
+  background: transparent;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.unit-card-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--card-color, #424242);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.unit-card-btn:hover::before { opacity: 1; }
+
+.unit-card-btn:hover {
+  box-shadow:
+    0 0 10px var(--card-color, #424242),
+    0 0 20px var(--card-color, #424242),
+    0 0 30px var(--card-color, #424242);
+}
+
+.unit-card-btn:active { transform: scale(0.95); }
+
+/* Override warna per unit */
+.card-toruk    { --card-color: #ff0000; }
+.card-sierra   { --card-color: #ffffff; }
+.card-beringas { --card-color: #ffd900; }
+.card-Sentinel { --card-color: #6c0000; }
+.card-Pathfinder { --card-color: #267900; }
+.card-Gatam    { --card-color: #585858; }
+
+/* ─── Scroll Progress Bar & Cursor Ambient Glow ─── */
+.paskus-scroll-progress {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #d4af37, #efbf04) !important;
+  z-index: 99999 !important;
+  pointer-events: none !important;
+  transition: width 80ms ease-out !important;
+  will-change: width;
+}
+
+.cursor-glow {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, -1000px) var(--mouse-y, -1000px),
+    rgba(212, 175, 55, 0.04),
+    transparent 70%
+  ) !important;
+  mix-blend-mode: screen !important;
+}

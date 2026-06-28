@@ -1,0 +1,14 @@
+{
+  "name": "paskus-discord-sync-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot to sync members data to PASKUS-791 website command network.",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0"
+  }
+}

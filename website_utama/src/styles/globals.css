@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sage: #8a9a5b;
+  --color-gold: #d4af37;
+}
+
+@import "./variables.css";
+@import "./typography.css";
+@import "./animations.css";
+@import "./utilities.css";
+@import "./navbar.css";
+@import "./paskus-unit-card-smooth.css";
+
+/* ─── Lenis Smooth Scroll Configuration ─── */
+html.lenis, html.lenis body {
+  height: auto !important;
+}
+
+.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+

@@ -9,16 +9,34 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-staff
+dist-hco
 dist-ssr
+PelatihDash-hostinger-deploy
+PelatihDash-hostinger-deploy.zip
+PelatihDash-hostinger-*.zip
+PelatihDash-hostinger-*/
+PelatihDash-vps-deploy-*.zip
+PelatihDash-vps-deploy-*/
 *.local
+api/data/*
+!api/data/.gitkeep
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+._*
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Build outputs
+/hasil build/
+/output/
+
+# Environment Variables & Secrets
+bot/.env

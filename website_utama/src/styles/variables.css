@@ -1,0 +1,17 @@
+:root {
+  --sage-green: #8a9a5b;
+  --deep-black: #0d0d0d;
+  --gold-highlight: #d4af37;
+  
+  /* Enterprise Design Tokens */
+  --primary: #d4af37;
+  --secondary: #111111;
+  --background: #050505;
+  --foreground: #ffffff;
+  
+  /* Rank Insignia Specific Colors */
+  --rust-gold: #a88c4a;
+  --olive-green: #556b2f;
+  --steel-gray: #708090;
+  --bone-white: #f5f5f5;
+}

@@ -46,3 +46,10 @@ scratch/
 /staff_pelatih/api/node_modules/
 /website_utama/cloudflare-streamer-worker/.wrangler/
 
+# Backup folders containing secrets
+paskus-backups/
+.paskus-backups/
+
+# Large media files
+*.mp4
+*.webm

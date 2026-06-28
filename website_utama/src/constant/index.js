@@ -4,16 +4,7 @@ import pathFinder from "../assets/images/pathfinder.webp";
 import sentinel from "../assets/images/sentinel.webp";
 import sierra from "../assets/images/sierra.webp";
 import gatam from "../assets/images/gatam.webp";
-
 import paskus from "../assets/images/paskus.webp";
-
-
-
-
-// import zeni from "../assets/images/zeni.webp";
-// import kopen from "../assets/images/kopen.webp";
-// import dpdm from "../assets/images/dpdm.webp";
-// import propa from "../assets/images/propa.webp";
 import logoDefault from "../assets/images/default.png";
 
 export const unit = [
@@ -35,7 +26,6 @@ export const unit = [
       "Rapid Action & Swift Strike Unit. Divisi infanteri khusus yang bergerak cepat, sigap, dan terukur.",
     class: "card-sierra",
   },
-
   {
     headingSatu: "BRINGAS",
     headingDua: "BRINGAS",
@@ -45,7 +35,6 @@ export const unit = [
       "Kekuatan pemukul berat. Menggunakan alat tempur berat untuk mengamankan area konflik yang paling berbahaya.",
     class: "card-beringas",
   },
-
   {
     headingSatu: "PATHFINDER",
     headingDua: "PATHFINDER",
@@ -55,7 +44,6 @@ export const unit = [
       "Unit pembuka jalur. Menentukan navigasi tim dan memastikan rute aman sebelum unit utama masuk.",
     class: "card-Pathfinder",
   },
-
   {
     headingSatu: "SENTINEL",
     headingDua: "SENTINEL",
@@ -65,7 +53,6 @@ export const unit = [
       " Garda pertahanan terakhir. Melindungi aset strategis pangkalan dan keselamatan VIP tingkat tinggi.",
     class: "card-Sentinel",
   },
-
   {
     headingSatu: "TORUK MAKTO",
     headingDua: "TORUK MAKTO",
@@ -85,7 +72,6 @@ export const nonTempur = [
     deskripsi:
       "Pendidikan dan pengamanan latihan. Menjaga standar kualitas rekrutmen komunitas.",
   },
-
   {
     headingSatu: "KOPENDIKLAT",
     headingDua: "KOPENDIKLAT",
@@ -93,7 +79,6 @@ export const nonTempur = [
     deskripsi:
       "Komando pengembangan pendidikan dan pelatihan. Berfokus pada pengembangan taktik instruktur.",
   },
-
   {
     headingSatu: "DPDM",
     headingDua: "DPDM",
@@ -101,7 +86,6 @@ export const nonTempur = [
     deskripsi:
       "Departemen Data dan Personel. Mengelola intelijen data dan arsip keanggotaan personel.",
   },
-
   {
     headingSatu: "PROPAGANDA",
     headingDua: "PROPAGANDA",
@@ -120,7 +104,6 @@ export const perwira = [
     pangkat: "KOLONEL",
     nama: ["[𖤍] KOL. [STAFF ♤] Cosmo"],
   },
-
   {
     pangkat: "LETNAN KOLONEL",
     nama: ["[❃] LETKOL. Duke Rekreasi"],
@@ -133,7 +116,6 @@ export const perwira = [
     pangkat: "KAPTEN",
     nama: ["[III] KAPT. Regi [SBN-2]", "[III] KAPT. [STAFF]. Raikkonen"],
   },
-
   {
     pangkat: "LETNAN SATU",
     nama: ["[II] Lettu. Go", "[II] 1LT. Salty", "[II] 1LT. Log [⚒] Pan"],
@@ -168,7 +150,6 @@ export const unitDetail = [
       },
       footer: "SIAP UNTUK LEPAS LANDAS?",
     },
-
     bringas: {
       color: "#e7d400ff",
       h1: "bringas",
@@ -179,15 +160,12 @@ export const unitDetail = [
         "BRINGAS dilatih untuk memusnahkan musuh dengan daya tembak yang dahsyat dari senjata berat dan kendaraan-kendaraan yang dibawa serta memberikan perlindungan kepada Infantri apabila ada kondisi yang darurat untuk bermobilisasi dengan cepat dan efisien",
       special: {
         judul: "KAVALERI",
-
         card1Judul: "BREAKER",
         card1Des:
           "Unit garis depan yang bertugas menghancurkan pertahanan musuh dan membuka jalur menggunakan kendaraan lapis baja dengan daya hancur tinggi.",
-
         card2Judul: "SHIELD CORE",
         card2Des:
           "Memberikan perlindungan maksimal bagi pasukan infanteri dengan formasi kendaraan berlapis baja untuk menahan serangan dan mengamankan area pergerakan.",
-
         card3Judul: "RAPID STRIKE",
         card3Des:
           "Unit mobilitas tinggi yang melakukan serangan cepat, flanking, dan penetrasi mendalam ke wilayah musuh untuk mengacaukan formasi lawan.",
@@ -201,21 +179,17 @@ export const unitDetail = [
       philosopiHeader: "COMBAT MEDIC",
       philosopiDeskripsi:
         "Unit Sentinel harus memiliki fokus yang kuat, kemampuan koordinasi dan komunikasi yang tinggi, serta dedikasi penuh dalam menyelamatkan rekan satu tim. Peran mereka sangat vital dalam menjaga keberlangsungan operasi di medan tempur.",
-
       special: {
         judul: "MEDICAL SUPPORT",
-
         card1Judul: "LIFE SAVER",
         card1Des:
           "Memberikan pertolongan pertama secara cepat di medan tempur untuk menstabilkan kondisi korban sebelum evakuasi dilakukan.",
-
         card2Judul: "FIELD EVAC",
         card2Des:
           "Melakukan evakuasi medis menggunakan kendaraan lapis baja untuk memastikan personel terluka dapat dipindahkan ke zona aman dengan cepat.",
-
         card3Judul: "SUPPORT CORE",
         card3Des:
-          "Menyuplai kebutuhan medis dan logistik penting bagi seluruh unit untuk menjaga keberlangsungan operasi dalam jangka panjang.",
+          "Menyuplai kebutuhan medis penting bagi seluruh unit untuk menjaga keberlangsungan operasi dalam jangka panjang.",
       },
     },
     gatam: {
@@ -226,18 +200,14 @@ export const unitDetail = [
       philosopiHeader: "INFILTRATION AND STEALTH UNIT",
       philosopiDeskripsi:
         "Unit Gatam dituntut memiliki fokus tinggi, disiplin ekstrem, serta kemampuan adaptasi dalam tekanan tinggi. Setiap operasi dijalankan dengan presisi tanpa toleransi kesalahan, karena satu kesalahan kecil dapat menggagalkan keseluruhan misi.",
-
       special: {
         judul: "BLACK OPS",
-
         card1Judul: "SILENT ENTRY",
         card1Des:
           "Melakukan infiltrasi tingkat tinggi ke wilayah musuh tanpa terdeteksi untuk mengamankan titik strategis sebelum operasi utama dimulai.",
-
         card2Judul: "TARGET ELIMINATION",
         card2Des:
-          "Menetralisir target bernilai tinggi dengan presisi maksimal menggunakan teknik stealth dan eksekusi cepat tanpa meninggalkan jejak.",
-
+          "Menetralisir target bernilai tinggi dengan presisi maksimal menggunakan teknik stealth and eksekusi cepat tanpa meninggalkan jejak.",
         card3Judul: "DEEP COVER",
         card3Des:
           "Operasi penyamaran jangka panjang di dalam wilayah musuh untuk mengumpulkan intelijen dan membuka peluang serangan dari dalam.",
@@ -251,18 +221,14 @@ export const unitDetail = [
       philosopiHeader: "MEMBUNUH DALAM SENYAP",
       philosopiDeskripsi:
         "Unit Pathfinder harus disiplin, presisi serta memiliki tingkat kesabaran yang sangat tinggi. Operasi pengintaian yang dijalankan sangat krusial untuk keberlangsungan misi, dengan kemampuan utama dalam penembakan jarak jauh, observasi, dan komunikasi taktis.",
-
       special: {
         judul: "RECON",
-
         card1Judul: "SHADOW SCOUT",
         card1Des:
           "Melakukan infiltrasi senyap ke wilayah musuh untuk mengumpulkan intelijen tanpa terdeteksi, memastikan jalur aman bagi unit utama.",
-
         card2Judul: "DEAD EYE",
         card2Des:
           "Penembak jitu dengan akurasi tinggi yang bertugas menetralisir target prioritas dari jarak jauh tanpa membuka posisi tim.",
-
         card3Judul: "ECHO SIGNAL",
         card3Des:
           "Spesialis komunikasi dan pengamatan yang menjaga aliran informasi real-time dari medan tempur ke pusat komando.",
@@ -287,6 +253,27 @@ export const unitDetail = [
         card3Judul: "AGILE CELL",
         card3Des:
           "Bergerak sebagai sel kecil dengan komunikasi tajam, keputusan matang, dan disiplin eksekusi.",
+      },
+    },
+    komodo: {
+      color: "#80c342",
+      h1: "KOMODO",
+      deskripsi:
+        "KOMODO adalah pasukan reguler PASKUS sekaligus satuan awal bagi seluruh anggota yang baru bergabung. Unit ini menjadi barak pembentukan dasar dari pangkat Prada hingga Praka, tempat personel mengenal kultur komando, disiplin lapangan, etika barak, dan standar loyalitas sebelum dinilai layak bergerak ke penugasan atau spesialisasi lanjutan.",
+      philosopiHeader: "BARAK DISIPLIN DAN FILTER PERSONEL",
+      philosopiDeskripsi:
+        "Di dalam KOMODO, anggota tidak hanya dikenalkan pada sistem PASKUS, tetapi juga diuji konsistensi, kedisiplinan, komunikasi, dan kesiapan mengikuti rantai komando. Unit ini berperan sebagai garda terdepan pelatihan, ruang pembentukan mental, serta filter awal agar setiap personel yang naik tahap memiliki sikap, komitmen, dan pemahaman dasar yang selaras dengan standar komunitas.",
+      special: {
+        judul: "REGULER CORPS",
+        card1Judul: "Orientasi Anggota",
+        card1Des:
+          "Pengenalan struktur PASKUS, kultur barak, cara komunikasi, dan dasar kedisiplinan agar personel baru memahami ritme satuan sejak hari pertama.",
+        card2Judul: "Disiplin Barak",
+        card2Des:
+          "Melatih ketertiban, kepatuhan terhadap instruksi, kesiapan apel, dan kebiasaan operasional dasar sebelum anggota masuk ke lingkungan yang lebih spesifik.",
+        card3Judul: "Filter Kesiapan",
+        card3Des:
+          "Menilai komitmen, attitude, keaktifan, dan kemampuan mengikuti standar komando sehingga anggota yang lolos benar-benar siap membawa nama PASKUS.",
       },
     },
   },
